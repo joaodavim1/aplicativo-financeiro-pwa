@@ -309,7 +309,7 @@ function renderExtratoList() {
 
 function renderInsights(balance, income, expense) {
   const savingsRate = income > 0 ? (income - expense) / income : 0;
-  const topExpense = Object.entries(totalsByCategory())[0];
+  const topExpense = Object.entries(totalsByCategoryForFilters("expense"))[0];
   const syncText =
     currentIdentity?.mode === "google"
       ? "Os dados desta tela estao na conta atual."
@@ -379,7 +379,7 @@ function renderGoals() {
 }
 
 function renderBudgets() {
-  const totals = totalsByCategory();
+  const totals = totalsByCategoryForFilters("expense");
 
   if (currentState.budgets.length === 0) {
     nodes.budgetList.innerHTML = emptyStateHtml("Nenhum limite por categoria cadastrado.");
