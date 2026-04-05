@@ -671,12 +671,12 @@ function updateUserBadge() {
 
   if (currentIdentity.mode === "google" && currentIdentity.user?.email) {
     const name = currentIdentity.user.displayName || currentIdentity.user.email;
-    nodes.userBadge.textContent = `Supabase: ${name}`;
+    nodes.userBadge.textContent = `Conta: ${name}`;
     nodes.userBadge.classList.remove("hidden");
     return;
   }
 
-  nodes.userBadge.textContent = "Modo demo local";
+  nodes.userBadge.textContent = "Conta local";
   nodes.userBadge.classList.remove("hidden");
 }
 

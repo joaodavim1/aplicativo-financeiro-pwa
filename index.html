@@ -29,27 +29,25 @@
         </article>
       </section>
 
-      <header class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">Painel pessoal</p>
-          <h1>Seu financeiro com cara de app no iPhone.</h1>
-          <p class="hero-text">
-            Controle saldo, metas e movimentos em uma PWA instalavel, sem App Store.
-          </p>
-        </div>
-        <div class="hero-actions">
+      <header class="hero app-header">
+        <button id="menuButton" class="menu-icon-button" type="button" aria-label="Menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div class="app-header-copy">
+          <h1>Finanças</h1>
           <div id="userBadge" class="user-badge hidden"></div>
-          <button id="menuButton" class="ghost-button" type="button">Menu</button>
-          <button id="logoutButton" class="ghost-button hidden" type="button">Sair</button>
-          <button id="installHelpButton" class="ghost-button hidden" type="button">Como instalar no iPhone</button>
         </div>
+        <button id="logoutButton" class="ghost-button hidden" type="button">Sair</button>
+        <button id="installHelpButton" class="ghost-button hidden" type="button">Como instalar no iPhone</button>
       </header>
 
       <main id="protectedApp" class="layout">
         <nav id="screenTabs" class="screen-tabs" aria-label="Telas do app"></nav>
 
         <section data-screen="EXTRATO" class="screen-panel">
-          <section class="summary-grid">
+          <section class="summary-grid single-column">
             <article class="balance-card">
               <div class="balance-topline">
                 <span>Saldo disponivel</span>
@@ -67,14 +65,6 @@
                   <strong id="expenseValue"></strong>
                 </div>
               </div>
-            </article>
-
-            <article class="card">
-              <div class="card-heading">
-                <p class="eyebrow">Conta ativa</p>
-                <h2>Resumo da conta</h2>
-              </div>
-              <div id="extratoAccountSnapshot" class="stack"></div>
             </article>
           </section>
 
