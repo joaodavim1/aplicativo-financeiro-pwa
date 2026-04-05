@@ -39,8 +39,9 @@
         </div>
         <div class="hero-actions">
           <div id="userBadge" class="user-badge hidden"></div>
+          <button id="menuButton" class="ghost-button" type="button">Menu</button>
           <button id="logoutButton" class="ghost-button hidden" type="button">Sair</button>
-          <button id="installHelpButton" class="ghost-button" type="button">Como instalar no iPhone</button>
+          <button id="installHelpButton" class="ghost-button hidden" type="button">Como instalar no iPhone</button>
         </div>
       </header>
 
@@ -191,8 +192,57 @@
             </article>
           </section>
         </section>
+
+        <section data-screen="CONFIG" class="screen-panel">
+          <section class="panel-grid">
+            <article class="card">
+              <div class="card-heading">
+                <p class="eyebrow">Configurações</p>
+                <h2>Conta e navegação</h2>
+              </div>
+              <div class="stack">
+                <div class="insight-item">
+                  <strong>Conta conectada</strong>
+                  <p id="settingsAccountName" class="muted">Modo demo local</p>
+                </div>
+                <div class="insight-item">
+                  <strong>Origem dos dados</strong>
+                  <p id="settingsDataSource" class="muted">Dados locais do navegador</p>
+                </div>
+                <div class="insight-item">
+                  <strong>Ordem das telas</strong>
+                  <p id="settingsScreenOrder" class="muted">Extrato, Lançamentos, Futuro</p>
+                </div>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="card-heading">
+                <p class="eyebrow">Ações</p>
+                <h2>Menu rápido</h2>
+              </div>
+              <div class="settings-actions">
+                <button id="settingsInstallButton" class="primary-button" type="button">Instalação no iPhone</button>
+                <button id="settingsLogoutButton" class="ghost-button dark-ghost" type="button">Sair da conta</button>
+              </div>
+            </article>
+          </section>
+        </section>
       </main>
     </div>
+
+    <dialog id="menuDialog" class="install-dialog">
+      <div class="dialog-content">
+        <p class="eyebrow">Menu</p>
+        <h2>Acesso rápido</h2>
+        <div class="settings-actions">
+          <button id="menuOpenSettingsButton" class="primary-button" type="button">Configurações</button>
+          <button id="menuInstallButton" class="ghost-button dark-ghost menu-dark" type="button">Instalação</button>
+          <button id="menuLogoutButton" class="ghost-button dark-ghost menu-dark" type="button">Sair</button>
+        </div>
+        <button id="closeMenuButton" class="primary-button" type="button">Fechar</button>
+      </div>
+    </dialog>
 
     <dialog id="installDialog" class="install-dialog">
       <div class="dialog-content">

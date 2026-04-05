@@ -142,6 +142,16 @@ select {
   display: block;
 }
 
+.settings-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.menu-dark {
+  background: rgba(17, 39, 32, 0.08);
+  color: var(--ink);
+}
+
 .summary-grid,
 .panel-grid,
 .transactions-section {

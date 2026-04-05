@@ -17,11 +17,19 @@ const nodes = {
   authStatusMessage: document.querySelector("#authStatusMessage"),
   googleLoginMount: document.querySelector("#googleLoginMount"),
   continueDemoButton: document.querySelector("#continueDemoButton"),
+  menuButton: document.querySelector("#menuButton"),
   logoutButton: document.querySelector("#logoutButton"),
+  menuDialog: document.querySelector("#menuDialog"),
+  closeMenuButton: document.querySelector("#closeMenuButton"),
+  menuOpenSettingsButton: document.querySelector("#menuOpenSettingsButton"),
+  menuInstallButton: document.querySelector("#menuInstallButton"),
+  menuLogoutButton: document.querySelector("#menuLogoutButton"),
   installDialog: document.querySelector("#installDialog"),
   openInstallModalButton: document.querySelector("#openInstallModalButton"),
   closeInstallModalButton: document.querySelector("#closeInstallModalButton"),
-  installHelpButton: document.querySelector("#installHelpButton")
+  installHelpButton: document.querySelector("#installHelpButton"),
+  settingsInstallButton: document.querySelector("#settingsInstallButton"),
+  settingsLogoutButton: document.querySelector("#settingsLogoutButton")
 };
 
 let currentSession = null;
@@ -74,11 +82,32 @@ async function bootstrap() {
 function bindEvents() {
   nodes.continueDemoButton.addEventListener("click", openDemoMode);
   nodes.logoutButton.addEventListener("click", handleLogout);
+  nodes.menuButton?.addEventListener("click", () => nodes.menuDialog?.showModal());
+  nodes.closeMenuButton?.addEventListener("click", () => nodes.menuDialog?.close());
+  nodes.menuOpenSettingsButton?.addEventListener("click", () => {
+    nodes.menuDialog?.close();
+    openSettingsScreen();
+  });
+  nodes.menuInstallButton?.addEventListener("click", () => {
+    nodes.menuDialog?.close();
+    nodes.installDialog?.showModal();
+  });
+  nodes.menuLogoutButton?.addEventListener("click", async () => {
+    nodes.menuDialog?.close();
+    await handleLogout();
+  });
   nodes.installHelpButton?.addEventListener("click", () => nodes.installDialog?.showModal());
   nodes.openInstallModalButton?.addEventListener("click", () => nodes.installDialog?.showModal());
   nodes.closeInstallModalButton?.addEventListener("click", () => nodes.installDialog?.close());
-  nodes.installDialog?.addEventListener("click", (event) => {
-    const rect = nodes.installDialog.getBoundingClientRect();
+  nodes.settingsInstallButton?.addEventListener("click", () => nodes.installDialog?.showModal());
+  nodes.settingsLogoutButton?.addEventListener("click", handleLogout);
+  bindDialogBackdrop(nodes.menuDialog);
+  bindDialogBackdrop(nodes.installDialog);
+}
+
+function bindDialogBackdrop(dialog) {
+  dialog?.addEventListener("click", (event) => {
+    const rect = dialog.getBoundingClientRect();
     const clickedInside =
       rect.top <= event.clientY &&
       event.clientY <= rect.top + rect.height &&
@@ -86,9 +115,15 @@ function bindEvents() {
       event.clientX <= rect.left + rect.width;
 
     if (!clickedInside) {
-      nodes.installDialog.close();
+      dialog.close();
     }
   });
+}
+
+function openSettingsScreen() {
+  const button = document.querySelector('.screen-tab[data-screen="CONFIG"]');
+  button?.click();
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 async function mountGoogleButton() {
@@ -517,6 +552,9 @@ function buildStateFromRemote({ activeAccount, transactions, settings, appSettin
   const allowedScreens = ["EXTRATO", "LANCAMENTOS", "QUADRO"];
   const screenOrder = decodeStringList(appSettings?.screen_order || "EXTRATO|||LANCAMENTOS|||QUADRO")
     .filter((screen) => allowedScreens.includes(screen));
+  if (!screenOrder.includes("CONFIG")) {
+    screenOrder.push("CONFIG");
+  }
 
   return {
     monthLabel: activeAccount?.name ? `Conta ${activeAccount.name}` : "Conta sincronizada",
@@ -538,7 +576,7 @@ function buildStateFromRemote({ activeAccount, transactions, settings, appSettin
       incomeCategories
     },
     ui: {
-      screenOrder: screenOrder.length > 0 ? screenOrder : ["EXTRATO", "LANCAMENTOS", "QUADRO"]
+      screenOrder: screenOrder.length > 0 ? screenOrder : ["EXTRATO", "LANCAMENTOS", "QUADRO", "CONFIG"]
     }
   };
 }

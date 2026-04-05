@@ -60,7 +60,10 @@ const nodes = {
   screenPanels: [...document.querySelectorAll(".screen-panel")],
   userBadge: document.querySelector("#userBadge"),
   categoryInput: document.querySelector("#categoryInput"),
-  typeInput: document.querySelector("#typeInput")
+  typeInput: document.querySelector("#typeInput"),
+  settingsAccountName: document.querySelector("#settingsAccountName"),
+  settingsDataSource: document.querySelector("#settingsDataSource"),
+  settingsScreenOrder: document.querySelector("#settingsScreenOrder")
 };
 
 export async function bootFinanceiroApp({ mode = "demo", user = null, persistence = null } = {}) {
@@ -142,6 +145,7 @@ function render() {
   renderCategoryOptions();
   renderScreenTabs();
   renderScreenPanels();
+  renderSettings();
 }
 
 function renderCategories() {
@@ -357,6 +361,22 @@ function handleScreenTabClick(event) {
   renderScreenPanels();
 }
 
+function renderSettings() {
+  if (!nodes.settingsAccountName) return;
+
+  const userName = currentIdentity?.mode === "google"
+    ? currentIdentity?.user?.displayName || currentIdentity?.user?.email || "Conta Google"
+    : "Modo demo local";
+  const dataSource = currentIdentity?.mode === "google"
+    ? "Mesmo Supabase do Android"
+    : "Dados locais do navegador";
+  const orderLabel = currentState.ui.screenOrder.map((screen) => screenLabel(screen)).join(", ");
+
+  nodes.settingsAccountName.textContent = userName;
+  nodes.settingsDataSource.textContent = dataSource;
+  nodes.settingsScreenOrder.textContent = orderLabel;
+}
+
 function totalsByCategory() {
   return currentState.transactions
     .filter((item) => item.type === "expense")
@@ -552,12 +572,15 @@ function sanitizeCatalog(catalog) {
 }
 
 function sanitizeUi(ui) {
-  const allowed = ["EXTRATO", "LANCAMENTOS", "QUADRO"];
+  const allowed = ["EXTRATO", "LANCAMENTOS", "QUADRO", "CONFIG"];
   const rawOrder = Array.isArray(ui?.screenOrder) ? ui.screenOrder : ["EXTRATO", "LANCAMENTOS", "QUADRO"];
   const screenOrder = rawOrder.filter((item) => allowed.includes(item));
+  if (!screenOrder.includes("CONFIG")) {
+    screenOrder.push("CONFIG");
+  }
 
   return {
-    screenOrder: screenOrder.length > 0 ? screenOrder : ["EXTRATO", "LANCAMENTOS", "QUADRO"]
+    screenOrder: screenOrder.length > 0 ? screenOrder : ["EXTRATO", "LANCAMENTOS", "QUADRO", "CONFIG"]
   };
 }
 
@@ -613,5 +636,6 @@ function emptyStateHtml(message) {
 function screenLabel(screen) {
   if (screen === "LANCAMENTOS") return "Lançamentos";
   if (screen === "QUADRO") return "Futuro";
+  if (screen === "CONFIG") return "Configurações";
   return "Extrato";
 }
