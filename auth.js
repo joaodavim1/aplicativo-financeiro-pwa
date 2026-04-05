@@ -3,6 +3,7 @@ import {
   getAuth,
   GoogleAuthProvider,
   onAuthStateChanged,
+  signInWithPopup,
   signInWithRedirect,
   signOut
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -96,11 +97,26 @@ async function handleGoogleLogin() {
   }
 
   try {
-    nodes.authStatusMessage.textContent = "Redirecionando para o Google...";
+    nodes.authStatusMessage.textContent = "Abrindo login Google...";
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
-    await signInWithRedirect(auth, provider);
+    await signInWithPopup(auth, provider);
   } catch (error) {
+    const code = error?.code || "";
+
+    if (code === "auth/popup-blocked" || code === "auth/cancelled-popup-request") {
+      try {
+        nodes.authStatusMessage.textContent = "Popup bloqueado. Tentando redirecionar...";
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: "select_account" });
+        await signInWithRedirect(auth, provider);
+        return;
+      } catch (redirectError) {
+        nodes.authStatusMessage.textContent = formatAuthError(redirectError);
+        return;
+      }
+    }
+
     nodes.authStatusMessage.textContent = formatAuthError(error);
   }
 }
