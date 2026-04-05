@@ -222,10 +222,11 @@ function createSupabasePersistence(ensureSessionFn) {
         throw new Error("Faca login novamente para carregar os dados do Supabase.");
       }
 
-      const [people, transactions, accountSettings] = await Promise.all([
+      const [people, transactions, accountSettings, appSettings] = await Promise.all([
         fetchPeople(session.accessToken),
         fetchTransactions(session.accessToken),
-        fetchAccountSettings(session.accessToken)
+        fetchAccountSettings(session.accessToken),
+        fetchAppSettings(session.accessToken)
       ]);
 
       const activeAccount = selectActiveAccount(people, transactions);
@@ -247,7 +248,8 @@ function createSupabasePersistence(ensureSessionFn) {
       return buildStateFromRemote({
         activeAccount,
         transactions: filteredTransactions,
-        settings: activeSettings
+        settings: activeSettings,
+        appSettings: Array.isArray(appSettings) ? appSettings[0] || null : null
       });
     },
     async saveState(state) {
@@ -398,6 +400,19 @@ async function fetchAccountSettings(accessToken) {
   });
 }
 
+async function fetchAppSettings(accessToken) {
+  return requestSupabase({
+    method: "GET",
+    path: "/rest/v1/app_settings",
+    query: {
+      select: "id,visualizacao_modo,screen_order,updated_at",
+      order: "updated_at.desc,id.asc",
+      limit: "1"
+    },
+    bearerToken: accessToken
+  });
+}
+
 async function requestSupabase({ method, path, query = {}, body = null, bearerToken = null, prefer = null }) {
   const url = buildSupabaseUrl(path, query);
   const headers = {
@@ -494,11 +509,14 @@ function selectActiveAccount(people, transactions) {
   return null;
 }
 
-function buildStateFromRemote({ activeAccount, transactions, settings }) {
+function buildStateFromRemote({ activeAccount, transactions, settings, appSettings }) {
   const sortedTransactions = [...transactions].sort((left, right) => Number(right.date_millis || 0) - Number(left.date_millis || 0));
   const budgets = buildBudgets(settings?.expense_category_limits || "");
   const expenseCategories = decodeStringList(settings?.expense_categories || "");
   const incomeCategories = decodeStringList(settings?.income_categories || "");
+  const allowedScreens = ["EXTRATO", "LANCAMENTOS", "QUADRO"];
+  const screenOrder = decodeStringList(appSettings?.screen_order || "EXTRATO|||LANCAMENTOS|||QUADRO")
+    .filter((screen) => allowedScreens.includes(screen));
 
   return {
     monthLabel: activeAccount?.name ? `Conta ${activeAccount.name}` : "Conta sincronizada",
@@ -518,6 +536,9 @@ function buildStateFromRemote({ activeAccount, transactions, settings }) {
     catalog: {
       expenseCategories,
       incomeCategories
+    },
+    ui: {
+      screenOrder: screenOrder.length > 0 ? screenOrder : ["EXTRATO", "LANCAMENTOS", "QUADRO"]
     }
   };
 }

@@ -111,6 +111,37 @@ select {
   gap: 18px;
 }
 
+.screen-tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.screen-tab {
+  border: 0;
+  cursor: pointer;
+  padding: 12px 16px;
+  border-radius: 999px;
+  background: rgba(20, 92, 76, 0.08);
+  color: var(--primary);
+  font-weight: 800;
+  transition: transform 180ms ease, background 180ms ease, color 180ms ease;
+}
+
+.screen-tab.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.screen-panel {
+  display: none;
+}
+
+.screen-panel.active {
+  display: block;
+}
+
 .summary-grid,
 .panel-grid,
 .transactions-section {

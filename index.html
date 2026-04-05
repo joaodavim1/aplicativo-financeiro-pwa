@@ -45,143 +45,151 @@
       </header>
 
       <main id="protectedApp" class="layout">
-        <section class="summary-grid">
-          <article class="balance-card">
-            <div class="balance-topline">
-              <span>Saldo disponivel</span>
-              <span id="currentMonthLabel"></span>
-            </div>
-            <strong id="balanceValue" class="balance-value"></strong>
+        <nav id="screenTabs" class="screen-tabs" aria-label="Telas do app"></nav>
 
-            <div class="pill-grid">
-              <div class="pill-card">
-                <span>Entradas</span>
-                <strong id="incomeValue"></strong>
+        <section data-screen="EXTRATO" class="screen-panel">
+          <section class="summary-grid">
+            <article class="balance-card">
+              <div class="balance-topline">
+                <span>Saldo disponivel</span>
+                <span id="currentMonthLabel"></span>
               </div>
-              <div class="pill-card">
-                <span>Saidas</span>
-                <strong id="expenseValue"></strong>
+              <strong id="balanceValue" class="balance-value"></strong>
+
+              <div class="pill-grid">
+                <div class="pill-card">
+                  <span>Entradas</span>
+                  <strong id="incomeValue"></strong>
+                </div>
+                <div class="pill-card">
+                  <span>Saidas</span>
+                  <strong id="expenseValue"></strong>
+                </div>
               </div>
-            </div>
-          </article>
+            </article>
 
-          <article class="card install-card">
-            <div class="card-heading">
-              <p class="eyebrow">Instalacao</p>
-              <h2>Pronto para Home Screen</h2>
-            </div>
-            <p>
-              No iPhone: Safari -> Compartilhar -> Adicionar a Tela de Inicio -> Open as Web App.
-            </p>
-            <button id="openInstallModalButton" class="primary-button" type="button">
-              Ver passo a passo
-            </button>
-          </article>
-        </section>
-
-        <section class="panel-grid">
-          <article class="card chart-card">
-            <div class="card-heading">
-              <p class="eyebrow">Distribuicao</p>
-              <h2>Gastos por categoria</h2>
-            </div>
-            <div id="categoryBars" class="bars"></div>
-          </article>
-
-          <article class="card">
-            <div class="card-heading">
-              <p class="eyebrow">Leituras rapidas</p>
-              <h2>Insights do mes</h2>
-            </div>
-            <div id="insightsList" class="stack"></div>
-          </article>
-        </section>
-
-        <section class="panel-grid">
-          <article class="card">
-            <div class="card-heading">
-              <p class="eyebrow">Metas</p>
-              <h2>Reservas em andamento</h2>
-            </div>
-            <div id="goalsList" class="stack"></div>
-          </article>
-
-          <article class="card">
-            <div class="card-heading">
-              <p class="eyebrow">Orcamento</p>
-              <h2>Limites por frente</h2>
-            </div>
-            <div id="budgetList" class="stack"></div>
-          </article>
-        </section>
-
-        <section class="transactions-section">
-          <article class="card composer-card">
-            <div class="card-heading">
-              <p class="eyebrow">Novo movimento</p>
-              <h2>Registrar transacao</h2>
-            </div>
-
-            <form id="transactionForm" class="transaction-form">
-              <label>
-                <span>Titulo</span>
-                <input id="titleInput" name="title" type="text" placeholder="Ex: Pix cliente" required />
-              </label>
-
-              <label>
-                <span>Categoria</span>
-                <select id="categoryInput" name="category">
-                  <option value="Casa">Casa</option>
-                  <option value="Mercado">Mercado</option>
-                  <option value="Transporte">Transporte</option>
-                  <option value="Lazer">Lazer</option>
-                  <option value="Investimentos">Investimentos</option>
-                  <option value="Trabalho">Trabalho</option>
-                </select>
-              </label>
-
-              <label>
-                <span>Tipo</span>
-                <select id="typeInput" name="type">
-                  <option value="expense">Saida</option>
-                  <option value="income">Entrada</option>
-                </select>
-              </label>
-
-              <label>
-                <span>Valor</span>
-                <input
-                  id="amountInput"
-                  name="amount"
-                  type="number"
-                  inputmode="decimal"
-                  min="0.01"
-                  step="0.01"
-                  placeholder="0,00"
-                  required
-                />
-              </label>
-
-              <button class="primary-button" type="submit">Salvar transacao</button>
-            </form>
-          </article>
-
-          <article class="card ledger-card">
-            <div class="ledger-toolbar">
+            <article class="card install-card">
               <div class="card-heading">
-                <p class="eyebrow">Movimentos</p>
-                <h2>Ultimas transacoes</h2>
+                <p class="eyebrow">Instalacao</p>
+                <h2>Pronto para Home Screen</h2>
+              </div>
+              <p>
+                No iPhone: Safari -> Compartilhar -> Adicionar a Tela de Inicio -> Open as Web App.
+              </p>
+              <button id="openInstallModalButton" class="primary-button" type="button">
+                Ver passo a passo
+              </button>
+            </article>
+          </section>
+
+          <section class="panel-grid">
+            <article class="card chart-card">
+              <div class="card-heading">
+                <p class="eyebrow">Distribuicao</p>
+                <h2>Gastos por categoria</h2>
+              </div>
+              <div id="categoryBars" class="bars"></div>
+            </article>
+
+            <article class="card">
+              <div class="card-heading">
+                <p class="eyebrow">Orcamento</p>
+                <h2>Limites por frente</h2>
+              </div>
+              <div id="budgetList" class="stack"></div>
+            </article>
+          </section>
+        </section>
+
+        <section data-screen="LANCAMENTOS" class="screen-panel">
+          <section class="transactions-section">
+            <article class="card composer-card">
+              <div class="card-heading">
+                <p class="eyebrow">Novo movimento</p>
+                <h2>Registrar transacao</h2>
               </div>
 
-              <div class="filter-tabs" role="tablist" aria-label="Filtro de transacoes">
-                <button class="filter-tab active" data-filter="all" type="button">Tudo</button>
-                <button class="filter-tab" data-filter="income" type="button">Entradas</button>
-                <button class="filter-tab" data-filter="expense" type="button">Saidas</button>
-              </div>
-            </div>
+              <form id="transactionForm" class="transaction-form">
+                <label>
+                  <span>Titulo</span>
+                  <input id="titleInput" name="title" type="text" placeholder="Ex: Pix cliente" required />
+                </label>
 
-            <div id="transactionsList" class="transactions-list"></div>
-          </article>
+                <label>
+                  <span>Categoria</span>
+                  <select id="categoryInput" name="category">
+                    <option value="Casa">Casa</option>
+                    <option value="Mercado">Mercado</option>
+                    <option value="Transporte">Transporte</option>
+                    <option value="Lazer">Lazer</option>
+                    <option value="Investimentos">Investimentos</option>
+                    <option value="Trabalho">Trabalho</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Tipo</span>
+                  <select id="typeInput" name="type">
+                    <option value="expense">Saida</option>
+                    <option value="income">Entrada</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Valor</span>
+                  <input
+                    id="amountInput"
+                    name="amount"
+                    type="number"
+                    inputmode="decimal"
+                    min="0.01"
+                    step="0.01"
+                    placeholder="0,00"
+                    required
+                  />
+                </label>
+
+                <button class="primary-button" type="submit">Salvar transacao</button>
+              </form>
+            </article>
+
+            <article class="card ledger-card">
+              <div class="ledger-toolbar">
+                <div class="card-heading">
+                  <p class="eyebrow">Movimentos</p>
+                  <h2>Ultimas transacoes</h2>
+                </div>
+
+                <div class="filter-tabs" role="tablist" aria-label="Filtro de transacoes">
+                  <button class="filter-tab active" data-filter="all" type="button">Tudo</button>
+                  <button class="filter-tab" data-filter="income" type="button">Entradas</button>
+                  <button class="filter-tab" data-filter="expense" type="button">Saidas</button>
+                </div>
+              </div>
+
+              <div id="transactionsList" class="transactions-list"></div>
+            </article>
+          </section>
+        </section>
+
+        <section data-screen="QUADRO" class="screen-panel">
+          <section class="panel-grid">
+            <article class="card">
+              <div class="card-heading">
+                <p class="eyebrow">Leituras rapidas</p>
+                <h2>Insights do mes</h2>
+              </div>
+              <div id="insightsList" class="stack"></div>
+            </article>
+
+            <article class="card">
+              <div class="card-heading">
+                <p class="eyebrow">Metas</p>
+                <h2>Reservas em andamento</h2>
+              </div>
+              <div id="goalsList" class="stack"></div>
+            </article>
+          </section>
         </section>
       </main>
     </div>

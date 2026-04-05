@@ -42,6 +42,7 @@ let currentState = structuredClone(defaults);
 let currentIdentity = null;
 let currentPersistence = null;
 let eventsBound = false;
+let activeScreen = "EXTRATO";
 
 const nodes = {
   currentMonthLabel: document.querySelector("#currentMonthLabel"),
@@ -55,6 +56,8 @@ const nodes = {
   transactionsList: document.querySelector("#transactionsList"),
   transactionForm: document.querySelector("#transactionForm"),
   filterTabs: [...document.querySelectorAll(".filter-tab")],
+  screenTabs: document.querySelector("#screenTabs"),
+  screenPanels: [...document.querySelectorAll(".screen-panel")],
   userBadge: document.querySelector("#userBadge"),
   categoryInput: document.querySelector("#categoryInput"),
   typeInput: document.querySelector("#typeInput")
@@ -79,6 +82,7 @@ export async function bootFinanceiroApp({ mode = "demo", user = null, persistenc
 function bindEvents() {
   nodes.transactionForm.addEventListener("submit", handleSubmit);
   nodes.typeInput.addEventListener("change", renderCategoryOptions);
+  nodes.screenTabs.addEventListener("click", handleScreenTabClick);
   nodes.filterTabs.forEach((tab) => {
     tab.addEventListener("click", () => {
       currentFilter = tab.dataset.filter;
@@ -136,6 +140,8 @@ function render() {
   renderBudgets();
   renderTransactions();
   renderCategoryOptions();
+  renderScreenTabs();
+  renderScreenPanels();
 }
 
 function renderCategories() {
@@ -320,6 +326,37 @@ function renderCategoryOptions() {
   }
 }
 
+function renderScreenTabs() {
+  const order = currentState.ui.screenOrder;
+  if (!order.includes(activeScreen)) {
+    activeScreen = order[0];
+  }
+
+  nodes.screenTabs.innerHTML = order
+    .map(
+      (screen) => `
+        <button class="screen-tab ${screen === activeScreen ? "active" : ""}" data-screen="${screen}" type="button">
+          ${escapeHtml(screenLabel(screen))}
+        </button>
+      `
+    )
+    .join("");
+}
+
+function renderScreenPanels() {
+  nodes.screenPanels.forEach((panel) => {
+    panel.classList.toggle("active", panel.dataset.screen === activeScreen);
+  });
+}
+
+function handleScreenTabClick(event) {
+  const button = event.target.closest(".screen-tab");
+  if (!button) return;
+  activeScreen = button.dataset.screen;
+  renderScreenTabs();
+  renderScreenPanels();
+}
+
 function totalsByCategory() {
   return currentState.transactions
     .filter((item) => item.type === "expense")
@@ -382,7 +419,8 @@ function sanitizeState(state) {
     budgets: Array.isArray(state?.budgets)
       ? state.budgets.map((budget, index) => sanitizeBudget(budget, index)).filter(Boolean)
       : structuredClone(defaults.budgets),
-    catalog: sanitizeCatalog(state?.catalog)
+    catalog: sanitizeCatalog(state?.catalog),
+    ui: sanitizeUi(state?.ui)
   };
 }
 
@@ -393,7 +431,8 @@ function stripRuntimeFields(state) {
     transactions: sanitized.transactions,
     goals: sanitized.goals,
     budgets: sanitized.budgets,
-    catalog: sanitized.catalog
+    catalog: sanitized.catalog,
+    ui: sanitized.ui
   };
 }
 
@@ -512,6 +551,16 @@ function sanitizeCatalog(catalog) {
   };
 }
 
+function sanitizeUi(ui) {
+  const allowed = ["EXTRATO", "LANCAMENTOS", "QUADRO"];
+  const rawOrder = Array.isArray(ui?.screenOrder) ? ui.screenOrder : ["EXTRATO", "LANCAMENTOS", "QUADRO"];
+  const screenOrder = rawOrder.filter((item) => allowed.includes(item));
+
+  return {
+    screenOrder: screenOrder.length > 0 ? screenOrder : ["EXTRATO", "LANCAMENTOS", "QUADRO"]
+  };
+}
+
 function uniqueCaseInsensitive(values) {
   const seen = new Set();
 
@@ -559,4 +608,10 @@ function fallbackBudgetColor(index) {
 
 function emptyStateHtml(message) {
   return `<div class="empty-state">${escapeHtml(message)}</div>`;
+}
+
+function screenLabel(screen) {
+  if (screen === "LANCAMENTOS") return "Lançamentos";
+  if (screen === "QUADRO") return "Futuro";
+  return "Extrato";
 }
