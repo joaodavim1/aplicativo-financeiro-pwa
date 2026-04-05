@@ -1,190 +1,628 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import {
-  getAuth,
-  GoogleAuthProvider,
-  onAuthStateChanged,
-  signInWithPopup,
-  signInWithRedirect,
-  signOut
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc,
-  serverTimestamp
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { bootFinanceiroApp } from "./app.js";
 
-const runtimeConfig = window.FINANCEIRO_FIREBASE_CONFIG || null;
+const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
   requireLogin: false,
   ...window.FINANCEIRO_AUTH_OPTIONS
 };
+const SESSION_STORAGE_KEY = "financeiro-pwa-supabase-session-v1";
+const SETTINGS_LIST_SEPARATOR = "|||";
+const GOOGLE_BUTTON_WIDTH = 280;
+const BUDGET_COLORS = ["#145c4c", "#6bc5a4", "#f08a24", "#d9604c", "#256d5a"];
 
 const nodes = {
   authGate: document.querySelector("#authGate"),
   protectedApp: document.querySelector("#protectedApp"),
   authDescription: document.querySelector("#authDescription"),
   authStatusMessage: document.querySelector("#authStatusMessage"),
-  googleLoginButton: document.querySelector("#googleLoginButton"),
+  googleLoginMount: document.querySelector("#googleLoginMount"),
   continueDemoButton: document.querySelector("#continueDemoButton"),
-  logoutButton: document.querySelector("#logoutButton")
+  logoutButton: document.querySelector("#logoutButton"),
+  installDialog: document.querySelector("#installDialog"),
+  openInstallModalButton: document.querySelector("#openInstallModalButton"),
+  closeInstallModalButton: document.querySelector("#closeInstallModalButton"),
+  installHelpButton: document.querySelector("#installHelpButton")
 };
 
-let auth = null;
-let db = null;
+let currentSession = null;
 
 bootstrap();
 
-function bootstrap() {
-  nodes.googleLoginButton.addEventListener("click", handleGoogleLogin);
-  nodes.continueDemoButton.addEventListener("click", openDemoMode);
-  nodes.logoutButton.addEventListener("click", handleLogout);
+async function bootstrap() {
+  bindEvents();
 
-  if (!isFirebaseConfigured(runtimeConfig)) {
+  if (!isSupabaseConfigured(runtimeConfig)) {
     nodes.authGate.classList.remove("hidden");
     nodes.protectedApp.classList.remove("hidden");
     nodes.authDescription.textContent =
-      "O login Google esta preparado, mas falta preencher o arquivo firebase-config.js com as credenciais do Firebase.";
+      "O login Google esta preparado para o Supabase, mas falta preencher o arquivo supabase-config.js.";
     nodes.authStatusMessage.textContent =
       "Enquanto isso, voce pode usar o app em modo demo local.";
     openDemoMode();
     return;
   }
 
-  const app = initializeApp(runtimeConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-
   nodes.authDescription.textContent =
-    "Entre com sua conta Google para manter uma area separada dentro do app.";
+    "Entre com a mesma conta Google do Android para puxar os dados reais do Supabase.";
   nodes.authStatusMessage.textContent =
-    "Se quiser testar sem login, o modo demo continua disponivel.";
+    "A PWA vai ler e salvar as transacoes na mesma base usada pelo app Android.";
 
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      nodes.authGate.classList.add("hidden");
-      nodes.protectedApp.classList.remove("hidden");
-      nodes.logoutButton.classList.remove("hidden");
-      nodes.authStatusMessage.textContent = "Conta Google conectada.";
-      bootFinanceiroApp({
-        mode: "google",
-        user,
-        persistence: createFirestorePersistence(user)
-      });
-      return;
-    }
+  try {
+    await mountGoogleButton();
+  } catch (error) {
+    nodes.authStatusMessage.textContent = formatAuthError(error);
+  }
 
-    nodes.logoutButton.classList.add("hidden");
+  const restoredSession = await restoreSession();
+  if (restoredSession) {
+    await openSupabaseMode(restoredSession);
+    return;
+  }
 
-    if (authOptions.requireLogin) {
-      nodes.authGate.classList.remove("hidden");
-      nodes.protectedApp.classList.add("hidden");
-      nodes.authStatusMessage.textContent = "Use sua conta Google para entrar.";
-      return;
-    }
-
-    nodes.authGate.classList.remove("hidden");
-    nodes.protectedApp.classList.remove("hidden");
-    bootFinanceiroApp({ mode: "demo" });
-  });
-
-  nodes.googleLoginButton.dataset.authReady = "true";
+  nodes.logoutButton.classList.add("hidden");
 
   if (authOptions.requireLogin) {
-    nodes.continueDemoButton.classList.add("hidden");
+    nodes.authGate.classList.remove("hidden");
+    nodes.protectedApp.classList.add("hidden");
+    nodes.authStatusMessage.textContent = "Use sua conta Google para entrar.";
+    return;
   }
+
+  openDemoMode();
+}
+
+function bindEvents() {
+  nodes.continueDemoButton.addEventListener("click", openDemoMode);
+  nodes.logoutButton.addEventListener("click", handleLogout);
+  nodes.installHelpButton?.addEventListener("click", () => nodes.installDialog?.showModal());
+  nodes.openInstallModalButton?.addEventListener("click", () => nodes.installDialog?.showModal());
+  nodes.closeInstallModalButton?.addEventListener("click", () => nodes.installDialog?.close());
+  nodes.installDialog?.addEventListener("click", (event) => {
+    const rect = nodes.installDialog.getBoundingClientRect();
+    const clickedInside =
+      rect.top <= event.clientY &&
+      event.clientY <= rect.top + rect.height &&
+      rect.left <= event.clientX &&
+      event.clientX <= rect.left + rect.width;
+
+    if (!clickedInside) {
+      nodes.installDialog.close();
+    }
+  });
+}
+
+async function mountGoogleButton() {
+  if (!runtimeConfig.googleClientId) {
+    throw new Error("Preencha googleClientId no supabase-config.js.");
+  }
+
+  const googleClient = await waitForGoogleClient();
+  nodes.googleLoginMount.innerHTML = "";
+
+  googleClient.accounts.id.initialize({
+    client_id: runtimeConfig.googleClientId,
+    callback: handleGoogleCredential,
+    auto_select: false,
+    itp_support: true,
+    use_fedcm_for_prompt: true
+  });
+
+  googleClient.accounts.id.renderButton(nodes.googleLoginMount, {
+    theme: "outline",
+    size: "large",
+    shape: "pill",
+    text: "signin_with",
+    width: GOOGLE_BUTTON_WIDTH
+  });
 }
 
 function openDemoMode() {
   nodes.protectedApp.classList.remove("hidden");
   nodes.authGate.classList.remove("hidden");
   nodes.logoutButton.classList.add("hidden");
+  nodes.authStatusMessage.textContent = "Modo demo local ativo.";
   bootFinanceiroApp({ mode: "demo" });
 }
 
-async function handleGoogleLogin() {
-  if (!auth) {
-    nodes.authStatusMessage.textContent =
-      "Preencha o firebase-config.js para ativar o login Google.";
-    return;
-  }
-
+async function handleGoogleCredential(response) {
   try {
-    nodes.authStatusMessage.textContent = "Abrindo login Google...";
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: "select_account" });
-    await signInWithPopup(auth, provider);
+    nodes.authStatusMessage.textContent = "Conectando ao Supabase...";
+    currentSession = await signInWithGoogleIdToken(response.credential);
+    persistSession(currentSession);
+    await openSupabaseMode(currentSession);
   } catch (error) {
-    const code = error?.code || "";
-
-    if (code === "auth/popup-blocked" || code === "auth/cancelled-popup-request") {
-      try {
-        nodes.authStatusMessage.textContent = "Popup bloqueado. Tentando redirecionar...";
-        const provider = new GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: "select_account" });
-        await signInWithRedirect(auth, provider);
-        return;
-      } catch (redirectError) {
-        nodes.authStatusMessage.textContent = formatAuthError(redirectError);
-        return;
-      }
-    }
-
     nodes.authStatusMessage.textContent = formatAuthError(error);
   }
 }
 
 async function handleLogout() {
-  if (!auth) return;
+  try {
+    const session = await ensureSession();
+    if (session?.accessToken) {
+      await requestSupabase({
+        method: "POST",
+        path: "/auth/v1/logout",
+        bearerToken: session.accessToken
+      });
+    }
+  } catch (error) {
+    console.warn("Falha ao encerrar sessao no Supabase:", error);
+  }
+
+  currentSession = null;
+  clearPersistedSession();
+  if (window.google?.accounts?.id) {
+    window.google.accounts.id.disableAutoSelect();
+  }
+
+  nodes.authStatusMessage.textContent = "Voce saiu da conta Google.";
+  openDemoMode();
+}
+
+async function openSupabaseMode(session) {
+  const user = session.user || (await fetchCurrentUser(session.accessToken));
+  currentSession = {
+    ...session,
+    user
+  };
+  persistSession(currentSession);
+  nodes.authGate.classList.add("hidden");
+  nodes.protectedApp.classList.remove("hidden");
+  nodes.logoutButton.classList.remove("hidden");
+  nodes.authStatusMessage.textContent = "Conta Google conectada ao Supabase.";
 
   try {
-    await signOut(auth);
-    nodes.authStatusMessage.textContent = "Voce saiu da conta Google.";
+    await bootFinanceiroApp({
+      mode: "google",
+      user,
+      persistence: createSupabasePersistence(ensureSession)
+    });
   } catch (error) {
+    nodes.authGate.classList.remove("hidden");
     nodes.authStatusMessage.textContent = formatAuthError(error);
+    await bootFinanceiroApp({ mode: "demo" });
   }
 }
 
-function isFirebaseConfigured(config) {
+function isSupabaseConfigured(config) {
   if (!config || typeof config !== "object") return false;
 
-  const requiredKeys = ["apiKey", "authDomain", "projectId", "appId"];
+  const requiredKeys = ["url", "anonKey", "googleClientId"];
   return requiredKeys.every((key) => typeof config[key] === "string" && config[key].trim().length > 0);
 }
 
 function formatAuthError(error) {
-  const code = error?.code || "erro-desconhecido";
-  return `Falha no login Google (${code}).`;
+  const message = String(error?.message || error || "").trim();
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes("origin") || normalized.includes("audience")) {
+    return "O Google ainda nao liberou este dominio. Falta autorizar joaodavim1.github.io no client web usado pelo Supabase.";
+  }
+  if (normalized.includes("network") || normalized.includes("fetch")) {
+    return "Falha de rede ao falar com o Supabase.";
+  }
+  if (message) {
+    return message;
+  }
+  return "Falha no login Google.";
 }
 
-function createFirestorePersistence(user) {
-  const documentRef = doc(db, "users", user.uid, "apps", "financeiro");
+function createSupabasePersistence(ensureSessionFn) {
+  const context = {
+    activeAccount: null,
+    activeAccountId: null,
+    activeSettings: null,
+    defaultPaymentMethod: "Pix"
+  };
 
   return {
     async loadState() {
-      const snapshot = await getDoc(documentRef);
-      if (!snapshot.exists()) {
-        return null;
+      const session = await ensureSessionFn();
+      if (!session?.accessToken) {
+        throw new Error("Faca login novamente para carregar os dados do Supabase.");
       }
 
-      return snapshot.data()?.state ?? null;
+      const [people, transactions, accountSettings] = await Promise.all([
+        fetchPeople(session.accessToken),
+        fetchTransactions(session.accessToken),
+        fetchAccountSettings(session.accessToken)
+      ]);
+
+      const activeAccount = selectActiveAccount(people, transactions);
+      const activeAccountId = activeAccount?.id ?? (transactions[0]?.account_id ? Number(transactions[0].account_id) : null);
+      const activeSettings =
+        (activeAccountId == null
+          ? accountSettings[0]
+          : accountSettings.find((item) => Number(item.account_id) === Number(activeAccountId))) || null;
+      const filteredTransactions =
+        activeAccountId == null
+          ? transactions
+          : transactions.filter((item) => Number(item.account_id) === Number(activeAccountId));
+
+      context.activeAccount = activeAccount;
+      context.activeAccountId = activeAccountId;
+      context.activeSettings = activeSettings;
+      context.defaultPaymentMethod = decodeStringList(activeSettings?.payment_methods || "")[0] || "Pix";
+
+      return buildStateFromRemote({
+        activeAccount,
+        transactions: filteredTransactions,
+        settings: activeSettings
+      });
     },
     async saveState(state) {
-      await setDoc(
-        documentRef,
-        {
-          state,
-          profile: {
-            uid: user.uid,
-            email: user.email || "",
-            displayName: user.displayName || ""
-          },
-          updatedAt: serverTimestamp()
-        },
-        { merge: true }
+      const session = await ensureSessionFn();
+      if (!session?.accessToken) {
+        throw new Error("Faca login novamente para salvar os dados do Supabase.");
+      }
+      if (!context.activeAccountId) {
+        throw new Error("Nao encontrei uma conta ativa no Supabase para salvar a transacao.");
+      }
+
+      const payload = state.transactions.map((transaction) =>
+        toSupabaseTransaction(transaction, {
+          accountId: context.activeAccountId,
+          ownerId: session.user.uid,
+          defaultPaymentMethod: context.defaultPaymentMethod
+        })
       );
+
+      await requestSupabase({
+        method: "POST",
+        path: "/rest/v1/transactions",
+        query: { on_conflict: "owner_id,id" },
+        body: payload,
+        bearerToken: session.accessToken,
+        prefer: "resolution=merge-duplicates,return=minimal"
+      });
     }
   };
+}
+
+async function restoreSession() {
+  const stored = readPersistedSession();
+  if (!stored) return null;
+
+  currentSession = stored;
+  const session = await ensureSession();
+  if (!session) {
+    clearPersistedSession();
+  }
+  return session;
+}
+
+async function ensureSession() {
+  if (!currentSession) return null;
+  if (!sessionNeedsRefresh(currentSession)) {
+    return hydrateSessionUser(currentSession);
+  }
+
+  try {
+    currentSession = await refreshSession(currentSession.refreshToken);
+    persistSession(currentSession);
+    return hydrateSessionUser(currentSession);
+  } catch {
+    currentSession = null;
+    clearPersistedSession();
+    return null;
+  }
+}
+
+async function hydrateSessionUser(session) {
+  if (session?.user?.uid) return session;
+  if (!session?.accessToken) return session;
+
+  const user = await fetchCurrentUser(session.accessToken);
+  currentSession = { ...session, user };
+  persistSession(currentSession);
+  return currentSession;
+}
+
+function sessionNeedsRefresh(session) {
+  const expiresAt = Number(session?.expiresAtEpochSeconds || 0);
+  if (!Number.isFinite(expiresAt) || expiresAt <= 0) return false;
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  return expiresAt <= nowSeconds + 60;
+}
+
+async function signInWithGoogleIdToken(idToken) {
+  const data = await requestSupabase({
+    method: "POST",
+    path: "/auth/v1/token",
+    query: { grant_type: "id_token" },
+    body: {
+      provider: "google",
+      id_token: idToken
+    }
+  });
+
+  return normalizeSession(data);
+}
+
+async function refreshSession(refreshToken) {
+  const data = await requestSupabase({
+    method: "POST",
+    path: "/auth/v1/token",
+    query: { grant_type: "refresh_token" },
+    body: {
+      refresh_token: refreshToken
+    }
+  });
+
+  return normalizeSession(data);
+}
+
+async function fetchCurrentUser(accessToken) {
+  const data = await requestSupabase({
+    method: "GET",
+    path: "/auth/v1/user",
+    bearerToken: accessToken
+  });
+
+  return normalizeUser(data);
+}
+
+async function fetchPeople(accessToken) {
+  return requestSupabase({
+    method: "GET",
+    path: "/rest/v1/people",
+    query: {
+      select: "id,name,phone,email,is_active,updated_at",
+      order: "is_active.desc,updated_at.desc,id.asc"
+    },
+    bearerToken: accessToken
+  });
+}
+
+async function fetchTransactions(accessToken) {
+  return requestSupabase({
+    method: "GET",
+    path: "/rest/v1/transactions",
+    query: {
+      select: "id,account_id,title,amount,type,category,payment_method,installments,installment_number,original_total_amount,card_payment_date_millis,notes,date_millis",
+      order: "date_millis.desc,id.desc"
+    },
+    bearerToken: accessToken
+  });
+}
+
+async function fetchAccountSettings(accessToken) {
+  return requestSupabase({
+    method: "GET",
+    path: "/rest/v1/account_settings",
+    query: {
+      select: "account_id,expense_categories,income_categories,payment_methods,payment_method_card_configs,expense_category_limits,multi_launch_expense_category_amounts,multi_launch_income_category_amounts,updated_at",
+      order: "account_id.asc"
+    },
+    bearerToken: accessToken
+  });
+}
+
+async function requestSupabase({ method, path, query = {}, body = null, bearerToken = null, prefer = null }) {
+  const url = buildSupabaseUrl(path, query);
+  const headers = {
+    apikey: runtimeConfig.anonKey,
+    Accept: "application/json"
+  };
+
+  if (bearerToken) {
+    headers.Authorization = `Bearer ${bearerToken}`;
+  }
+  if (prefer) {
+    headers.Prefer = prefer;
+  }
+  if (body !== null) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const response = await fetch(url, {
+    method,
+    headers,
+    body: body === null ? undefined : JSON.stringify(body)
+  });
+
+  const raw = await response.text();
+  const payload = raw ? tryParseJson(raw) : null;
+
+  if (!response.ok) {
+    throw new Error(extractSupabaseError(payload, raw));
+  }
+
+  return payload ?? raw;
+}
+
+function buildSupabaseUrl(path, query) {
+  const base = runtimeConfig.url.replace(/\/+$/, "");
+  const search = new URLSearchParams();
+
+  Object.entries(query).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && `${value}`.length > 0) {
+      search.set(key, String(value));
+    }
+  });
+
+  const suffix = search.size ? `?${search.toString()}` : "";
+  return `${base}${path}${suffix}`;
+}
+
+function normalizeSession(data) {
+  const expiresAtEpochSeconds = Number(data.expires_at || 0) || Math.floor(Date.now() / 1000) + Number(data.expires_in || 3600);
+  return {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+    expiresAtEpochSeconds,
+    user: normalizeUser(data.user || {})
+  };
+}
+
+function normalizeUser(user) {
+  const metadata = user.user_metadata || {};
+  return {
+    uid: user.id || "",
+    email: user.email || "",
+    displayName: metadata.full_name || metadata.name || metadata.display_name || user.email || "Conta Google"
+  };
+}
+
+function persistSession(session) {
+  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+}
+
+function readPersistedSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function clearPersistedSession() {
+  localStorage.removeItem(SESSION_STORAGE_KEY);
+}
+
+function selectActiveAccount(people, transactions) {
+  const active = people.find((person) => person.is_active);
+  if (active) return active;
+  if (people.length > 0) return people[0];
+  if (transactions.length > 0) {
+    return {
+      id: Number(transactions[0].account_id),
+      name: `Conta ${transactions[0].account_id}`
+    };
+  }
+  return null;
+}
+
+function buildStateFromRemote({ activeAccount, transactions, settings }) {
+  const sortedTransactions = [...transactions].sort((left, right) => Number(right.date_millis || 0) - Number(left.date_millis || 0));
+  const budgets = buildBudgets(settings?.expense_category_limits || "");
+  const expenseCategories = decodeStringList(settings?.expense_categories || "");
+  const incomeCategories = decodeStringList(settings?.income_categories || "");
+
+  return {
+    monthLabel: activeAccount?.name ? `Conta ${activeAccount.name}` : "Conta sincronizada",
+    transactions: sortedTransactions.map((transaction) => ({
+      id: Number(transaction.id),
+      title: transaction.title || "Sem titulo",
+      category: transaction.category || "Sem categoria",
+      type: transaction.type === "RECEITA" ? "income" : "expense",
+      amount: Number(transaction.amount || 0),
+      dateMillis: Number(transaction.date_millis || Date.now()),
+      dateLabel: formatRelativeDate(Number(transaction.date_millis || Date.now())),
+      paymentMethod: transaction.payment_method || "",
+      notes: transaction.notes || ""
+    })),
+    goals: [],
+    budgets,
+    catalog: {
+      expenseCategories,
+      incomeCategories
+    }
+  };
+}
+
+function buildBudgets(rawLimits) {
+  const limits = decodeDoubleMap(rawLimits);
+  return Object.entries(limits).map(([name, limit], index) => ({
+    name,
+    limit,
+    color: BUDGET_COLORS[index % BUDGET_COLORS.length]
+  }));
+}
+
+function decodeStringList(raw) {
+  if (!raw) return [];
+  return raw
+    .split(SETTINGS_LIST_SEPARATOR)
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function decodeDoubleMap(raw) {
+  if (!raw) return {};
+
+  return raw.split(SETTINGS_LIST_SEPARATOR).reduce((accumulator, entry) => {
+    const [name, value] = entry.split("::", 2).map((item) => item?.trim() || "");
+    const parsed = Number(value);
+    if (name && Number.isFinite(parsed) && parsed > 0) {
+      accumulator[name] = parsed;
+    }
+    return accumulator;
+  }, {});
+}
+
+function toSupabaseTransaction(transaction, context) {
+  const amount = Number(transaction.amount || 0);
+  const dateMillis = Number(transaction.dateMillis || Date.now());
+
+  return {
+    id: Number(transaction.id),
+    owner_id: context.ownerId,
+    account_id: context.accountId,
+    title: String(transaction.title || "Sem titulo").trim() || "Sem titulo",
+    amount,
+    type: transaction.type === "income" ? "RECEITA" : "DESPESA",
+    category: String(transaction.category || "Sem categoria").trim() || "Sem categoria",
+    payment_method: String(transaction.paymentMethod || context.defaultPaymentMethod || "Pix").trim() || "Pix",
+    installments: 1,
+    installment_number: 1,
+    original_total_amount: amount,
+    card_payment_date_millis: null,
+    notes: String(transaction.notes || "").trim(),
+    date_millis: dateMillis
+  };
+}
+
+function formatRelativeDate(dateMillis) {
+  const currentDate = new Date();
+  const targetDate = new Date(dateMillis);
+  const currentStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+  const targetStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+  const diffDays = Math.round((currentStart - targetStart) / 86400000);
+
+  if (diffDays === 0) return "Hoje";
+  if (diffDays === 1) return "Ontem";
+  if (diffDays > 1 && diffDays < 7) {
+    return new Intl.DateTimeFormat("pt-BR", { weekday: "long" }).format(targetDate);
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).format(targetDate);
+}
+
+function waitForGoogleClient() {
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+    const timer = window.setInterval(() => {
+      attempts += 1;
+      if (window.google?.accounts?.id) {
+        window.clearInterval(timer);
+        resolve(window.google);
+        return;
+      }
+      if (attempts >= 60) {
+        window.clearInterval(timer);
+        reject(new Error("A biblioteca do Google nao carregou a tempo."));
+      }
+    }, 100);
+  });
+}
+
+function tryParseJson(raw) {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function extractSupabaseError(payload, raw) {
+  if (payload && typeof payload === "object") {
+    return payload.msg || payload.message || payload.error_description || payload.error || raw || "Falha ao falar com o Supabase.";
+  }
+  return raw || "Falha ao falar com o Supabase.";
 }

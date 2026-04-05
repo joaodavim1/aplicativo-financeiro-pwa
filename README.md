@@ -6,10 +6,10 @@ Versao web instalavel do app financeiro, criada em pasta separada para rodar no 
 
 - `index.html`: estrutura principal da interface.
 - `styles.css`: visual responsivo com cara de app.
-- `app.js`: logica, armazenamento local e renderizacao.
-- `auth.js`: camada de login Google via Firebase Auth.
-- `firebase-config.js`: configuracao ativa do Firebase para o site.
-- `firebase-config.example.js`: modelo para preencher as credenciais.
+- `app.js`: logica, armazenamento local, renderizacao e modo demo.
+- `auth.js`: camada de login Google e sincronizacao via Supabase.
+- `supabase-config.js`: configuracao ativa do Supabase para o site.
+- `supabase-config.example.js`: modelo para preencher as credenciais.
 - `manifest.webmanifest`: metadados de instalacao.
 - `service-worker.js`: cache offline da app shell.
 - `icons/`: icones para Home Screen e manifest.
@@ -20,18 +20,18 @@ Versao web instalavel do app financeiro, criada em pasta separada para rodar no 
 2. Abra a URL no navegador.
 3. Para o iPhone, use uma URL HTTPS no Safari.
 
-## Como ativar login com Google
+## Como ativar login com Google e puxar os dados do Android
 
-1. Crie um projeto no Firebase.
-2. Em `Authentication`, ative o provedor `Google`.
-3. Em `Authentication -> Settings -> Authorized domains`, adicione:
-   - `joaodavim1.github.io`
-4. Em `Project settings`, copie a configuracao Web do app.
-5. Substitua o conteudo de `firebase-config.js` com base em `firebase-config.example.js`.
-6. Se quiser exigir login antes de entrar no app, deixe `requireLogin: true`.
-7. Crie o Firestore Database.
-8. Em `Authentication -> Settings -> Authorized domains`, adicione o dominio do GitHub Pages.
-9. Faça commit e push novamente para o GitHub Pages.
+1. Use o mesmo projeto Supabase do app Android.
+2. Preencha `supabase-config.js` com:
+   - `url`
+   - `anonKey`
+   - `googleClientId`
+3. No Google Cloud do client web usado pelo Supabase, autorize a origem:
+   - `https://joaodavim1.github.io`
+4. Entre no site com a mesma conta Google usada no Android.
+5. A PWA vai ler as tabelas `people`, `transactions` e `account_settings`.
+6. Novas transacoes criadas aqui tambem sobem para o mesmo Supabase.
 
 ## Como instalar no iPhone
 
@@ -44,6 +44,6 @@ Versao web instalavel do app financeiro, criada em pasta separada para rodar no 
 ## Observacoes
 
 - Os dados ficam salvos localmente no navegador do aparelho.
-- Com login Google ativo, os dados ficam associados a conta e sincronizados no Firestore.
+- Com login Google ativo, os dados financeiros passam a usar o mesmo Supabase do Android.
 - O app funciona offline para os arquivos principais depois da primeira carga.
 - Como e uma PWA, o acesso a recursos nativos do iOS e mais limitado do que em um app SwiftUI.

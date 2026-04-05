@@ -19,10 +19,10 @@
           <p class="eyebrow">Acesso</p>
           <h2>Entrar com Google</h2>
           <p id="authDescription" class="auth-description">
-            Ative o Firebase para liberar login com Google e sincronizar o acesso por conta.
+            Entre com a mesma conta Google usada no Android para abrir a base do Supabase.
           </p>
           <div class="auth-actions">
-            <button id="googleLoginButton" class="primary-button" type="button">Entrar com Google</button>
+            <div id="googleLoginMount" class="google-login-mount"></div>
             <button id="continueDemoButton" class="ghost-button dark-ghost" type="button">Continuar em modo demo</button>
           </div>
           <p id="authStatusMessage" class="auth-status"></p>
@@ -201,7 +201,8 @@
       </div>
     </dialog>
 
-    <script src="./firebase-config.js"></script>
+    <script src="./supabase-config.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script type="module" src="./auth.js"></script>
   </body>
 </html>

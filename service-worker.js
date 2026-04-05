@@ -1,11 +1,11 @@
-const CACHE_NAME = "financeiro-pwa-cache-v2";
+const CACHE_NAME = "financeiro-pwa-cache-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./auth.js",
-  "./firebase-config.js",
+  "./supabase-config.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
