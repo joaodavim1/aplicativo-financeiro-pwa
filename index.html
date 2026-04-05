@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#145c4c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Financeiro" />
+    <title>Financeiro</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Painel pessoal</p>
+          <h1>Seu financeiro com cara de app no iPhone.</h1>
+          <p class="hero-text">
+            Controle saldo, metas e movimentos em uma PWA instalavel, sem App Store.
+          </p>
+        </div>
+        <button id="installHelpButton" class="ghost-button" type="button">Como instalar no iPhone</button>
+      </header>
+
+      <main class="layout">
+        <section class="summary-grid">
+          <article class="balance-card">
+            <div class="balance-topline">
+              <span>Saldo disponivel</span>
+              <span id="currentMonthLabel"></span>
+            </div>
+            <strong id="balanceValue" class="balance-value"></strong>
+
+            <div class="pill-grid">
+              <div class="pill-card">
+                <span>Entradas</span>
+                <strong id="incomeValue"></strong>
+              </div>
+              <div class="pill-card">
+                <span>Saidas</span>
+                <strong id="expenseValue"></strong>
+              </div>
+            </div>
+          </article>
+
+          <article class="card install-card">
+            <div class="card-heading">
+              <p class="eyebrow">Instalacao</p>
+              <h2>Pronto para Home Screen</h2>
+            </div>
+            <p>
+              No iPhone: Safari -> Compartilhar -> Adicionar a Tela de Inicio -> Open as Web App.
+            </p>
+            <button id="openInstallModalButton" class="primary-button" type="button">
+              Ver passo a passo
+            </button>
+          </article>
+        </section>
+
+        <section class="panel-grid">
+          <article class="card chart-card">
+            <div class="card-heading">
+              <p class="eyebrow">Distribuicao</p>
+              <h2>Gastos por categoria</h2>
+            </div>
+            <div id="categoryBars" class="bars"></div>
+          </article>
+
+          <article class="card">
+            <div class="card-heading">
+              <p class="eyebrow">Leituras rapidas</p>
+              <h2>Insights do mes</h2>
+            </div>
+            <div id="insightsList" class="stack"></div>
+          </article>
+        </section>
+
+        <section class="panel-grid">
+          <article class="card">
+            <div class="card-heading">
+              <p class="eyebrow">Metas</p>
+              <h2>Reservas em andamento</h2>
+            </div>
+            <div id="goalsList" class="stack"></div>
+          </article>
+
+          <article class="card">
+            <div class="card-heading">
+              <p class="eyebrow">Orcamento</p>
+              <h2>Limites por frente</h2>
+            </div>
+            <div id="budgetList" class="stack"></div>
+          </article>
+        </section>
+
+        <section class="transactions-section">
+          <article class="card composer-card">
+            <div class="card-heading">
+              <p class="eyebrow">Novo movimento</p>
+              <h2>Registrar transacao</h2>
+            </div>
+
+            <form id="transactionForm" class="transaction-form">
+              <label>
+                <span>Titulo</span>
+                <input id="titleInput" name="title" type="text" placeholder="Ex: Pix cliente" required />
+              </label>
+
+              <label>
+                <span>Categoria</span>
+                <select id="categoryInput" name="category">
+                  <option value="Casa">Casa</option>
+                  <option value="Mercado">Mercado</option>
+                  <option value="Transporte">Transporte</option>
+                  <option value="Lazer">Lazer</option>
+                  <option value="Investimentos">Investimentos</option>
+                  <option value="Trabalho">Trabalho</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Tipo</span>
+                <select id="typeInput" name="type">
+                  <option value="expense">Saida</option>
+                  <option value="income">Entrada</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Valor</span>
+                <input
+                  id="amountInput"
+                  name="amount"
+                  type="number"
+                  inputmode="decimal"
+                  min="0.01"
+                  step="0.01"
+                  placeholder="0,00"
+                  required
+                />
+              </label>
+
+              <button class="primary-button" type="submit">Salvar transacao</button>
+            </form>
+          </article>
+
+          <article class="card ledger-card">
+            <div class="ledger-toolbar">
+              <div class="card-heading">
+                <p class="eyebrow">Movimentos</p>
+                <h2>Ultimas transacoes</h2>
+              </div>
+
+              <div class="filter-tabs" role="tablist" aria-label="Filtro de transacoes">
+                <button class="filter-tab active" data-filter="all" type="button">Tudo</button>
+                <button class="filter-tab" data-filter="income" type="button">Entradas</button>
+                <button class="filter-tab" data-filter="expense" type="button">Saidas</button>
+              </div>
+            </div>
+
+            <div id="transactionsList" class="transactions-list"></div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="installDialog" class="install-dialog">
+      <div class="dialog-content">
+        <p class="eyebrow">No iPhone</p>
+        <h2>Como instalar</h2>
+        <ol>
+          <li>Hospede esta pasta em uma URL HTTPS.</li>
+          <li>Abra a URL no Safari do iPhone.</li>
+          <li>Toque em Compartilhar.</li>
+          <li>Escolha Adicionar a Tela de Inicio.</li>
+          <li>Confirme em Open as Web App.</li>
+        </ol>
+        <button id="closeInstallModalButton" class="primary-button" type="button">Fechar</button>
+      </div>
+    </dialog>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>
