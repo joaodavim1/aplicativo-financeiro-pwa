@@ -7,6 +7,13 @@ import {
   signInWithRedirect,
   signOut
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { bootFinanceiroApp } from "./app.js";
 
 const runtimeConfig = window.FINANCEIRO_FIREBASE_CONFIG || null;
@@ -26,6 +33,7 @@ const nodes = {
 };
 
 let auth = null;
+let db = null;
 
 bootstrap();
 
@@ -47,6 +55,7 @@ function bootstrap() {
 
   const app = initializeApp(runtimeConfig);
   auth = getAuth(app);
+  db = getFirestore(app);
 
   nodes.authDescription.textContent =
     "Entre com sua conta Google para manter uma area separada dentro do app.";
@@ -58,7 +67,12 @@ function bootstrap() {
       nodes.authGate.classList.add("hidden");
       nodes.protectedApp.classList.remove("hidden");
       nodes.logoutButton.classList.remove("hidden");
-      bootFinanceiroApp({ mode: "google", user });
+      nodes.authStatusMessage.textContent = "Conta Google conectada.";
+      bootFinanceiroApp({
+        mode: "google",
+        user,
+        persistence: createFirestorePersistence(user)
+      });
       return;
     }
 
@@ -86,6 +100,7 @@ function bootstrap() {
 function openDemoMode() {
   nodes.protectedApp.classList.remove("hidden");
   nodes.authGate.classList.remove("hidden");
+  nodes.logoutButton.classList.add("hidden");
   bootFinanceiroApp({ mode: "demo" });
 }
 
@@ -142,4 +157,34 @@ function isFirebaseConfigured(config) {
 function formatAuthError(error) {
   const code = error?.code || "erro-desconhecido";
   return `Falha no login Google (${code}).`;
+}
+
+function createFirestorePersistence(user) {
+  const documentRef = doc(db, "users", user.uid, "apps", "financeiro");
+
+  return {
+    async loadState() {
+      const snapshot = await getDoc(documentRef);
+      if (!snapshot.exists()) {
+        return null;
+      }
+
+      return snapshot.data()?.state ?? null;
+    },
+    async saveState(state) {
+      await setDoc(
+        documentRef,
+        {
+          state,
+          profile: {
+            uid: user.uid,
+            email: user.email || "",
+            displayName: user.displayName || ""
+          },
+          updatedAt: serverTimestamp()
+        },
+        { merge: true }
+      );
+    }
+  };
 }

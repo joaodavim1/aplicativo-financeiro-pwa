@@ -29,7 +29,9 @@ Versao web instalavel do app financeiro, criada em pasta separada para rodar no 
 4. Em `Project settings`, copie a configuracao Web do app.
 5. Substitua o conteudo de `firebase-config.js` com base em `firebase-config.example.js`.
 6. Se quiser exigir login antes de entrar no app, deixe `requireLogin: true`.
-7. Faça commit e push novamente para o GitHub Pages.
+7. Crie o Firestore Database.
+8. Em `Authentication -> Settings -> Authorized domains`, adicione o dominio do GitHub Pages.
+9. Faça commit e push novamente para o GitHub Pages.
 
 ## Como instalar no iPhone
 
@@ -42,6 +44,6 @@ Versao web instalavel do app financeiro, criada em pasta separada para rodar no 
 ## Observacoes
 
 - Os dados ficam salvos localmente no navegador do aparelho.
-- Com login Google ativo, os dados ficam separados por conta neste navegador.
+- Com login Google ativo, os dados ficam associados a conta e sincronizados no Firestore.
 - O app funciona offline para os arquivos principais depois da primeira carga.
 - Como e uma PWA, o acesso a recursos nativos do iOS e mais limitado do que em um app SwiftUI.

@@ -34,9 +34,10 @@ const percent = new Intl.NumberFormat("pt-BR", {
 });
 
 let currentFilter = "all";
-let currentState = null;
-let currentStorageKey = null;
+let currentState = structuredClone(defaults);
 let currentIdentity = null;
+let currentPersistence = null;
+let eventsBound = false;
 
 const nodes = {
   currentMonthLabel: document.querySelector("#currentMonthLabel"),
@@ -53,12 +54,11 @@ const nodes = {
   userBadge: document.querySelector("#userBadge")
 };
 
-let eventsBound = false;
-
-export function bootFinanceiroApp({ mode = "demo", user = null } = {}) {
+export async function bootFinanceiroApp({ mode = "demo", user = null, persistence = null } = {}) {
   currentIdentity = { mode, user };
-  currentStorageKey = getStorageKey(mode, user);
-  currentState = loadState(currentStorageKey);
+  currentPersistence = persistence || createLocalPersistence(mode, user);
+  currentState = await currentPersistence.loadState();
+  currentState = sanitizeState(currentState);
 
   updateUserBadge();
 
@@ -82,7 +82,7 @@ function bindEvents() {
   });
 }
 
-function handleSubmit(event) {
+async function handleSubmit(event) {
   event.preventDefault();
 
   const formData = new FormData(event.currentTarget);
@@ -102,7 +102,7 @@ function handleSubmit(event) {
     dateLabel: "Agora"
   });
 
-  saveState();
+  await saveState();
   event.currentTarget.reset();
   render();
 }
@@ -155,8 +155,8 @@ function renderInsights(balance, income, expense) {
   const topExpense = Object.entries(totalsByCategory())[0];
   const syncText =
     currentIdentity?.mode === "google"
-      ? "Sua area esta vinculada a conta Google atual neste navegador."
-      : "Voce esta em modo demo local. Entre com Google para separar os dados por conta.";
+      ? "Os dados desta tela estao vinculados a sua conta Google e sincronizados no Firestore."
+      : "Voce esta em modo demo local. Entre com Google para sincronizar os dados da conta.";
 
   const insights = [
     {
@@ -175,7 +175,7 @@ function renderInsights(balance, income, expense) {
       text: topExpense ? `${topExpense[0]} lidera as saidas com ${currency.format(topExpense[1])}.` : "Sem gastos registrados."
     },
     {
-      title: currentIdentity?.mode === "google" ? "Conta Google ativa" : "Modo demo",
+      title: currentIdentity?.mode === "google" ? "Conta Google sincronizada" : "Modo demo",
       text: syncText
     }
   ];
@@ -284,23 +284,35 @@ function sumByType(type) {
     .reduce((total, transaction) => total + transaction.amount, 0);
 }
 
-function loadState(storageKey) {
+async function saveState() {
   try {
-    const raw = localStorage.getItem(storageKey);
-    if (!raw) return structuredClone(defaults);
-
-    const parsed = JSON.parse(raw);
-    return {
-      ...structuredClone(defaults),
-      ...parsed
-    };
-  } catch {
-    return structuredClone(defaults);
+    await currentPersistence.saveState(stripRuntimeFields(currentState));
+  } catch (error) {
+    console.error("Falha ao salvar dados do app:", error);
   }
 }
 
-function saveState() {
-  localStorage.setItem(currentStorageKey, JSON.stringify(currentState));
+function createLocalPersistence(mode, user) {
+  const storageKey = getStorageKey(mode, user);
+
+  return {
+    async loadState() {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (!raw) return structuredClone(defaults);
+
+        return {
+          ...structuredClone(defaults),
+          ...JSON.parse(raw)
+        };
+      } catch {
+        return structuredClone(defaults);
+      }
+    },
+    async saveState(state) {
+      localStorage.setItem(storageKey, JSON.stringify(state));
+    }
+  };
 }
 
 function getStorageKey(mode, user) {
@@ -309,6 +321,19 @@ function getStorageKey(mode, user) {
   }
 
   return "financeiro-pwa-state-demo";
+}
+
+function sanitizeState(state) {
+  return {
+    monthLabel: typeof state?.monthLabel === "string" ? state.monthLabel : defaults.monthLabel,
+    transactions: Array.isArray(state?.transactions) ? state.transactions : structuredClone(defaults.transactions),
+    goals: Array.isArray(state?.goals) ? state.goals : structuredClone(defaults.goals),
+    budgets: Array.isArray(state?.budgets) ? state.budgets : structuredClone(defaults.budgets)
+  };
+}
+
+function stripRuntimeFields(state) {
+  return sanitizeState(state);
 }
 
 function updateUserBadge() {
