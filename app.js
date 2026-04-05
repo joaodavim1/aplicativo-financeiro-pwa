@@ -1,15 +1,13 @@
-const storageKey = "financeiro-pwa-state-v1";
-
 const defaults = {
   monthLabel: "Abril de 2026",
   transactions: [
-    { id: crypto.randomUUID(), title: "Salario", category: "Trabalho", type: "income", amount: 7800, dateLabel: "Hoje" },
-    { id: crypto.randomUUID(), title: "Pix cliente", category: "Trabalho", type: "income", amount: 1850, dateLabel: "Hoje" },
-    { id: crypto.randomUUID(), title: "Mercado do mes", category: "Mercado", type: "expense", amount: 428.72, dateLabel: "Ontem" },
-    { id: crypto.randomUUID(), title: "Internet fibra", category: "Casa", type: "expense", amount: 119.99, dateLabel: "Segunda" },
-    { id: crypto.randomUUID(), title: "Combustivel", category: "Transporte", type: "expense", amount: 210, dateLabel: "Segunda" },
-    { id: crypto.randomUUID(), title: "Cinema", category: "Lazer", type: "expense", amount: 74.5, dateLabel: "Domingo" },
-    { id: crypto.randomUUID(), title: "Aporte automatico", category: "Investimentos", type: "expense", amount: 1200, dateLabel: "Domingo" }
+    { id: generateId(), title: "Salario", category: "Trabalho", type: "income", amount: 7800, dateLabel: "Hoje" },
+    { id: generateId(), title: "Pix cliente", category: "Trabalho", type: "income", amount: 1850, dateLabel: "Hoje" },
+    { id: generateId(), title: "Mercado do mes", category: "Mercado", type: "expense", amount: 428.72, dateLabel: "Ontem" },
+    { id: generateId(), title: "Internet fibra", category: "Casa", type: "expense", amount: 119.99, dateLabel: "Segunda" },
+    { id: generateId(), title: "Combustivel", category: "Transporte", type: "expense", amount: 210, dateLabel: "Segunda" },
+    { id: generateId(), title: "Cinema", category: "Lazer", type: "expense", amount: 74.5, dateLabel: "Domingo" },
+    { id: generateId(), title: "Aporte automatico", category: "Investimentos", type: "expense", amount: 1200, dateLabel: "Domingo" }
   ],
   goals: [
     { name: "Reserva de emergencia", saved: 19200, target: 30000, note: "Meta principal" },
@@ -25,9 +23,6 @@ const defaults = {
   ]
 };
 
-const state = loadState();
-let currentFilter = "all";
-
 const currency = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL"
@@ -37,6 +32,11 @@ const percent = new Intl.NumberFormat("pt-BR", {
   style: "percent",
   maximumFractionDigits: 0
 });
+
+let currentFilter = "all";
+let currentState = null;
+let currentStorageKey = null;
+let currentIdentity = null;
 
 const nodes = {
   currentMonthLabel: document.querySelector("#currentMonthLabel"),
@@ -49,34 +49,26 @@ const nodes = {
   budgetList: document.querySelector("#budgetList"),
   transactionsList: document.querySelector("#transactionsList"),
   transactionForm: document.querySelector("#transactionForm"),
-  installDialog: document.querySelector("#installDialog"),
-  installHelpButton: document.querySelector("#installHelpButton"),
-  openInstallModalButton: document.querySelector("#openInstallModalButton"),
-  closeInstallModalButton: document.querySelector("#closeInstallModalButton"),
-  filterTabs: [...document.querySelectorAll(".filter-tab")]
+  filterTabs: [...document.querySelectorAll(".filter-tab")],
+  userBadge: document.querySelector("#userBadge")
 };
 
-render();
-bindEvents();
-registerServiceWorker();
+let eventsBound = false;
 
-function loadState() {
-  try {
-    const raw = localStorage.getItem(storageKey);
-    if (!raw) return structuredClone(defaults);
+export function bootFinanceiroApp({ mode = "demo", user = null } = {}) {
+  currentIdentity = { mode, user };
+  currentStorageKey = getStorageKey(mode, user);
+  currentState = loadState(currentStorageKey);
 
-    const parsed = JSON.parse(raw);
-    return {
-      ...structuredClone(defaults),
-      ...parsed
-    };
-  } catch {
-    return structuredClone(defaults);
+  updateUserBadge();
+
+  if (!eventsBound) {
+    bindEvents();
+    registerServiceWorker();
+    eventsBound = true;
   }
-}
 
-function saveState() {
-  localStorage.setItem(storageKey, JSON.stringify(state));
+  render();
 }
 
 function bindEvents() {
@@ -88,10 +80,6 @@ function bindEvents() {
       renderTransactions();
     });
   });
-
-  nodes.installHelpButton.addEventListener("click", openInstallDialog);
-  nodes.openInstallModalButton.addEventListener("click", openInstallDialog);
-  nodes.closeInstallModalButton.addEventListener("click", () => nodes.installDialog.close());
 }
 
 function handleSubmit(event) {
@@ -105,8 +93,8 @@ function handleSubmit(event) {
 
   if (!title || !Number.isFinite(amount) || amount <= 0) return;
 
-  state.transactions.unshift({
-    id: crypto.randomUUID(),
+  currentState.transactions.unshift({
+    id: generateId(),
     title,
     category,
     type,
@@ -124,7 +112,7 @@ function render() {
   const expense = sumByType("expense");
   const balance = income - expense;
 
-  nodes.currentMonthLabel.textContent = state.monthLabel;
+  nodes.currentMonthLabel.textContent = currentState.monthLabel;
   nodes.balanceValue.textContent = currency.format(balance);
   nodes.incomeValue.textContent = currency.format(income);
   nodes.expenseValue.textContent = currency.format(expense);
@@ -143,7 +131,7 @@ function renderCategories() {
   nodes.categoryBars.innerHTML = Object.entries(totals)
     .sort((a, b) => b[1] - a[1])
     .map(([name, total]) => {
-      const budget = state.budgets.find((item) => item.name === name);
+      const budget = currentState.budgets.find((item) => item.name === name);
       const color = budget?.color || "#145c4c";
       const width = `${Math.max((total / max) * 100, 6)}%`;
 
@@ -165,6 +153,10 @@ function renderCategories() {
 function renderInsights(balance, income, expense) {
   const savingsRate = income > 0 ? (income - expense) / income : 0;
   const topExpense = Object.entries(totalsByCategory())[0];
+  const syncText =
+    currentIdentity?.mode === "google"
+      ? "Sua area esta vinculada a conta Google atual neste navegador."
+      : "Voce esta em modo demo local. Entre com Google para separar os dados por conta.";
 
   const insights = [
     {
@@ -181,6 +173,10 @@ function renderInsights(balance, income, expense) {
     {
       title: "Maior foco",
       text: topExpense ? `${topExpense[0]} lidera as saidas com ${currency.format(topExpense[1])}.` : "Sem gastos registrados."
+    },
+    {
+      title: currentIdentity?.mode === "google" ? "Conta Google ativa" : "Modo demo",
+      text: syncText
     }
   ];
 
@@ -197,7 +193,7 @@ function renderInsights(balance, income, expense) {
 }
 
 function renderGoals() {
-  nodes.goalsList.innerHTML = state.goals
+  nodes.goalsList.innerHTML = currentState.goals
     .map((goal) => {
       const progress = Math.min(goal.saved / goal.target, 1);
       return `
@@ -223,7 +219,7 @@ function renderGoals() {
 function renderBudgets() {
   const totals = totalsByCategory();
 
-  nodes.budgetList.innerHTML = state.budgets
+  nodes.budgetList.innerHTML = currentState.budgets
     .map((budget) => {
       const spent = totals[budget.name] || 0;
       const progress = Math.min(spent / budget.limit, 1);
@@ -250,7 +246,7 @@ function renderBudgets() {
 }
 
 function renderTransactions() {
-  const filtered = state.transactions.filter((transaction) => {
+  const filtered = currentState.transactions.filter((transaction) => {
     if (currentFilter === "all") return true;
     return transaction.type === currentFilter;
   });
@@ -274,7 +270,7 @@ function renderTransactions() {
 }
 
 function totalsByCategory() {
-  return state.transactions
+  return currentState.transactions
     .filter((item) => item.type === "expense")
     .reduce((accumulator, transaction) => {
       accumulator[transaction.category] = (accumulator[transaction.category] || 0) + transaction.amount;
@@ -283,13 +279,53 @@ function totalsByCategory() {
 }
 
 function sumByType(type) {
-  return state.transactions
+  return currentState.transactions
     .filter((transaction) => transaction.type === type)
     .reduce((total, transaction) => total + transaction.amount, 0);
 }
 
-function openInstallDialog() {
-  nodes.installDialog.showModal();
+function loadState(storageKey) {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return structuredClone(defaults);
+
+    const parsed = JSON.parse(raw);
+    return {
+      ...structuredClone(defaults),
+      ...parsed
+    };
+  } catch {
+    return structuredClone(defaults);
+  }
+}
+
+function saveState() {
+  localStorage.setItem(currentStorageKey, JSON.stringify(currentState));
+}
+
+function getStorageKey(mode, user) {
+  if (mode === "google" && user?.uid) {
+    return `financeiro-pwa-state-google-${user.uid}`;
+  }
+
+  return "financeiro-pwa-state-demo";
+}
+
+function updateUserBadge() {
+  if (!currentIdentity) {
+    nodes.userBadge.classList.add("hidden");
+    return;
+  }
+
+  if (currentIdentity.mode === "google" && currentIdentity.user?.email) {
+    const name = currentIdentity.user.displayName || currentIdentity.user.email;
+    nodes.userBadge.textContent = `Google: ${name}`;
+    nodes.userBadge.classList.remove("hidden");
+    return;
+  }
+
+  nodes.userBadge.textContent = "Modo demo local";
+  nodes.userBadge.classList.remove("hidden");
 }
 
 function registerServiceWorker() {
@@ -315,4 +351,12 @@ function hexToRgba(hex, alpha) {
   const green = Number.parseInt(value.slice(2, 4), 16);
   const blue = Number.parseInt(value.slice(4, 6), 16);
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+function generateId() {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }

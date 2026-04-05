@@ -14,6 +14,21 @@
   </head>
   <body>
     <div class="app-shell">
+      <section id="authGate" class="auth-gate hidden">
+        <article class="auth-card">
+          <p class="eyebrow">Acesso</p>
+          <h2>Entrar com Google</h2>
+          <p id="authDescription" class="auth-description">
+            Ative o Firebase para liberar login com Google e sincronizar o acesso por conta.
+          </p>
+          <div class="auth-actions">
+            <button id="googleLoginButton" class="primary-button" type="button">Entrar com Google</button>
+            <button id="continueDemoButton" class="ghost-button dark-ghost" type="button">Continuar em modo demo</button>
+          </div>
+          <p id="authStatusMessage" class="auth-status"></p>
+        </article>
+      </section>
+
       <header class="hero">
         <div class="hero-copy">
           <p class="eyebrow">Painel pessoal</p>
@@ -22,10 +37,14 @@
             Controle saldo, metas e movimentos em uma PWA instalavel, sem App Store.
           </p>
         </div>
-        <button id="installHelpButton" class="ghost-button" type="button">Como instalar no iPhone</button>
+        <div class="hero-actions">
+          <div id="userBadge" class="user-badge hidden"></div>
+          <button id="logoutButton" class="ghost-button hidden" type="button">Sair</button>
+          <button id="installHelpButton" class="ghost-button" type="button">Como instalar no iPhone</button>
+        </div>
       </header>
 
-      <main class="layout">
+      <main id="protectedApp" class="layout">
         <section class="summary-grid">
           <article class="balance-card">
             <div class="balance-topline">
@@ -182,6 +201,7 @@
       </div>
     </dialog>
 
-    <script src="./app.js" defer></script>
+    <script src="./firebase-config.js"></script>
+    <script type="module" src="./auth.js"></script>
   </body>
 </html>
