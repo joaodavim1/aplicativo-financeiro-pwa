@@ -69,35 +69,96 @@
               </div>
             </article>
 
-            <article class="card install-card">
+            <article class="card">
               <div class="card-heading">
-                <p class="eyebrow">Instalacao</p>
-                <h2>Pronto para Home Screen</h2>
+                <p class="eyebrow">Conta ativa</p>
+                <h2>Resumo da conta</h2>
               </div>
-              <p>
-                No iPhone: Safari -> Compartilhar -> Adicionar a Tela de Inicio -> Open as Web App.
-              </p>
-              <button id="openInstallModalButton" class="primary-button" type="button">
-                Ver passo a passo
-              </button>
+              <div id="extratoAccountSnapshot" class="stack"></div>
             </article>
           </section>
 
           <section class="panel-grid">
             <article class="card chart-card">
               <div class="card-heading">
-                <p class="eyebrow">Distribuicao</p>
-                <h2>Gastos por categoria</h2>
+                <p class="eyebrow">Receitas do período</p>
+                <h2>Por categoria</h2>
               </div>
-              <div id="categoryBars" class="bars"></div>
+              <div id="incomeCategoryBars" class="bars"></div>
             </article>
 
             <article class="card">
               <div class="card-heading">
-                <p class="eyebrow">Orcamento</p>
-                <h2>Limites por frente</h2>
+                <p class="eyebrow">Despesas do período</p>
+                <h2>Por categoria</h2>
+              </div>
+              <div id="expenseCategoryBars" class="bars"></div>
+            </article>
+          </section>
+
+          <section class="panel-grid">
+            <article class="card filter-card">
+              <div class="card-heading">
+                <p class="eyebrow">Filtros</p>
+                <h2>Extrato</h2>
+              </div>
+              <div class="filter-grid">
+                <label>
+                  <span>Data inicial</span>
+                  <input id="historyStartDate" type="date" />
+                </label>
+                <label>
+                  <span>Data final</span>
+                  <input id="historyEndDate" type="date" />
+                </label>
+                <label>
+                  <span>Tipo</span>
+                  <select id="historyTypeFilter">
+                    <option value="all">Todos</option>
+                    <option value="income">Receitas</option>
+                    <option value="expense">Despesas</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Categoria</span>
+                  <select id="historyCategoryFilter">
+                    <option value="">Todas</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Pagamento</span>
+                  <select id="historyPaymentFilter">
+                    <option value="">Todos</option>
+                  </select>
+                </label>
+              </div>
+              <button id="clearHistoryFiltersButton" class="ghost-button dark-ghost history-clear-button" type="button">
+                Limpar filtros
+              </button>
+            </article>
+
+            <article class="card">
+              <div class="card-heading">
+                <p class="eyebrow">Orçamento</p>
+                <h2>Limites por categoria</h2>
               </div>
               <div id="budgetList" class="stack"></div>
+            </article>
+          </section>
+
+          <section class="transactions-section single-column">
+            <article class="card ledger-card">
+              <div class="ledger-toolbar">
+                <div class="card-heading">
+                  <p class="eyebrow">Extrato</p>
+                  <h2>Lançamentos filtrados</h2>
+                </div>
+                <div class="stack-inline">
+                  <span class="muted">Total filtrado</span>
+                  <strong id="filteredTotalValue"></strong>
+                </div>
+              </div>
+              <div id="extratoList" class="transactions-list"></div>
             </article>
           </section>
         </section>

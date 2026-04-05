@@ -43,13 +43,30 @@ let currentIdentity = null;
 let currentPersistence = null;
 let eventsBound = false;
 let activeScreen = "EXTRATO";
+let currentHistoryFilters = {
+  startDate: "",
+  endDate: "",
+  type: "all",
+  category: "",
+  payment: ""
+};
 
 const nodes = {
   currentMonthLabel: document.querySelector("#currentMonthLabel"),
   balanceValue: document.querySelector("#balanceValue"),
   incomeValue: document.querySelector("#incomeValue"),
   expenseValue: document.querySelector("#expenseValue"),
-  categoryBars: document.querySelector("#categoryBars"),
+  incomeCategoryBars: document.querySelector("#incomeCategoryBars"),
+  expenseCategoryBars: document.querySelector("#expenseCategoryBars"),
+  extratoAccountSnapshot: document.querySelector("#extratoAccountSnapshot"),
+  historyStartDate: document.querySelector("#historyStartDate"),
+  historyEndDate: document.querySelector("#historyEndDate"),
+  historyTypeFilter: document.querySelector("#historyTypeFilter"),
+  historyCategoryFilter: document.querySelector("#historyCategoryFilter"),
+  historyPaymentFilter: document.querySelector("#historyPaymentFilter"),
+  clearHistoryFiltersButton: document.querySelector("#clearHistoryFiltersButton"),
+  filteredTotalValue: document.querySelector("#filteredTotalValue"),
+  extratoList: document.querySelector("#extratoList"),
   insightsList: document.querySelector("#insightsList"),
   goalsList: document.querySelector("#goalsList"),
   budgetList: document.querySelector("#budgetList"),
@@ -86,6 +103,16 @@ function bindEvents() {
   nodes.transactionForm.addEventListener("submit", handleSubmit);
   nodes.typeInput.addEventListener("change", renderCategoryOptions);
   nodes.screenTabs.addEventListener("click", handleScreenTabClick);
+  [
+    nodes.historyStartDate,
+    nodes.historyEndDate,
+    nodes.historyTypeFilter,
+    nodes.historyCategoryFilter,
+    nodes.historyPaymentFilter
+  ].forEach((node) => {
+    node?.addEventListener("change", handleHistoryFilterChange);
+  });
+  nodes.clearHistoryFiltersButton?.addEventListener("click", clearHistoryFilters);
   nodes.filterTabs.forEach((tab) => {
     tab.addEventListener("click", () => {
       currentFilter = tab.dataset.filter;
@@ -137,7 +164,10 @@ function render() {
   nodes.incomeValue.textContent = currency.format(income);
   nodes.expenseValue.textContent = currency.format(expense);
 
-  renderCategories();
+  renderExtratoAccountSnapshot();
+  renderHistoryFilterOptions();
+  renderExtratoCategoryBars();
+  renderExtratoList();
   renderInsights(balance, income, expense);
   renderGoals();
   renderBudgets();
@@ -148,21 +178,72 @@ function render() {
   renderSettings();
 }
 
-function renderCategories() {
-  const totals = totalsByCategory();
+function renderExtratoAccountSnapshot() {
+  if (!nodes.extratoAccountSnapshot) return;
+
+  const paymentMethods = uniqueCaseInsensitive(
+    currentState.transactions.map((transaction) => transaction.paymentMethod).filter(Boolean)
+  );
+
+  const items = [
+    {
+      title: "Conta conectada",
+      text: currentIdentity?.user?.displayName || currentIdentity?.user?.email || "Conta local"
+    },
+    {
+      title: "Origem",
+      text: currentIdentity?.mode === "google" ? "Mesmo Supabase do Android" : "Modo demo local"
+    },
+    {
+      title: "Formas de pagamento",
+      text: paymentMethods.length > 0 ? paymentMethods.join(", ") : "Nenhuma forma mapeada"
+    }
+  ];
+
+  nodes.extratoAccountSnapshot.innerHTML = items
+    .map(
+      (item) => `
+        <div class="insight-item">
+          <strong>${escapeHtml(item.title)}</strong>
+          <p class="muted">${escapeHtml(item.text)}</p>
+        </div>
+      `
+    )
+    .join("");
+}
+
+function renderExtratoCategoryBars() {
+  renderCategoryBarsByType({
+    node: nodes.incomeCategoryBars,
+    type: "income",
+    emptyMessage: "As receitas por categoria aparecem quando houver entradas no período.",
+    fallbackColor: "#145c4c"
+  });
+  renderCategoryBarsByType({
+    node: nodes.expenseCategoryBars,
+    type: "expense",
+    emptyMessage: "As despesas por categoria aparecem quando houver saídas no período.",
+    fallbackColor: "#d9604c"
+  });
+}
+
+function renderCategoryBarsByType({ node, type, emptyMessage, fallbackColor }) {
+  if (!node) return;
+
+  const totals = totalsByCategoryForFilters(type);
   const entries = Object.entries(totals);
   const max = Math.max(...Object.values(totals), 1);
 
   if (entries.length === 0) {
-    nodes.categoryBars.innerHTML = emptyStateHtml("As categorias aparecem assim que houver despesas sincronizadas.");
+    node.innerHTML = emptyStateHtml(emptyMessage);
     return;
   }
 
-  nodes.categoryBars.innerHTML = entries
-    .sort((a, b) => b[1] - a[1])
+  node.innerHTML = entries
+    .sort((left, right) => right[1] - left[1])
     .map(([name, total]) => {
       const budget = currentState.budgets.find((item) => item.name === name);
-      const color = budget?.color || "#145c4c";
+      const color = budget?.color || fallbackColor;
       const width = `${Math.max((total / max) * 100, 6)}%`;
 
       return `
@@ -178,6 +259,52 @@ function renderCategories() {
       `;
     })
     .join("");
+}
+
+function renderHistoryFilterOptions() {
+  syncHistoryFilterInputs();
+
+  const type = nodes.historyTypeFilter?.value || "all";
+  const categoryOptions = deriveHistoryCategoryOptions(type);
+  const paymentOptions = deriveHistoryPaymentOptions();
+  const previousCategory = currentHistoryFilters.category;
+  const previousPayment = currentHistoryFilters.payment;
+
+  if (nodes.historyCategoryFilter) {
+    nodes.historyCategoryFilter.innerHTML = ['<option value="">Todas</option>']
+      .concat(categoryOptions.map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`))
+      .join("");
+    nodes.historyCategoryFilter.value = categoryOptions.includes(previousCategory) ? previousCategory : "";
+    currentHistoryFilters.category = nodes.historyCategoryFilter.value;
+  }
+
+  if (nodes.historyPaymentFilter) {
+    nodes.historyPaymentFilter.innerHTML = ['<option value="">Todos</option>']
+      .concat(paymentOptions.map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`))
+      .join("");
+    nodes.historyPaymentFilter.value = paymentOptions.includes(previousPayment) ? previousPayment : "";
+    currentHistoryFilters.payment = nodes.historyPaymentFilter.value;
+  }
+}
+
+function renderExtratoList() {
+  const filtered = getHistoryFilteredTransactions();
+  const total = filtered.reduce(
+    (accumulator, transaction) => accumulator + (transaction.type === "income" ? transaction.amount : -transaction.amount),
+    0
+  );
+
+  if (nodes.filteredTotalValue) {
+    nodes.filteredTotalValue.textContent = currency.format(total);
+  }
+
+  if (!nodes.extratoList) return;
+  if (filtered.length === 0) {
+    nodes.extratoList.innerHTML = emptyStateHtml("Sem lançamentos para o filtro selecionado.");
+    return;
+  }
+
+  nodes.extratoList.innerHTML = filtered.map((transaction) => renderTransactionItem(transaction)).join("");
 }
 
 function renderInsights(balance, income, expense) {
@@ -296,22 +423,7 @@ function renderTransactions() {
     return;
   }
 
-  nodes.transactionsList.innerHTML = filtered
-    .map((transaction) => {
-      const sign = transaction.type === "income" ? "+" : "-";
-      return `
-        <div class="transaction-item">
-          <div>
-            <div class="transaction-title">${escapeHtml(transaction.title)}</div>
-            <div class="transaction-meta">${escapeHtml(transaction.category)} · ${escapeHtml(transaction.dateLabel)}</div>
-          </div>
-          <div class="transaction-amount ${transaction.type}">
-            ${sign}${currency.format(transaction.amount)}
-          </div>
-        </div>
-      `;
-    })
-    .join("");
+  nodes.transactionsList.innerHTML = filtered.map((transaction) => renderTransactionItem(transaction)).join("");
 }
 
 function renderCategoryOptions() {
@@ -377,9 +489,9 @@ function renderSettings() {
   nodes.settingsScreenOrder.textContent = orderLabel;
 }
 
-function totalsByCategory() {
-  return currentState.transactions
-    .filter((item) => item.type === "expense")
+function totalsByCategoryForFilters(type) {
+  return getHistoryFilteredTransactions()
+    .filter((item) => item.type === type)
     .reduce((accumulator, transaction) => {
       accumulator[transaction.category] = (accumulator[transaction.category] || 0) + transaction.amount;
       return accumulator;
@@ -390,6 +502,101 @@ function sumByType(type) {
   return currentState.transactions
     .filter((transaction) => transaction.type === type)
     .reduce((total, transaction) => total + transaction.amount, 0);
+}
+
+function handleHistoryFilterChange() {
+  currentHistoryFilters = {
+    startDate: nodes.historyStartDate?.value || "",
+    endDate: nodes.historyEndDate?.value || "",
+    type: nodes.historyTypeFilter?.value || "all",
+    category: nodes.historyCategoryFilter?.value || "",
+    payment: nodes.historyPaymentFilter?.value || ""
+  };
+
+  renderHistoryFilterOptions();
+  renderExtratoCategoryBars();
+  renderExtratoList();
+}
+
+function clearHistoryFilters() {
+  currentHistoryFilters = {
+    startDate: "",
+    endDate: "",
+    type: "all",
+    category: "",
+    payment: ""
+  };
+  syncHistoryFilterInputs();
+  renderHistoryFilterOptions();
+  renderExtratoCategoryBars();
+  renderExtratoList();
+}
+
+function syncHistoryFilterInputs() {
+  if (nodes.historyStartDate) nodes.historyStartDate.value = currentHistoryFilters.startDate;
+  if (nodes.historyEndDate) nodes.historyEndDate.value = currentHistoryFilters.endDate;
+  if (nodes.historyTypeFilter) nodes.historyTypeFilter.value = currentHistoryFilters.type;
+}
+
+function getHistoryFilteredTransactions() {
+  return currentState.transactions.filter((transaction) => {
+    if (currentHistoryFilters.type !== "all" && transaction.type !== currentHistoryFilters.type) {
+      return false;
+    }
+    if (currentHistoryFilters.category && transaction.category !== currentHistoryFilters.category) {
+      return false;
+    }
+    if (currentHistoryFilters.payment && transaction.paymentMethod !== currentHistoryFilters.payment) {
+      return false;
+    }
+    if (currentHistoryFilters.startDate) {
+      const startMillis = toStartOfDayMillis(currentHistoryFilters.startDate);
+      if (transaction.dateMillis < startMillis) {
+        return false;
+      }
+    }
+    if (currentHistoryFilters.endDate) {
+      const endMillis = toEndOfDayMillis(currentHistoryFilters.endDate);
+      if (transaction.dateMillis > endMillis) {
+        return false;
+      }
+    }
+    return true;
+  });
+}
+
+function deriveHistoryCategoryOptions(type) {
+  const filteredType = type === "all" ? null : type;
+  return uniqueCaseInsensitive(
+    currentState.transactions
+      .filter((transaction) => !filteredType || transaction.type === filteredType)
+      .map((transaction) => transaction.category)
+  );
+}
+
+function deriveHistoryPaymentOptions() {
+  return uniqueCaseInsensitive(
+    currentState.transactions.map((transaction) => transaction.paymentMethod).filter(Boolean)
+  );
+}
+
+function renderTransactionItem(transaction) {
+  const sign = transaction.type === "income" ? "+" : "-";
+  const details = [transaction.category, transaction.paymentMethod, transaction.dateLabel].filter(Boolean).join(" · ");
+  const notes = transaction.notes ? `<div class="transaction-notes">${escapeHtml(transaction.notes)}</div>` : "";
+
+  return `
+    <div class="transaction-item">
+      <div>
+        <div class="transaction-title">${escapeHtml(transaction.title)}</div>
+        <div class="transaction-meta">${escapeHtml(details)}</div>
+        ${notes}
+      </div>
+      <div class="transaction-amount ${transaction.type}">
+        ${sign}${currency.format(transaction.amount)}
+      </div>
+    </div>
+  `;
 }
 
 async function saveState() {
@@ -622,6 +829,16 @@ function formatRelativeDate(dateMillis) {
     month: "2-digit",
     year: "numeric"
   }).format(targetDate);
+}
+
+function toStartOfDayMillis(dateText) {
+  const [year, month, day] = String(dateText).split("-").map(Number);
+  return new Date(year, (month || 1) - 1, day || 1, 0, 0, 0, 0).getTime();
+}
+
+function toEndOfDayMillis(dateText) {
+  const [year, month, day] = String(dateText).split("-").map(Number);
+  return new Date(year, (month || 1) - 1, day || 1, 23, 59, 59, 999).getTime();
 }
 
 function fallbackBudgetColor(index) {
