@@ -551,8 +551,9 @@ function buildStateFromRemote({ activeAccount, transactions, settings, appSettin
   const expenseCategories = decodeStringList(settings?.expense_categories || "");
   const incomeCategories = decodeStringList(settings?.income_categories || "");
   const allowedScreens = ["EXTRATO", "LANCAMENTOS", "QUADRO"];
-  const screenOrder = decodeStringList(appSettings?.screen_order || "EXTRATO|||LANCAMENTOS|||QUADRO")
+  const rawScreenOrder = decodeStringList(appSettings?.screen_order || "EXTRATO|||LANCAMENTOS|||QUADRO")
     .filter((screen) => allowedScreens.includes(screen));
+  const screenOrder = rawScreenOrder.length > 0 ? rawScreenOrder : [...allowedScreens];
   if (!screenOrder.includes("CONFIG")) {
     screenOrder.push("CONFIG");
   }
@@ -577,7 +578,7 @@ function buildStateFromRemote({ activeAccount, transactions, settings, appSettin
       incomeCategories
     },
     ui: {
-      screenOrder: screenOrder.length > 0 ? screenOrder : ["EXTRATO", "LANCAMENTOS", "QUADRO", "CONFIG"]
+      screenOrder
     }
   };
 }

@@ -781,13 +781,14 @@ function sanitizeCatalog(catalog) {
 function sanitizeUi(ui) {
   const allowed = ["EXTRATO", "LANCAMENTOS", "QUADRO", "CONFIG"];
   const rawOrder = Array.isArray(ui?.screenOrder) ? ui.screenOrder : ["EXTRATO", "LANCAMENTOS", "QUADRO"];
-  const screenOrder = rawOrder.filter((item) => allowed.includes(item));
+  const baseScreens = rawOrder.filter((item) => allowed.includes(item) && item !== "CONFIG");
+  const screenOrder = baseScreens.length > 0 ? baseScreens : ["EXTRATO", "LANCAMENTOS", "QUADRO"];
   if (!screenOrder.includes("CONFIG")) {
     screenOrder.push("CONFIG");
   }
 
   return {
-    screenOrder: screenOrder.length > 0 ? screenOrder : ["EXTRATO", "LANCAMENTOS", "QUADRO", "CONFIG"]
+    screenOrder
   };
 }
 
