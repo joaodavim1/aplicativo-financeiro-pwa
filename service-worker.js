@@ -1,4 +1,4 @@
-const CACHE_NAME = "financeiro-pwa-cache-v3";
+const CACHE_NAME = "financeiro-pwa-cache-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -16,6 +16,7 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
   );
+  self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
@@ -26,15 +27,20 @@ self.addEventListener("activate", (event) => {
           .filter((key) => key !== CACHE_NAME)
           .map((key) => caches.delete(key))
       )
-    )
+    ).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
+  const requestUrl = new URL(event.request.url);
+  const isAppShellRequest =
+    requestUrl.origin === self.location.origin &&
+    APP_SHELL.some((asset) => requestUrl.pathname.endsWith(asset.replace("./", "/")));
+
   event.respondWith(
-    caches.match(event.request).then((cached) => {
+    (isAppShellRequest ? fetch(event.request).catch(() => caches.match(event.request)) : caches.match(event.request).then((cached) => {
       if (cached) return cached;
 
       return fetch(event.request).then((response) => {
@@ -42,6 +48,6 @@ self.addEventListener("fetch", (event) => {
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
         return response;
       });
-    })
+    }))
   );
 });
