@@ -19,11 +19,11 @@
           <p class="eyebrow">Acesso</p>
           <h2>Entrar com Google</h2>
           <p id="authDescription" class="auth-description">
-            Entre com a mesma conta Google usada no Android para abrir a base do Supabase.
+            Entre com a mesma conta usada no Android.
           </p>
           <div class="auth-actions">
             <div id="googleLoginMount" class="google-login-mount"></div>
-            <button id="continueDemoButton" class="ghost-button dark-ghost" type="button">Continuar em modo demo</button>
+            <button id="continueDemoButton" class="ghost-button dark-ghost" type="button">Abrir versão local</button>
           </div>
           <p id="authStatusMessage" class="auth-status"></p>
         </article>
@@ -40,7 +40,7 @@
           <div id="userBadge" class="user-badge hidden"></div>
         </div>
         <button id="logoutButton" class="ghost-button hidden" type="button">Sair</button>
-        <button id="installHelpButton" class="ghost-button hidden" type="button">Como instalar no iPhone</button>
+        <button id="installHelpButton" class="ghost-button hidden" type="button">Instalação</button>
       </header>
 
       <main id="protectedApp" class="layout">
@@ -253,15 +253,15 @@
               </div>
               <div class="stack">
                 <div class="insight-item">
-                  <strong>Conta conectada</strong>
-                  <p id="settingsAccountName" class="muted">Modo demo local</p>
+                  <strong>Conta em uso</strong>
+                  <p id="settingsAccountName" class="muted">Conta local</p>
                 </div>
                 <div class="insight-item">
-                  <strong>Origem dos dados</strong>
-                  <p id="settingsDataSource" class="muted">Dados locais do navegador</p>
+                  <strong>Acesso</strong>
+                  <p id="settingsDataSource" class="muted">Conta local</p>
                 </div>
                 <div class="insight-item">
-                  <strong>Ordem das telas</strong>
+                  <strong>Telas</strong>
                   <p id="settingsScreenOrder" class="muted">Extrato, Lançamentos, Futuro</p>
                 </div>
               </div>
@@ -273,7 +273,7 @@
                 <h2>Menu rápido</h2>
               </div>
               <div class="settings-actions">
-                <button id="settingsInstallButton" class="primary-button" type="button">Instalação no iPhone</button>
+                <button id="settingsInstallButton" class="primary-button" type="button">Instalação</button>
                 <button id="settingsLogoutButton" class="ghost-button dark-ghost" type="button">Sair da conta</button>
               </div>
             </article>
@@ -297,14 +297,13 @@
 
     <dialog id="installDialog" class="install-dialog">
       <div class="dialog-content">
-        <p class="eyebrow">No iPhone</p>
-        <h2>Como instalar</h2>
+        <p class="eyebrow">Instalação</p>
+        <h2>Adicionar à tela inicial</h2>
         <ol>
-          <li>Hospede esta pasta em uma URL HTTPS.</li>
-          <li>Abra a URL no Safari do iPhone.</li>
+          <li>Abra este endereço no Safari.</li>
           <li>Toque em Compartilhar.</li>
-          <li>Escolha Adicionar a Tela de Inicio.</li>
-          <li>Confirme em Open as Web App.</li>
+          <li>Escolha Adicionar à Tela de Início.</li>
+          <li>Confirme a adição.</li>
         </ol>
         <button id="closeInstallModalButton" class="primary-button" type="button">Fechar</button>
       </div>

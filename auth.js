@@ -43,17 +43,17 @@ async function bootstrap() {
     nodes.authGate.classList.remove("hidden");
     nodes.protectedApp.classList.remove("hidden");
     nodes.authDescription.textContent =
-      "O login Google esta preparado para o Supabase, mas falta preencher o arquivo supabase-config.js.";
+      "Entre com sua conta para abrir os dados.";
     nodes.authStatusMessage.textContent =
-      "Enquanto isso, voce pode usar o app em modo demo local.";
+      "Enquanto isso, voce pode abrir a versao local.";
     openDemoMode();
     return;
   }
 
   nodes.authDescription.textContent =
-    "Entre com a mesma conta Google do Android para puxar os dados reais do Supabase.";
+    "Entre com a mesma conta usada no Android.";
   nodes.authStatusMessage.textContent =
-    "A PWA vai ler e salvar as transacoes na mesma base usada pelo app Android.";
+    "Os dados desta conta serao carregados ao entrar.";
 
   try {
     await mountGoogleButton();
@@ -72,7 +72,7 @@ async function bootstrap() {
   if (authOptions.requireLogin) {
     nodes.authGate.classList.remove("hidden");
     nodes.protectedApp.classList.add("hidden");
-    nodes.authStatusMessage.textContent = "Use sua conta Google para entrar.";
+    nodes.authStatusMessage.textContent = "Use sua conta para entrar.";
     return;
   }
 
@@ -156,13 +156,13 @@ function openDemoMode() {
   nodes.protectedApp.classList.remove("hidden");
   nodes.authGate.classList.remove("hidden");
   nodes.logoutButton.classList.add("hidden");
-  nodes.authStatusMessage.textContent = "Modo demo local ativo.";
+  nodes.authStatusMessage.textContent = "Versao local aberta.";
   bootFinanceiroApp({ mode: "demo" });
 }
 
 async function handleGoogleCredential(response, nonce) {
   try {
-    nodes.authStatusMessage.textContent = "Conectando ao Supabase...";
+    nodes.authStatusMessage.textContent = "Entrando na conta...";
     currentSession = await signInWithGoogleIdToken(response.credential, nonce);
     persistSession(currentSession);
     await openSupabaseMode(currentSession);
@@ -182,12 +182,12 @@ async function handleLogout() {
       });
     }
   } catch (error) {
-    console.warn("Falha ao encerrar sessao no Supabase:", error);
+    console.warn("Falha ao encerrar sessao:", error);
   }
 
   currentSession = null;
   clearPersistedSession();
-  nodes.authStatusMessage.textContent = "Voce saiu da conta Google.";
+  nodes.authStatusMessage.textContent = "Voce saiu da conta.";
   openDemoMode();
 }
 
@@ -201,7 +201,7 @@ async function openSupabaseMode(session) {
   nodes.authGate.classList.add("hidden");
   nodes.protectedApp.classList.remove("hidden");
   nodes.logoutButton.classList.remove("hidden");
-  nodes.authStatusMessage.textContent = "Conta Google conectada ao Supabase.";
+  nodes.authStatusMessage.textContent = "Conta aberta.";
 
   try {
     await bootFinanceiroApp({
@@ -228,18 +228,18 @@ function formatAuthError(error) {
   const normalized = message.toLowerCase();
 
   if (normalized.includes("invalid client") || normalized.includes("invalid_client")) {
-    return "O client Google desta tela web ainda esta invalido para o navegador.";
+    return "Nao foi possivel abrir esta conta agora.";
   }
   if (normalized.includes("origin") || normalized.includes("audience")) {
-    return "O Google ainda nao liberou este dominio. Falta autorizar joaodavim1.github.io no provedor Google do Supabase.";
+    return "Esta conta ainda nao pode entrar neste acesso.";
   }
   if (normalized.includes("network") || normalized.includes("fetch")) {
-    return "Falha de rede ao falar com o Supabase.";
+    return "Falha de rede ao abrir a conta.";
   }
   if (message) {
     return message;
   }
-  return "Falha no login Google.";
+  return "Falha ao entrar na conta.";
 }
 
 function createSupabasePersistence(ensureSessionFn) {
@@ -254,7 +254,7 @@ function createSupabasePersistence(ensureSessionFn) {
     async loadState() {
       const session = await ensureSessionFn();
       if (!session?.accessToken) {
-        throw new Error("Faca login novamente para carregar os dados do Supabase.");
+        throw new Error("Faca login novamente para carregar os dados.");
       }
 
       const [people, transactions, accountSettings, appSettings] = await Promise.all([
@@ -290,10 +290,10 @@ function createSupabasePersistence(ensureSessionFn) {
     async saveState(state) {
       const session = await ensureSessionFn();
       if (!session?.accessToken) {
-        throw new Error("Faca login novamente para salvar os dados do Supabase.");
+        throw new Error("Faca login novamente para salvar os dados.");
       }
       if (!context.activeAccountId) {
-        throw new Error("Nao encontrei uma conta ativa no Supabase para salvar a transacao.");
+        throw new Error("Nao encontrei uma conta ativa para salvar a transacao.");
       }
 
       const payload = state.transactions.map((transaction) =>
@@ -511,7 +511,7 @@ function normalizeUser(user) {
   return {
     uid: user.id || "",
     email: user.email || "",
-    displayName: metadata.full_name || metadata.name || metadata.display_name || user.email || "Conta Google"
+    displayName: metadata.full_name || metadata.name || metadata.display_name || user.email || "Conta"
   };
 }
 
@@ -558,7 +558,7 @@ function buildStateFromRemote({ activeAccount, transactions, settings, appSettin
   }
 
   return {
-    monthLabel: activeAccount?.name ? `Conta ${activeAccount.name}` : "Conta sincronizada",
+    monthLabel: activeAccount?.name ? `Conta ${activeAccount.name}` : "Conta",
     transactions: sortedTransactions.map((transaction) => ({
       id: Number(transaction.id),
       title: transaction.title || "Sem titulo",
@@ -699,7 +699,7 @@ function tryParseJson(raw) {
 
 function extractSupabaseError(payload, raw) {
   if (payload && typeof payload === "object") {
-    return payload.msg || payload.message || payload.error_description || payload.error || raw || "Falha ao falar com o Supabase.";
+    return payload.msg || payload.message || payload.error_description || payload.error || raw || "Falha ao carregar os dados.";
   }
-  return raw || "Falha ao falar com o Supabase.";
+  return raw || "Falha ao carregar os dados.";
 }

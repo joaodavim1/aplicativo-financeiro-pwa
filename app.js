@@ -192,7 +192,7 @@ function renderExtratoAccountSnapshot() {
     },
     {
       title: "Origem",
-      text: currentIdentity?.mode === "google" ? "Mesmo Supabase do Android" : "Modo demo local"
+      text: currentIdentity?.mode === "google" ? "Conta ativa" : "Conta local"
     },
     {
       title: "Formas de pagamento",
@@ -312,8 +312,8 @@ function renderInsights(balance, income, expense) {
   const topExpense = Object.entries(totalsByCategory())[0];
   const syncText =
     currentIdentity?.mode === "google"
-      ? "Os dados desta tela usam o mesmo Supabase do Android e ficam separados pela sua conta Google."
-      : "Voce esta em modo demo local. Entre com Google para puxar os dados reais do Supabase.";
+      ? "Os dados desta tela estao na conta atual."
+      : "Esta e a versao local da conta.";
 
   const insights = [
     {
@@ -332,7 +332,7 @@ function renderInsights(balance, income, expense) {
       text: topExpense ? `${topExpense[0]} lidera as saidas com ${currency.format(topExpense[1])}.` : "Sem gastos registrados."
     },
     {
-      title: currentIdentity?.mode === "google" ? "Conta Google sincronizada" : "Modo demo",
+      title: currentIdentity?.mode === "google" ? "Conta ativa" : "Conta local",
       text: syncText
     }
   ];
@@ -351,7 +351,7 @@ function renderInsights(balance, income, expense) {
 
 function renderGoals() {
   if (currentState.goals.length === 0) {
-    nodes.goalsList.innerHTML = emptyStateHtml("As metas ainda nao foram mapeadas nesta versao web.");
+    nodes.goalsList.innerHTML = emptyStateHtml("Nenhuma meta cadastrada.");
     return;
   }
 
@@ -382,7 +382,7 @@ function renderBudgets() {
   const totals = totalsByCategory();
 
   if (currentState.budgets.length === 0) {
-    nodes.budgetList.innerHTML = emptyStateHtml("Nenhum limite por categoria veio da conta sincronizada.");
+    nodes.budgetList.innerHTML = emptyStateHtml("Nenhum limite por categoria cadastrado.");
     return;
   }
 
@@ -477,11 +477,11 @@ function renderSettings() {
   if (!nodes.settingsAccountName) return;
 
   const userName = currentIdentity?.mode === "google"
-    ? currentIdentity?.user?.displayName || currentIdentity?.user?.email || "Conta Google"
-    : "Modo demo local";
+    ? currentIdentity?.user?.displayName || currentIdentity?.user?.email || "Conta"
+    : "Conta local";
   const dataSource = currentIdentity?.mode === "google"
-    ? "Mesmo Supabase do Android"
-    : "Dados locais do navegador";
+    ? "Conta ativa"
+    : "Conta local";
   const orderLabel = currentState.ui.screenOrder.map((screen) => screenLabel(screen)).join(", ");
 
   nodes.settingsAccountName.textContent = userName;
