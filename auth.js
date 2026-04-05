@@ -55,15 +55,10 @@ async function bootstrap() {
   nodes.authStatusMessage.textContent =
     "A PWA vai ler e salvar as transacoes na mesma base usada pelo app Android.";
 
-  mountGoogleButton();
-
-  const callbackSession = readSessionFromCallback();
-  if (callbackSession) {
-    currentSession = callbackSession;
-    persistSession(currentSession);
-    clearAuthParamsFromUrl();
-    await openSupabaseMode(currentSession);
-    return;
+  try {
+    await mountGoogleButton();
+  } catch (error) {
+    nodes.authStatusMessage.textContent = formatAuthError(error);
   }
 
   const restoredSession = await restoreSession();
@@ -131,15 +126,30 @@ function openSettingsScreen() {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function mountGoogleButton() {
+async function mountGoogleButton() {
+  if (!runtimeConfig.googleClientId) {
+    throw new Error("Preencha googleClientId no supabase-config.js.");
+  }
+
+  const { googleClient, hashedNonce, nonce } = await createGoogleNonceClient();
   nodes.googleLoginMount.innerHTML = "";
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "primary-button";
-  button.style.width = `${GOOGLE_BUTTON_WIDTH}px`;
-  button.textContent = "Entrar com Google";
-  button.addEventListener("click", handleGoogleLogin);
-  nodes.googleLoginMount.appendChild(button);
+
+  googleClient.accounts.id.initialize({
+    client_id: runtimeConfig.googleClientId,
+    callback: (response) => handleGoogleCredential(response, nonce),
+    auto_select: false,
+    itp_support: true,
+    use_fedcm_for_prompt: true,
+    nonce: hashedNonce
+  });
+
+  googleClient.accounts.id.renderButton(nodes.googleLoginMount, {
+    theme: "outline",
+    size: "large",
+    shape: "pill",
+    text: "signin_with",
+    width: GOOGLE_BUTTON_WIDTH
+  });
 }
 
 function openDemoMode() {
@@ -150,15 +160,12 @@ function openDemoMode() {
   bootFinanceiroApp({ mode: "demo" });
 }
 
-async function handleGoogleLogin() {
+async function handleGoogleCredential(response, nonce) {
   try {
-    nodes.authStatusMessage.textContent = "Abrindo login Google...";
-    const redirectTo = `${window.location.origin}${window.location.pathname}`;
-    const authUrl = buildSupabaseUrl("/auth/v1/authorize", {
-      provider: "google",
-      redirect_to: redirectTo
-    });
-    window.location.assign(authUrl);
+    nodes.authStatusMessage.textContent = "Conectando ao Supabase...";
+    currentSession = await signInWithGoogleIdToken(response.credential, nonce);
+    persistSession(currentSession);
+    await openSupabaseMode(currentSession);
   } catch (error) {
     nodes.authStatusMessage.textContent = formatAuthError(error);
   }
@@ -221,7 +228,7 @@ function formatAuthError(error) {
   const normalized = message.toLowerCase();
 
   if (normalized.includes("invalid client") || normalized.includes("invalid_client")) {
-    return "O client Google configurado no Supabase esta invalido. Vou precisar ajustar isso no console se o novo fluxo nao resolver.";
+    return "O client Google desta tela web ainda esta invalido para o navegador.";
   }
   if (normalized.includes("origin") || normalized.includes("audience")) {
     return "O Google ainda nao liberou este dominio. Falta autorizar joaodavim1.github.io no provedor Google do Supabase.";
@@ -353,6 +360,21 @@ function sessionNeedsRefresh(session) {
   if (!Number.isFinite(expiresAt) || expiresAt <= 0) return false;
   const nowSeconds = Math.floor(Date.now() / 1000);
   return expiresAt <= nowSeconds + 60;
+}
+
+async function signInWithGoogleIdToken(idToken, nonce) {
+  const data = await requestSupabase({
+    method: "POST",
+    path: "/auth/v1/token",
+    query: { grant_type: "id_token" },
+    body: {
+      provider: "google",
+      id_token: idToken,
+      nonce
+    }
+  });
+
+  return normalizeSession(data);
 }
 
 async function refreshSession(refreshToken) {
@@ -632,28 +654,39 @@ function formatRelativeDate(dateMillis) {
   }).format(targetDate);
 }
 
-function readSessionFromCallback() {
-  const hashParams = new URLSearchParams(window.location.hash.startsWith("#") ? window.location.hash.slice(1) : "");
-  const searchParams = new URLSearchParams(window.location.search);
-  const accessToken = hashParams.get("access_token") || searchParams.get("access_token");
-  const refreshToken = hashParams.get("refresh_token") || searchParams.get("refresh_token");
-  const expiresAt = hashParams.get("expires_at") || searchParams.get("expires_at");
-
-  if (!accessToken || !refreshToken) {
-    return null;
-  }
+async function createGoogleNonceClient() {
+  const googleClient = await waitForGoogleClient();
+  const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32))));
+  const encoder = new TextEncoder();
+  const encodedNonce = encoder.encode(nonce);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", encodedNonce);
+  const hashedNonce = Array.from(new Uint8Array(hashBuffer))
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("");
 
   return {
-    accessToken,
-    refreshToken,
-    expiresAtEpochSeconds: Number(expiresAt || 0) || Math.floor(Date.now() / 1000) + 3600,
-    user: null
+    googleClient,
+    nonce,
+    hashedNonce
   };
 }
 
-function clearAuthParamsFromUrl() {
-  const cleanUrl = `${window.location.origin}${window.location.pathname}`;
-  window.history.replaceState({}, document.title, cleanUrl);
+function waitForGoogleClient() {
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+    const timer = window.setInterval(() => {
+      attempts += 1;
+      if (window.google?.accounts?.id) {
+        window.clearInterval(timer);
+        resolve(window.google);
+        return;
+      }
+      if (attempts >= 60) {
+        window.clearInterval(timer);
+        reject(new Error("A biblioteca do Google nao carregou a tempo."));
+      }
+    }, 100);
+  });
 }
 
 function tryParseJson(raw) {
