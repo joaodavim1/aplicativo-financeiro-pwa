@@ -131,7 +131,7 @@ select {
 
 .hero-text,
 .install-card p,
-.menu-sheet-panel li {
+.dialog-content li {
   color: rgba(255, 255, 255, 0.86);
 }
 
@@ -145,7 +145,7 @@ select {
 }
 
 .card .eyebrow,
-.menu-sheet-panel .eyebrow {
+.dialog-content .eyebrow {
   color: var(--primary-2);
 }
 
@@ -245,63 +245,6 @@ select {
 .menu-dark {
   background: rgba(17, 39, 32, 0.08);
   color: var(--ink);
-}
-
-body.menu-open {
-  overflow: hidden;
-}
-
-.menu-sheet {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-}
-
-.menu-sheet.visible {
-  display: block !important;
-}
-
-.menu-sheet-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(12, 28, 22, 0.42);
-}
-
-.menu-sheet-panel {
-  position: absolute;
-  top: max(12px, env(safe-area-inset-top, 0px) + 12px);
-  left: 14px;
-  right: 14px;
-  max-width: 520px;
-  margin: 0 auto;
-  border-radius: 28px;
-  background: #fff;
-  box-shadow: 0 30px 80px rgba(17, 39, 32, 0.22);
-  padding: 24px;
-}
-
-.menu-sheet-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 18px;
-}
-
-.menu-sheet-header h2 {
-  margin: 0;
-}
-
-.menu-close-button {
-  width: 42px;
-  height: 42px;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(17, 39, 32, 0.08);
-  color: var(--ink);
-  font-size: 1.6rem;
-  line-height: 1;
-  cursor: pointer;
 }
 
 .summary-grid,
@@ -688,6 +631,33 @@ body.menu-open {
   color: var(--coral);
 }
 
+.install-dialog {
+  width: min(520px, calc(100% - 24px));
+  border: 0;
+  border-radius: 28px;
+  padding: 0;
+  box-shadow: 0 30px 80px rgba(17, 39, 32, 0.22);
+}
+
+.install-dialog::backdrop {
+  background: rgba(12, 28, 22, 0.42);
+}
+
+.dialog-content {
+  padding: 24px;
+  background: #fff;
+}
+
+.dialog-content h2 {
+  margin: 0 0 12px;
+}
+
+.dialog-content ol {
+  margin: 0 0 18px;
+  padding-left: 20px;
+  color: var(--ink);
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -709,12 +679,6 @@ body.menu-open {
 
   .app-header {
     grid-template-columns: auto 1fr;
-  }
-
-  .menu-sheet-panel {
-    left: 10px;
-    right: 10px;
-    padding: 22px 18px;
   }
 
   .filter-grid {
@@ -760,10 +724,6 @@ body.menu-open {
 
   .app-header {
     padding: 12px;
-  }
-
-  .menu-sheet-panel {
-    top: max(10px, env(safe-area-inset-top, 0px) + 10px);
   }
 
   .card,

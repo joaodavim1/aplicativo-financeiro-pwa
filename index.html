@@ -8,9 +8,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Financeiro" />
     <title>Financeiro</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260406h" />
+    <link rel="manifest" href="./manifest.webmanifest?v=20260406g" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260406h" />
+    <link rel="stylesheet" href="./styles.css?v=20260406g" />
   </head>
   <body>
     <div class="app-shell">
@@ -362,16 +362,10 @@
       </main>
     </div>
 
-    <div id="menuDialog" class="menu-sheet hidden" aria-hidden="true">
-      <div class="menu-sheet-backdrop"></div>
-      <div class="menu-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="menuDialogTitle">
-        <div class="menu-sheet-header">
-          <div>
-            <p class="eyebrow">Menu</p>
-            <h2 id="menuDialogTitle">Finanças</h2>
-          </div>
-          <button id="closeMenuButton" class="menu-close-button" type="button" aria-label="Fechar menu">×</button>
-        </div>
+    <dialog id="menuDialog" class="install-dialog">
+      <div class="dialog-content">
+        <p class="eyebrow">Menu</p>
+        <h2>Finanças</h2>
         <div class="settings-actions">
           <button id="menuOpenExtratoButton" class="primary-button" type="button">Extrato</button>
           <button id="menuOpenLancamentosButton" class="ghost-button dark-ghost menu-dark" type="button">Lançamentos</button>
@@ -381,11 +375,26 @@
           <button id="menuInstallButton" class="ghost-button dark-ghost menu-dark" type="button">Atualizar versão</button>
           <button id="menuLogoutButton" class="ghost-button dark-ghost menu-dark" type="button">Sair</button>
         </div>
+        <button id="closeMenuButton" class="primary-button" type="button">Fechar</button>
       </div>
-    </div>
+    </dialog>
 
-    <script src="./supabase-config.js?v=20260406h"></script>
+    <dialog id="installDialog" class="install-dialog">
+      <div class="dialog-content">
+        <p class="eyebrow">Instalação</p>
+        <h2>Adicionar à tela inicial</h2>
+        <ol>
+          <li>Abra este endereço no Safari.</li>
+          <li>Toque em Compartilhar.</li>
+          <li>Escolha Adicionar à Tela de Início.</li>
+          <li>Confirme a adição.</li>
+        </ol>
+        <button id="closeInstallModalButton" class="primary-button" type="button">Fechar</button>
+      </div>
+    </dialog>
+
+    <script src="./supabase-config.js?v=20260406g"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260406h"></script>
+    <script type="module" src="./auth.js?v=20260406g"></script>
   </body>
 </html>

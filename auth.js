@@ -1,4 +1,4 @@
-import { bootFinanceiroApp } from "./app.js?v=20260406h";
+import { bootFinanceiroApp } from "./app.js?v=20260406e";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -34,7 +34,6 @@ const nodes = {
 };
 
 let currentSession = null;
-let menuEscapeHandlerBound = false;
 
 bootstrap();
 
@@ -106,43 +105,62 @@ function bindEvents() {
   nodes.settingsLoginButton?.addEventListener("click", handleAccountAccess);
   nodes.settingsInstallButton?.addEventListener("click", () => refreshAppVersion());
   nodes.settingsLogoutButton?.addEventListener("click", handleLogout);
-  nodes.menuDialog?.addEventListener("click", (event) => {
-    if (
-      event.target === nodes.menuDialog ||
-      event.target?.classList?.contains("menu-sheet-backdrop")
-    ) {
-      closeMenuDialog();
+  bindDialogBackdrop(nodes.menuDialog);
+}
+
+function bindDialogBackdrop(dialog) {
+  dialog?.addEventListener("click", (event) => {
+    const rect = dialog.getBoundingClientRect();
+    const clickedInside =
+      rect.top <= event.clientY &&
+      event.clientY <= rect.top + rect.height &&
+      rect.left <= event.clientX &&
+      event.clientX <= rect.left + rect.width;
+
+    if (!clickedInside) {
+      closeDialog(dialog);
     }
   });
 }
 
 function openMenuDialog() {
-  if (!nodes.menuDialog) return;
-
-  nodes.menuDialog.classList.remove("hidden");
-  nodes.menuDialog.classList.add("visible");
-  nodes.menuDialog.setAttribute("aria-hidden", "false");
-  document.body.classList.add("menu-open");
-
-  if (!menuEscapeHandlerBound) {
-    document.addEventListener("keydown", handleMenuEscape);
-    menuEscapeHandlerBound = true;
-  }
+  openDialog(nodes.menuDialog);
 }
 
 function closeMenuDialog() {
-  if (!nodes.menuDialog) return;
-
-  nodes.menuDialog.classList.remove("visible");
-  nodes.menuDialog.classList.add("hidden");
-  nodes.menuDialog.setAttribute("aria-hidden", "true");
-  document.body.classList.remove("menu-open");
+  closeDialog(nodes.menuDialog);
 }
 
-function handleMenuEscape(event) {
-  if (event.key === "Escape" && nodes.menuDialog?.classList.contains("visible")) {
-    closeMenuDialog();
+function openDialog(dialog) {
+  if (!dialog) return;
+
+  try {
+    if (typeof dialog.showModal === "function") {
+      if (!dialog.open) {
+        dialog.showModal();
+      }
+      return;
+    }
+  } catch (error) {
+    console.warn("Falha ao abrir dialogo:", error);
   }
+
+  dialog.setAttribute("open", "open");
+}
+
+function closeDialog(dialog) {
+  if (!dialog) return;
+
+  try {
+    if (typeof dialog.close === "function" && dialog.open) {
+      dialog.close();
+      return;
+    }
+  } catch (error) {
+    console.warn("Falha ao fechar dialogo:", error);
+  }
+
+  dialog.removeAttribute("open");
 }
 
 function refreshAppVersion(options = {}) {
