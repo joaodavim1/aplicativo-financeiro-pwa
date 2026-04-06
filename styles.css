@@ -200,6 +200,10 @@ select {
   margin-bottom: 14px;
 }
 
+.single-input-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
 .catalog-add-row input {
   width: 100%;
   padding: 14px 15px;
@@ -617,6 +621,21 @@ select {
   gap: 8px;
 }
 
+.field-link-button {
+  justify-self: start;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--primary);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.inline-manager-card {
+  padding: 18px;
+  margin-top: -4px;
+}
+
 .transaction-form span {
   font-size: 0.92rem;
   font-weight: 700;
@@ -775,6 +794,10 @@ select {
   }
 
   .catalog-add-row {
+    grid-template-columns: 1fr;
+  }
+
+  .single-input-row {
     grid-template-columns: 1fr;
   }
 

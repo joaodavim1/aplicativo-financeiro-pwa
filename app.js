@@ -45,6 +45,8 @@ let currentIdentity = null;
 let currentPersistence = null;
 let eventsBound = false;
 let activeScreen = "EXTRATO";
+let isCategoryManagerOpen = false;
+let isPaymentManagerOpen = false;
 let currentHistoryFilters = {
   startDate: "",
   endDate: "",
@@ -84,6 +86,11 @@ const nodes = {
   userBadge: document.querySelector("#userBadge"),
   categoryInput: document.querySelector("#categoryInput"),
   paymentMethodInput: document.querySelector("#paymentMethodInput"),
+  manageCategoryToggleButton: document.querySelector("#manageCategoryToggleButton"),
+  managePaymentToggleButton: document.querySelector("#managePaymentToggleButton"),
+  manageExpenseCategoryCard: document.querySelector("#manageExpenseCategoryCard"),
+  manageIncomeCategoryCard: document.querySelector("#manageIncomeCategoryCard"),
+  managePaymentCard: document.querySelector("#managePaymentCard"),
   dateInput: document.querySelector("#dateInput"),
   installmentsInput: document.querySelector("#installmentsInput"),
   typeInput: document.querySelector("#typeInput"),
@@ -126,6 +133,8 @@ window.financeiroNavigateToScreen = navigateToScreen;
 function bindEvents() {
   nodes.transactionForm.addEventListener("submit", handleSubmit);
   nodes.typeToggle?.addEventListener("click", handleTypeToggleClick);
+  nodes.manageCategoryToggleButton?.addEventListener("click", toggleCategoryManager);
+  nodes.managePaymentToggleButton?.addEventListener("click", togglePaymentManager);
   nodes.addExpenseCategoryButton?.addEventListener("click", () => handleAddCatalogItem("expense"));
   nodes.addIncomeCategoryButton?.addEventListener("click", () => handleAddCatalogItem("income"));
   nodes.addPaymentMethodButton?.addEventListener("click", () => handleAddCatalogItem("payment"));
@@ -218,6 +227,7 @@ function render() {
   syncTypeToggle(selectDefaultTransactionType());
   renderCategoryOptions();
   renderPaymentMethodOptions();
+  syncManagerSections();
   syncLaunchFormDefaults();
   renderScreenTabs();
   renderScreenPanels();
@@ -506,6 +516,7 @@ function handleTypeToggleClick(event) {
   if (!button) return;
   syncTypeToggle(button.dataset.type === "income" ? "income" : "expense");
   renderCategoryOptions();
+  syncManagerSections();
 }
 
 function syncTypeToggle(type) {
@@ -520,6 +531,35 @@ function syncTypeToggle(type) {
     button.classList.toggle("active", isActive);
     button.setAttribute("aria-pressed", isActive ? "true" : "false");
   });
+}
+
+function toggleCategoryManager() {
+  isCategoryManagerOpen = !isCategoryManagerOpen;
+  syncManagerSections();
+}
+
+function togglePaymentManager() {
+  isPaymentManagerOpen = !isPaymentManagerOpen;
+  syncManagerSections();
+}
+
+function syncManagerSections() {
+  const currentLaunchType = nodes.typeInput?.value === "income" ? "income" : "expense";
+
+  if (nodes.manageCategoryToggleButton) {
+    nodes.manageCategoryToggleButton.textContent =
+      currentLaunchType === "income" ? "Gerenciar categorias de receita" : "Gerenciar categorias de despesa";
+  }
+
+  nodes.manageExpenseCategoryCard?.classList.toggle(
+    "hidden",
+    !isCategoryManagerOpen || currentLaunchType !== "expense"
+  );
+  nodes.manageIncomeCategoryCard?.classList.toggle(
+    "hidden",
+    !isCategoryManagerOpen || currentLaunchType !== "income"
+  );
+  nodes.managePaymentCard?.classList.toggle("hidden", !isPaymentManagerOpen);
 }
 
 function renderPaymentMethodOptions() {

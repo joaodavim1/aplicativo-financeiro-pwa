@@ -172,7 +172,32 @@
                     <option value="Investimentos">Investimentos</option>
                     <option value="Trabalho">Trabalho</option>
                   </select>
+                  <button id="manageCategoryToggleButton" class="field-link-button" type="button">Gerenciar categorias de despesa</button>
                 </label>
+
+                <article id="manageExpenseCategoryCard" class="card inline-manager-card hidden">
+                  <div class="card-heading">
+                    <p class="eyebrow">Categorias</p>
+                    <h2>Despesas</h2>
+                  </div>
+                  <div class="catalog-add-row single-input-row">
+                    <input id="addExpenseCategoryInput" type="text" placeholder="Nova categoria de despesa" />
+                    <button id="addExpenseCategoryButton" class="primary-button" type="button">Incluir</button>
+                  </div>
+                  <div id="settingsExpenseCategoriesList" class="stack"></div>
+                </article>
+
+                <article id="manageIncomeCategoryCard" class="card inline-manager-card hidden">
+                  <div class="card-heading">
+                    <p class="eyebrow">Categorias</p>
+                    <h2>Receitas</h2>
+                  </div>
+                  <div class="catalog-add-row single-input-row">
+                    <input id="addIncomeCategoryInput" type="text" placeholder="Nova categoria de receita" />
+                    <button id="addIncomeCategoryButton" class="primary-button" type="button">Incluir</button>
+                  </div>
+                  <div id="settingsIncomeCategoriesList" class="stack"></div>
+                </article>
 
                 <label>
                   <span>Entrada ou saída</span>
@@ -202,7 +227,22 @@
                   <select id="paymentMethodInput" name="paymentMethod">
                     <option value="Pix">Pix</option>
                   </select>
+                  <button id="managePaymentToggleButton" class="field-link-button" type="button">Gerenciar formas de pagamento</button>
                 </label>
+
+                <article id="managePaymentCard" class="card inline-manager-card hidden">
+                  <div class="card-heading">
+                    <p class="eyebrow">Lançamentos</p>
+                    <h2>Formas de pagamento</h2>
+                  </div>
+                  <div class="catalog-add-row">
+                    <input id="addPaymentMethodInput" type="text" placeholder="Nova forma de pagamento" />
+                    <input id="addPaymentClosingDayInput" type="number" inputmode="numeric" min="1" max="31" placeholder="Fech." />
+                    <input id="addPaymentDueDayInput" type="number" inputmode="numeric" min="1" max="31" placeholder="Pag." />
+                    <button id="addPaymentMethodButton" class="primary-button" type="button">Incluir</button>
+                  </div>
+                  <div id="settingsPaymentMethodsList" class="stack"></div>
+                </article>
 
                 <label>
                   <span>Data de vencimento</span>
@@ -315,43 +355,6 @@
               </div>
             </article>
 
-            <article class="card">
-              <div class="card-heading">
-                <p class="eyebrow">Categorias</p>
-                <h2>Despesas</h2>
-              </div>
-              <div class="catalog-add-row">
-                <input id="addExpenseCategoryInput" type="text" placeholder="Nova categoria de despesa" />
-                <button id="addExpenseCategoryButton" class="primary-button" type="button">Incluir</button>
-              </div>
-              <div id="settingsExpenseCategoriesList" class="stack"></div>
-            </article>
-
-            <article class="card">
-              <div class="card-heading">
-                <p class="eyebrow">Categorias</p>
-                <h2>Receitas</h2>
-              </div>
-              <div class="catalog-add-row">
-                <input id="addIncomeCategoryInput" type="text" placeholder="Nova categoria de receita" />
-                <button id="addIncomeCategoryButton" class="primary-button" type="button">Incluir</button>
-              </div>
-              <div id="settingsIncomeCategoriesList" class="stack"></div>
-            </article>
-
-            <article class="card">
-              <div class="card-heading">
-                <p class="eyebrow">Lançamentos</p>
-                <h2>Formas de pagamento</h2>
-              </div>
-              <div class="catalog-add-row">
-                <input id="addPaymentMethodInput" type="text" placeholder="Nova forma de pagamento" />
-                <input id="addPaymentClosingDayInput" type="number" inputmode="numeric" min="1" max="31" placeholder="Fech." />
-                <input id="addPaymentDueDayInput" type="number" inputmode="numeric" min="1" max="31" placeholder="Pag." />
-                <button id="addPaymentMethodButton" class="primary-button" type="button">Incluir</button>
-              </div>
-              <div id="settingsPaymentMethodsList" class="stack"></div>
-            </article>
           </section>
         </section>
       </main>
@@ -403,8 +406,8 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260406p"></script>
+    <script src="./supabase-config.js?v=20260406q"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260406p"></script>
+    <script type="module" src="./auth.js?v=20260406q"></script>
   </body>
 </html>

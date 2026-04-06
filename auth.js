@@ -1,4 +1,4 @@
-import { bootFinanceiroApp } from "./app.js?v=20260406p";
+import { bootFinanceiroApp } from "./app.js?v=20260406q";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
