@@ -215,6 +215,10 @@ select {
   gap: 10px;
 }
 
+.history-type-toggle {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .type-toggle-button {
   border: 1px solid rgba(17, 39, 32, 0.1);
   border-radius: 18px;
@@ -240,6 +244,24 @@ select {
   background: rgba(20, 92, 76, 0.12);
   border-color: rgba(20, 92, 76, 0.36);
   color: var(--primary);
+}
+
+.history-type-button.active {
+  background: var(--primary);
+  border-color: rgba(20, 92, 76, 0.42);
+  color: #fff;
+}
+
+.history-type-button.income.active {
+  background: rgba(20, 92, 76, 0.12);
+  border-color: rgba(20, 92, 76, 0.36);
+  color: var(--primary);
+}
+
+.history-type-button.expense.active {
+  background: rgba(217, 96, 76, 0.12);
+  border-color: rgba(217, 96, 76, 0.36);
+  color: var(--coral);
 }
 
 .menu-dark {
@@ -470,6 +492,27 @@ select {
 
 .history-clear-button {
   margin-top: 16px;
+}
+
+.history-clear-button.inline {
+  margin-top: 0;
+  align-self: center;
+}
+
+.extrato-header-row {
+  align-items: center;
+}
+
+.extrato-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.extrato-title-row h2 {
+  margin: 0;
+  font-size: 1.55rem;
 }
 
 .bar-item,

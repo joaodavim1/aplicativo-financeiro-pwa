@@ -64,6 +64,10 @@ const nodes = {
   historyStartDate: document.querySelector("#historyStartDate"),
   historyEndDate: document.querySelector("#historyEndDate"),
   historyTypeFilter: document.querySelector("#historyTypeFilter"),
+  historyTypeToggle: document.querySelector("#historyTypeToggle"),
+  historyTypeButtons: [...document.querySelectorAll("[data-history-type]")],
+  historyCategoryGroup: document.querySelector("#historyCategoryGroup"),
+  historyPaymentGroup: document.querySelector("#historyPaymentGroup"),
   historyCategoryFilter: document.querySelector("#historyCategoryFilter"),
   historyPaymentFilter: document.querySelector("#historyPaymentFilter"),
   clearHistoryFiltersButton: document.querySelector("#clearHistoryFiltersButton"),
@@ -132,12 +136,12 @@ function bindEvents() {
   [
     nodes.historyStartDate,
     nodes.historyEndDate,
-    nodes.historyTypeFilter,
     nodes.historyCategoryFilter,
     nodes.historyPaymentFilter
   ].forEach((node) => {
     node?.addEventListener("change", handleHistoryFilterChange);
   });
+  nodes.historyTypeToggle?.addEventListener("click", handleHistoryTypeToggleClick);
   nodes.clearHistoryFiltersButton?.addEventListener("click", clearHistoryFilters);
   nodes.filterTabs.forEach((tab) => {
     tab.addEventListener("click", () => {
@@ -310,6 +314,10 @@ function renderHistoryFilterOptions() {
   const paymentOptions = deriveHistoryPaymentOptions();
   const previousCategory = currentHistoryFilters.category;
   const previousPayment = currentHistoryFilters.payment;
+  const showDetailedFilters = type !== "all";
+
+  nodes.historyCategoryGroup?.classList.toggle("hidden", !showDetailedFilters);
+  nodes.historyPaymentGroup?.classList.toggle("hidden", !showDetailedFilters);
 
   if (nodes.historyCategoryFilter) {
     nodes.historyCategoryFilter.innerHTML = ['<option value="">Todas</option>']
@@ -424,6 +432,8 @@ function renderGoals() {
 }
 
 function renderBudgets() {
+  if (!nodes.budgetList) return;
+
   const totals = totalsByCategoryForFilters("expense");
 
   if (currentState.budgets.length === 0) {
@@ -688,6 +698,25 @@ function handleHistoryFilterChange() {
   renderExtratoList();
 }
 
+function handleHistoryTypeToggleClick(event) {
+  const button = event.target.closest("[data-history-type]");
+  if (!button) return;
+
+  const nextType = button.dataset.historyType || "all";
+  if (nextType === currentHistoryFilters.type) return;
+
+  currentHistoryFilters.type = nextType;
+  if (nextType === "all") {
+    currentHistoryFilters.category = "";
+    currentHistoryFilters.payment = "";
+  }
+
+  syncHistoryFilterInputs();
+  renderHistoryFilterOptions();
+  renderExtratoCategoryBars();
+  renderExtratoList();
+}
+
 function clearHistoryFilters() {
   currentHistoryFilters = {
     startDate: "",
@@ -706,6 +735,9 @@ function syncHistoryFilterInputs() {
   if (nodes.historyStartDate) nodes.historyStartDate.value = currentHistoryFilters.startDate;
   if (nodes.historyEndDate) nodes.historyEndDate.value = currentHistoryFilters.endDate;
   if (nodes.historyTypeFilter) nodes.historyTypeFilter.value = currentHistoryFilters.type;
+  nodes.historyTypeButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.historyType === currentHistoryFilters.type);
+  });
 }
 
 function getHistoryFilteredTransactions() {

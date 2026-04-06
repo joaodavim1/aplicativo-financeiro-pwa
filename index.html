@@ -8,9 +8,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Financeiro" />
     <title>Financeiro</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260406i" />
+    <link rel="manifest" href="./manifest.webmanifest?v=20260406j" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260406i" />
+    <link rel="stylesheet" href="./styles.css?v=20260406j" />
   </head>
   <body>
     <div class="app-shell">
@@ -71,26 +71,23 @@
           <section class="panel-grid">
             <article class="card chart-card">
               <div class="card-heading">
-                <p class="eyebrow">Receitas do período</p>
-                <h2>Por categoria</h2>
+                <h2>RECEITAS DO PERIODO POR CATEGORIA</h2>
               </div>
               <div id="incomeCategoryBars" class="bars"></div>
             </article>
 
             <article class="card">
               <div class="card-heading">
-                <p class="eyebrow">Despesas do período</p>
-                <h2>Por categoria</h2>
+                <h2>DESPESAS DO PERIODO POR CATEGORIA</h2>
               </div>
               <div id="expenseCategoryBars" class="bars"></div>
             </article>
           </section>
 
-          <section class="panel-grid">
+          <section class="transactions-section single-column">
             <article class="card filter-card">
               <div class="card-heading">
-                <p class="eyebrow">Filtros</p>
-                <h2>Extrato</h2>
+                <h2>Filtrar período</h2>
               </div>
               <div class="filter-grid">
                 <label>
@@ -103,48 +100,46 @@
                 </label>
                 <label>
                   <span>Movimento</span>
-                  <select id="historyTypeFilter">
-                    <option value="all">Todos</option>
-                    <option value="income">Receitas</option>
-                    <option value="expense">Despesas</option>
-                  </select>
+                  <input id="historyTypeFilter" type="hidden" value="all" />
+                  <div id="historyTypeToggle" class="type-toggle history-type-toggle" role="group" aria-label="Movimento">
+                    <button class="type-toggle-button history-type-button active" data-history-type="all" type="button">
+                      Todos
+                    </button>
+                    <button class="type-toggle-button history-type-button income" data-history-type="income" type="button">
+                      Receitas
+                    </button>
+                    <button class="type-toggle-button history-type-button expense" data-history-type="expense" type="button">
+                      Despesas
+                    </button>
+                  </div>
                 </label>
-                <label>
+                <label id="historyCategoryGroup">
                   <span>Categoria</span>
                   <select id="historyCategoryFilter">
                     <option value="">Todas</option>
                   </select>
                 </label>
-                <label>
+                <label id="historyPaymentGroup">
                   <span>Pagamento</span>
                   <select id="historyPaymentFilter">
                     <option value="">Todos</option>
                   </select>
                 </label>
               </div>
-              <button id="clearHistoryFiltersButton" class="ghost-button dark-ghost history-clear-button" type="button">
-                Limpar filtros
-              </button>
-            </article>
-
-            <article class="card">
-              <div class="card-heading">
-                <p class="eyebrow">Orçamento</p>
-                <h2>Limites por categoria</h2>
-              </div>
-              <div id="budgetList" class="stack"></div>
             </article>
           </section>
 
           <section class="transactions-section single-column">
             <article class="card ledger-card">
-              <div class="ledger-toolbar">
-                <div class="card-heading">
-                  <p class="eyebrow">Extrato</p>
-                  <h2>Lançamentos filtrados</h2>
+              <div class="ledger-toolbar extrato-header-row">
+                <div class="extrato-title-row">
+                  <h2>Extrato</h2>
+                  <button id="clearHistoryFiltersButton" class="ghost-button dark-ghost history-clear-button inline" type="button">
+                    Limpar filtros
+                  </button>
                 </div>
                 <div class="stack-inline">
-                  <span class="muted">Total filtrado</span>
+                  <span class="muted">Total</span>
                   <strong id="filteredTotalValue"></strong>
                 </div>
               </div>
@@ -393,8 +388,8 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260406i"></script>
+    <script src="./supabase-config.js?v=20260406j"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260406i"></script>
+    <script type="module" src="./auth.js?v=20260406j"></script>
   </body>
 </html>
