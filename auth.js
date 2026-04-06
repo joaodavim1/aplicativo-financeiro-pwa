@@ -1,4 +1,4 @@
-import { bootFinanceiroApp } from "./app.js?v=20260406l";
+import { bootFinanceiroApp } from "./app.js?v=20260406m";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -21,12 +21,12 @@ const nodes = {
   logoutButton: document.querySelector("#logoutButton"),
   menuDialog: document.querySelector("#menuDialog"),
   closeMenuButton: document.querySelector("#closeMenuButton"),
+  menuCurrentAccountName: document.querySelector("#menuCurrentAccountName"),
   menuOpenExtratoButton: document.querySelector("#menuOpenExtratoButton"),
   menuOpenLancamentosButton: document.querySelector("#menuOpenLancamentosButton"),
   menuOpenQuadroButton: document.querySelector("#menuOpenQuadroButton"),
   menuOpenSettingsButton: document.querySelector("#menuOpenSettingsButton"),
   menuLoginButton: document.querySelector("#menuLoginButton"),
-  menuInstallButton: document.querySelector("#menuInstallButton"),
   menuLogoutButton: document.querySelector("#menuLogoutButton"),
   installHelpButton: document.querySelector("#installHelpButton"),
   settingsLoginButton: document.querySelector("#settingsLoginButton"),
@@ -113,7 +113,6 @@ function bindEvents() {
     closeMenuDialog();
     await handleAccountAccess();
   });
-  nodes.menuInstallButton?.addEventListener("click", () => refreshAppVersion({ closeMenu: true }));
   nodes.menuLogoutButton?.addEventListener("click", async () => {
     closeMenuDialog();
     await handleLogout();
@@ -360,6 +359,12 @@ async function openSupabaseMode(session) {
 }
 
 function syncAccountActions(isLoggedIn) {
+  const currentAccountName =
+    currentIdentityLabel() || "Sem conta";
+
+  if (nodes.menuCurrentAccountName) {
+    nodes.menuCurrentAccountName.textContent = currentAccountName;
+  }
   if (nodes.settingsLoginButton) {
     nodes.settingsLoginButton.textContent = isLoggedIn ? "Trocar conta" : "Entrar com Google";
     nodes.settingsLoginButton.classList.remove("hidden");
@@ -373,9 +378,15 @@ function syncAccountActions(isLoggedIn) {
     nodes.settingsLogoutButton.classList.remove("hidden");
   }
   if (nodes.menuLogoutButton) {
-    nodes.menuLogoutButton.textContent = isLoggedIn ? "Sair" : "Limpar acesso";
+    nodes.menuLogoutButton.textContent = isLoggedIn ? "Sair da conta" : "Limpar acesso";
     nodes.menuLogoutButton.classList.remove("hidden");
   }
+}
+
+function currentIdentityLabel() {
+  if (currentSession?.user?.displayName) return currentSession.user.displayName;
+  if (currentSession?.user?.email) return currentSession.user.email;
+  return "Conta local";
 }
 
 function isSupabaseConfigured(config) {

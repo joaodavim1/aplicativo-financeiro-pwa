@@ -8,9 +8,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Financeiro" />
     <title>Financeiro</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260406l" />
+    <link rel="manifest" href="./manifest.webmanifest?v=20260406m" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260406l" />
+    <link rel="stylesheet" href="./styles.css?v=20260406m" />
   </head>
   <body>
     <div class="app-shell">
@@ -359,17 +359,32 @@
 
     <dialog id="menuDialog" class="install-dialog">
       <div class="dialog-content">
-        <p class="eyebrow">Menu</p>
-        <h2>Finanças</h2>
-        <div class="settings-actions">
-          <button id="menuOpenExtratoButton" class="primary-button" type="button">Extrato</button>
-          <button id="menuOpenLancamentosButton" class="ghost-button dark-ghost menu-dark" type="button">Lançamentos</button>
-          <button id="menuOpenQuadroButton" class="ghost-button dark-ghost menu-dark" type="button">Futuro</button>
-          <button id="menuOpenSettingsButton" class="primary-button" type="button">Configurações</button>
-          <button id="menuLoginButton" class="primary-button" type="button">Entrar com Google</button>
-          <button id="menuInstallButton" class="ghost-button dark-ghost menu-dark" type="button">Atualizar versão</button>
-          <button id="menuLogoutButton" class="ghost-button dark-ghost menu-dark" type="button">Sair</button>
+        <p class="eyebrow">Contas</p>
+        <h2>Menu</h2>
+
+        <div class="menu-account-card">
+          <strong>Conta em uso</strong>
+          <p id="menuCurrentAccountName" class="muted">Sem conta</p>
         </div>
+
+        <div class="menu-section">
+          <h3>Navegação</h3>
+          <div class="settings-actions">
+            <button id="menuOpenExtratoButton" class="primary-button" type="button">Extrato</button>
+            <button id="menuOpenLancamentosButton" class="ghost-button dark-ghost menu-dark" type="button">Lançamentos</button>
+            <button id="menuOpenQuadroButton" class="ghost-button dark-ghost menu-dark" type="button">Futuro</button>
+            <button id="menuOpenSettingsButton" class="ghost-button dark-ghost menu-dark" type="button">Configurações</button>
+          </div>
+        </div>
+
+        <div class="menu-section">
+          <h3>Conta</h3>
+          <div class="settings-actions">
+            <button id="menuLoginButton" class="primary-button" type="button">Entrar com Google</button>
+            <button id="menuLogoutButton" class="ghost-button dark-ghost menu-dark" type="button">Sair da conta</button>
+          </div>
+        </div>
+
         <button id="closeMenuButton" class="primary-button" type="button">Fechar</button>
       </div>
     </dialog>
@@ -388,8 +403,8 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260406l"></script>
+    <script src="./supabase-config.js?v=20260406m"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260406l"></script>
+    <script type="module" src="./auth.js?v=20260406m"></script>
   </body>
 </html>
