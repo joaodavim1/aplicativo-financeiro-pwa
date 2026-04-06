@@ -374,17 +374,35 @@
         </div>
 
         <div class="menu-section">
-          <h3>Conta</h3>
-          <div class="settings-actions">
-            <button id="menuLoginButton" class="primary-button" type="button">Entrar com Google</button>
-            <button id="menuLogoutButton" class="ghost-button dark-ghost menu-dark" type="button">Sair da conta</button>
+          <h3>Dados da conta</h3>
+          <div class="menu-account-card">
+            <strong>Acesso</strong>
+            <p id="menuCurrentAccess" class="muted">Conta local</p>
+          </div>
+          <div class="menu-account-card">
+            <strong>Telas</strong>
+            <p id="menuScreenOrder" class="muted">Extrato, Lançamentos, Futuro</p>
           </div>
         </div>
 
         <div class="menu-section">
-          <h3>Configurações</h3>
+          <h3>Ações da conta</h3>
+          <div class="settings-actions">
+            <button id="menuLoginButton" class="primary-button" type="button">Entrar com Google</button>
+          </div>
+        </div>
+
+        <div class="menu-section">
+          <h3>Atualizar aplicativo</h3>
           <div class="settings-actions">
             <button id="menuUpdateButton" class="ghost-button dark-ghost menu-dark" type="button">Atualizar versão</button>
+          </div>
+        </div>
+
+        <div class="menu-section">
+          <h3>Sessão</h3>
+          <div class="settings-actions">
+            <button id="menuLogoutButton" class="ghost-button dark-ghost menu-dark" type="button">Sair da conta</button>
           </div>
         </div>
 
@@ -406,8 +424,8 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260406q"></script>
+    <script src="./supabase-config.js?v=20260406r"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260406q"></script>
+    <script type="module" src="./auth.js?v=20260406r"></script>
   </body>
 </html>

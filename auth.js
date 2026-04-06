@@ -1,4 +1,4 @@
-import { bootFinanceiroApp } from "./app.js?v=20260406q";
+import { bootFinanceiroApp } from "./app.js?v=20260406r";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -22,6 +22,8 @@ const nodes = {
   menuDialog: document.querySelector("#menuDialog"),
   closeMenuButton: document.querySelector("#closeMenuButton"),
   menuCurrentAccountName: document.querySelector("#menuCurrentAccountName"),
+  menuCurrentAccess: document.querySelector("#menuCurrentAccess"),
+  menuScreenOrder: document.querySelector("#menuScreenOrder"),
   menuUpdateButton: document.querySelector("#menuUpdateButton"),
   menuLoginButton: document.querySelector("#menuLoginButton"),
   menuLogoutButton: document.querySelector("#menuLogoutButton"),
@@ -331,9 +333,17 @@ async function openSupabaseMode(session) {
 function syncAccountActions(isLoggedIn) {
   const currentAccountName =
     currentIdentityLabel() || "Sem conta";
+  const currentAccess =
+    currentSession?.accessToken ? "Conta ativa" : "Conta local";
 
   if (nodes.menuCurrentAccountName) {
     nodes.menuCurrentAccountName.textContent = currentAccountName;
+  }
+  if (nodes.menuCurrentAccess) {
+    nodes.menuCurrentAccess.textContent = currentAccess;
+  }
+  if (nodes.menuScreenOrder) {
+    nodes.menuScreenOrder.textContent = "Extrato, Lançamentos, Futuro";
   }
   if (nodes.settingsLoginButton) {
     nodes.settingsLoginButton.textContent = isLoggedIn ? "Trocar conta" : "Entrar com Google";
