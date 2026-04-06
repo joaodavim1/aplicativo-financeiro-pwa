@@ -490,6 +490,10 @@ select {
   gap: 12px;
 }
 
+.catalog-item-copy {
+  min-width: 0;
+}
+
 .catalog-item-actions {
   display: flex;
   gap: 8px;
@@ -499,6 +503,16 @@ select {
 
 .compact-button {
   padding: 10px 12px;
+}
+
+.catalog-edit-button {
+  align-self: center;
+}
+
+.catalog-delete-button {
+  align-self: center;
+  background: rgba(217, 96, 76, 0.14);
+  color: var(--coral);
 }
 
 .empty-state {

@@ -593,12 +593,14 @@ function renderCatalogManager({ node, kind, items, emptyMessage }) {
     .map(
       (item) => `
         <div class="catalog-item">
-          <strong>${escapeHtml(item)}</strong>
+          <div class="catalog-item-copy">
+            <strong>${escapeHtml(item)}</strong>
+          </div>
           <div class="catalog-item-actions">
-            <button class="ghost-button dark-ghost compact-button" data-action="edit" data-kind="${kind}" data-value="${escapeHtml(item)}" type="button">
-              Alterar
+            <button class="primary-button compact-button catalog-edit-button" data-action="edit" data-kind="${kind}" data-value="${escapeHtml(item)}" type="button">
+              Editar
             </button>
-            <button class="ghost-button dark-ghost compact-button" data-action="delete" data-kind="${kind}" data-value="${escapeHtml(item)}" type="button">
+            <button class="ghost-button dark-ghost compact-button catalog-delete-button" data-action="delete" data-kind="${kind}" data-value="${escapeHtml(item)}" type="button">
               Excluir
             </button>
           </div>
