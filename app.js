@@ -80,6 +80,8 @@ const nodes = {
   categoryInput: document.querySelector("#categoryInput"),
   paymentMethodInput: document.querySelector("#paymentMethodInput"),
   typeInput: document.querySelector("#typeInput"),
+  typeToggle: document.querySelector("#typeToggle"),
+  typeToggleButtons: [...document.querySelectorAll(".type-toggle-button")],
   settingsAccountName: document.querySelector("#settingsAccountName"),
   settingsDataSource: document.querySelector("#settingsDataSource"),
   settingsScreenOrder: document.querySelector("#settingsScreenOrder"),
@@ -114,7 +116,7 @@ window.financeiroNavigateToScreen = navigateToScreen;
 
 function bindEvents() {
   nodes.transactionForm.addEventListener("submit", handleSubmit);
-  nodes.typeInput.addEventListener("change", renderCategoryOptions);
+  nodes.typeToggle?.addEventListener("click", handleTypeToggleClick);
   nodes.addExpenseCategoryButton?.addEventListener("click", () => handleAddCatalogItem("expense"));
   nodes.addIncomeCategoryButton?.addEventListener("click", () => handleAddCatalogItem("income"));
   nodes.addPaymentMethodButton?.addEventListener("click", () => handleAddCatalogItem("payment"));
@@ -170,6 +172,7 @@ async function handleSubmit(event) {
   updateCatalogForTransaction(category, type, paymentMethod);
   await saveState();
   event.currentTarget.reset();
+  syncTypeToggle(selectDefaultTransactionType());
   renderCategoryOptions();
   renderPaymentMethodOptions();
   render();
@@ -193,6 +196,7 @@ function render() {
   renderGoals();
   renderBudgets();
   renderTransactions();
+  syncTypeToggle(selectDefaultTransactionType());
   renderCategoryOptions();
   renderPaymentMethodOptions();
   renderScreenTabs();
@@ -462,6 +466,27 @@ function renderCategoryOptions() {
   if (options.includes(previousValue)) {
     nodes.categoryInput.value = previousValue;
   }
+}
+
+function handleTypeToggleClick(event) {
+  const button = event.target.closest(".type-toggle-button");
+  if (!button) return;
+  syncTypeToggle(button.dataset.type === "income" ? "income" : "expense");
+  renderCategoryOptions();
+}
+
+function syncTypeToggle(type) {
+  const resolvedType = type === "income" ? "income" : "expense";
+
+  if (nodes.typeInput) {
+    nodes.typeInput.value = resolvedType;
+  }
+
+  nodes.typeToggleButtons.forEach((button) => {
+    const isActive = button.dataset.type === resolvedType;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
 }
 
 function renderPaymentMethodOptions() {
@@ -824,6 +849,12 @@ function derivePaymentMethodOptions() {
     ...currentState.transactions.map((transaction) => transaction.paymentMethod).filter(Boolean),
     ...defaults.catalog.paymentMethods
   ]);
+}
+
+function selectDefaultTransactionType() {
+  const incomeCount = currentState.transactions.filter((transaction) => transaction.type === "income").length;
+  const expenseCount = currentState.transactions.filter((transaction) => transaction.type === "expense").length;
+  return incomeCount > expenseCount ? "income" : "expense";
 }
 
 function updateCatalogForTransaction(category, type, paymentMethod = "") {

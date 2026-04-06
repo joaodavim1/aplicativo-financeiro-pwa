@@ -209,6 +209,39 @@ select {
   color: var(--ink);
 }
 
+.type-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.type-toggle-button {
+  border: 1px solid rgba(17, 39, 32, 0.1);
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 180ms ease, background 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.type-toggle-button:hover {
+  transform: translateY(-1px);
+}
+
+.type-toggle-button.expense.active {
+  background: rgba(217, 96, 76, 0.12);
+  border-color: rgba(217, 96, 76, 0.36);
+  color: var(--coral);
+}
+
+.type-toggle-button.income.active {
+  background: rgba(20, 92, 76, 0.12);
+  border-color: rgba(20, 92, 76, 0.36);
+  color: var(--primary);
+}
+
 .menu-dark {
   background: rgba(17, 39, 32, 0.08);
   color: var(--ink);
