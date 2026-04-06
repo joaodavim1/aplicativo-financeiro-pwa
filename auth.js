@@ -1,4 +1,4 @@
-import { bootFinanceiroApp } from "./app.js?v=20260406r";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260406s";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -22,8 +22,11 @@ const nodes = {
   menuDialog: document.querySelector("#menuDialog"),
   closeMenuButton: document.querySelector("#closeMenuButton"),
   menuCurrentAccountName: document.querySelector("#menuCurrentAccountName"),
+  menuAccountsList: document.querySelector("#menuAccountsList"),
+  menuAccountDetails: document.querySelector("#menuAccountDetails"),
   menuCurrentAccess: document.querySelector("#menuCurrentAccess"),
   menuScreenOrder: document.querySelector("#menuScreenOrder"),
+  menuScreenOrderList: document.querySelector("#menuScreenOrderList"),
   menuUpdateButton: document.querySelector("#menuUpdateButton"),
   menuLoginButton: document.querySelector("#menuLoginButton"),
   menuLogoutButton: document.querySelector("#menuLogoutButton"),
@@ -115,6 +118,9 @@ function bindEvents() {
   nodes.settingsInstallButton?.addEventListener("click", () => refreshAppVersion());
   nodes.settingsLogoutButton?.addEventListener("click", handleLogout);
   bindDialogBackdrop(nodes.menuDialog);
+  window.addEventListener("financeiro:menu-state", (event) => {
+    syncMenuState(event.detail);
+  });
 }
 
 function bindDialogBackdrop(dialog) {
@@ -331,20 +337,7 @@ async function openSupabaseMode(session) {
 }
 
 function syncAccountActions(isLoggedIn) {
-  const currentAccountName =
-    currentIdentityLabel() || "Sem conta";
-  const currentAccess =
-    currentSession?.accessToken ? "Conta ativa" : "Conta local";
-
-  if (nodes.menuCurrentAccountName) {
-    nodes.menuCurrentAccountName.textContent = currentAccountName;
-  }
-  if (nodes.menuCurrentAccess) {
-    nodes.menuCurrentAccess.textContent = currentAccess;
-  }
-  if (nodes.menuScreenOrder) {
-    nodes.menuScreenOrder.textContent = "Extrato, Lançamentos, Futuro";
-  }
+  syncMenuState(getFinanceiroMenuState());
   if (nodes.settingsLoginButton) {
     nodes.settingsLoginButton.textContent = isLoggedIn ? "Trocar conta" : "Entrar com Google";
     nodes.settingsLoginButton.classList.remove("hidden");
@@ -361,6 +354,79 @@ function syncAccountActions(isLoggedIn) {
     nodes.menuLogoutButton.textContent = isLoggedIn ? "Sair da conta" : "Limpar acesso";
     nodes.menuLogoutButton.classList.remove("hidden");
   }
+}
+
+function syncMenuState(menuState = null) {
+  const snapshot = menuState || {
+    accountName: currentIdentityLabel() || "Sem conta",
+    accessLabel: currentSession?.accessToken ? "Conta ativa" : "Conta local",
+    accountDetails: [{ label: "Acesso", value: currentSession?.accessToken ? "Conta ativa" : "Conta local" }],
+    accounts: [],
+    screenOrder: ["Extrato", "Lançamentos", "Futuro"]
+  };
+
+  if (nodes.menuCurrentAccountName) {
+    nodes.menuCurrentAccountName.textContent = snapshot.accountName || "Sem conta";
+  }
+  if (nodes.menuAccountsList) {
+    nodes.menuAccountsList.innerHTML = renderMenuAccounts(snapshot.accounts || []);
+  }
+  if (nodes.menuAccountDetails) {
+    nodes.menuAccountDetails.innerHTML = renderMenuDetails(snapshot.accountDetails || []);
+  }
+  if (nodes.menuScreenOrderList) {
+    nodes.menuScreenOrderList.innerHTML = renderMenuScreenOrder(snapshot.screenOrder || []);
+  }
+}
+
+function renderMenuAccounts(accounts) {
+  if (!Array.isArray(accounts) || accounts.length === 0) {
+    return `<div class="empty-state">Nenhuma conta encontrada.</div>`;
+  }
+
+  return accounts
+    .map((account) => `
+      <div class="menu-list-card">
+        <div class="menu-list-card-header">
+          <span class="menu-list-card-title">${escapeHtml(account.name || "Sem conta")}</span>
+          ${account.isActive ? `<span class="menu-inline-badge">Em uso</span>` : ""}
+        </div>
+        <div class="menu-list-card-copy">
+          <p class="muted">${escapeHtml(account.phone || "Telefone não informado")}</p>
+          <p class="muted">${escapeHtml(account.email || "Email não informado")}</p>
+        </div>
+      </div>
+    `)
+    .join("");
+}
+
+function renderMenuDetails(details) {
+  if (!Array.isArray(details) || details.length === 0) {
+    return `<div class="empty-state">Sem dados da conta.</div>`;
+  }
+
+  return details
+    .map((item) => `
+      <div class="menu-detail-row">
+        <strong>${escapeHtml(item.label || "")}</strong>
+        <p class="muted">${escapeHtml(item.value || "")}</p>
+      </div>
+    `)
+    .join("");
+}
+
+function renderMenuScreenOrder(screenOrder) {
+  if (!Array.isArray(screenOrder) || screenOrder.length === 0) {
+    return `<div class="empty-state">Sem telas configuradas.</div>`;
+  }
+
+  return screenOrder
+    .map((screen, index) => `
+      <div class="menu-detail-row">
+        <strong>${index + 1}. ${escapeHtml(screen)}</strong>
+      </div>
+    `)
+    .join("");
 }
 
 function currentIdentityLabel() {
@@ -434,7 +500,9 @@ function createSupabasePersistence(ensureSessionFn) {
       context.defaultPaymentMethod = decodeStringList(activeSettings?.payment_methods || "")[0] || "Pix";
 
       return buildStateFromRemote({
+        people,
         activeAccount,
+        activeAccountId,
         transactions: filteredTransactions,
         settings: activeSettings,
         appSettings: Array.isArray(appSettings) ? appSettings[0] || null : null
@@ -726,7 +794,7 @@ function selectActiveAccount(people, transactions) {
   return null;
 }
 
-function buildStateFromRemote({ activeAccount, transactions, settings, appSettings }) {
+function buildStateFromRemote({ people, activeAccount, activeAccountId, transactions, settings, appSettings }) {
   const sortedTransactions = [...transactions].sort((left, right) => Number(right.date_millis || 0) - Number(left.date_millis || 0));
   const budgets = buildBudgets(settings?.expense_category_limits || "");
   const expenseCategories = uniqueCaseInsensitive([
@@ -782,7 +850,16 @@ function buildStateFromRemote({ activeAccount, transactions, settings, appSettin
       paymentMethodConfigs
     },
     ui: {
-      screenOrder
+      screenOrder,
+      activeAccountId,
+      accounts: Array.isArray(people)
+        ? people.map((person) => ({
+            id: Number(person.id),
+            name: person.name || `Conta ${person.id}`,
+            phone: person.phone || "",
+            email: person.email || ""
+          }))
+        : []
     }
   };
 }

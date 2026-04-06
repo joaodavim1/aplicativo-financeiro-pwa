@@ -766,6 +766,53 @@ select {
   margin-bottom: 4px;
 }
 
+.menu-list-block {
+  display: grid;
+  gap: 10px;
+}
+
+.menu-list-card,
+.menu-detail-row {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #f6f7fb;
+}
+
+.menu-list-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.menu-list-card-title {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.menu-inline-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e9f8ec;
+  color: var(--primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.menu-list-card-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.menu-detail-row strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;

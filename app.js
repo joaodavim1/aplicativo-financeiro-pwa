@@ -129,6 +129,28 @@ export async function bootFinanceiroApp({ mode = "demo", user = null, persistenc
 }
 
 window.financeiroNavigateToScreen = navigateToScreen;
+window.financeiroGetMenuState = getFinanceiroMenuState;
+
+export function getFinanceiroMenuState() {
+  const accounts = Array.isArray(currentState?.ui?.accounts) ? currentState.ui.accounts : [];
+  const activeAccountId = currentState?.ui?.activeAccountId ?? null;
+  const activeAccount = resolveActiveAccountRecord(accounts, activeAccountId);
+  const screenOrder = Array.isArray(currentState?.ui?.screenOrder) ? currentState.ui.screenOrder : ["EXTRATO", "LANCAMENTOS", "QUADRO"];
+
+  return {
+    accountName: activeAccount?.name || "Sem conta",
+    accessLabel: currentIdentity?.mode === "google" ? "Conta ativa" : "Conta local",
+    accountDetails: buildMenuAccountDetails(activeAccountId, accounts),
+    accounts: accounts.map((account) => ({
+      id: account.id,
+      name: account.name,
+      phone: account.phone || "",
+      email: account.email || "",
+      isActive: Number(account.id) === Number(activeAccountId)
+    })),
+    screenOrder: screenOrder.filter((screen) => screen !== "CONFIG").map((screen) => screenLabel(screen))
+  };
+}
 
 function bindEvents() {
   nodes.transactionForm.addEventListener("submit", handleSubmit);
@@ -232,6 +254,7 @@ function render() {
   renderScreenTabs();
   renderScreenPanels();
   renderSettings();
+  window.dispatchEvent(new CustomEvent("financeiro:menu-state", { detail: getFinanceiroMenuState() }));
 }
 
 function renderExtratoAccountSnapshot() {
@@ -629,9 +652,11 @@ function navigateToScreen(screen) {
 function renderSettings() {
   if (!nodes.settingsAccountName) return;
 
-  const userName = currentIdentity?.mode === "google"
-    ? currentIdentity?.user?.displayName || currentIdentity?.user?.email || "Conta"
-    : "Conta local";
+  const activeAccount = resolveActiveAccountRecord(
+    Array.isArray(currentState?.ui?.accounts) ? currentState.ui.accounts : [],
+    currentState?.ui?.activeAccountId ?? null
+  );
+  const userName = activeAccount?.name || "Sem conta";
   const dataSource = currentIdentity?.mode === "google"
     ? "Conta ativa"
     : "Conta local";
@@ -935,9 +960,13 @@ function updateUserBadge() {
     return;
   }
 
-  if (currentIdentity.mode === "google" && currentIdentity.user?.email) {
-    const name = currentIdentity.user.displayName || currentIdentity.user.email;
-    nodes.userBadge.textContent = `Conta: ${name}`;
+  const activeAccount = resolveActiveAccountRecord(
+    Array.isArray(currentState?.ui?.accounts) ? currentState.ui.accounts : [],
+    currentState?.ui?.activeAccountId ?? null
+  );
+
+  if (currentIdentity.mode === "google" && activeAccount?.name) {
+    nodes.userBadge.textContent = `Conta: ${activeAccount.name}`;
     nodes.userBadge.classList.remove("hidden");
     return;
   }
@@ -1259,8 +1288,38 @@ function sanitizeUi(ui) {
   }
 
   return {
-    screenOrder
+    screenOrder,
+    activeAccountId: Number(ui?.activeAccountId) || null,
+    accounts: Array.isArray(ui?.accounts)
+      ? ui.accounts
+          .map((account) => ({
+            id: Number(account?.id) || 0,
+            name: String(account?.name || "").trim(),
+            phone: String(account?.phone || "").trim(),
+            email: String(account?.email || "").trim()
+          }))
+          .filter((account) => account.id > 0 && account.name)
+      : []
   };
+}
+
+function buildMenuAccountDetails(activeAccountId, accounts) {
+  const activeAccount = resolveActiveAccountRecord(accounts, activeAccountId);
+  if (!activeAccount) {
+    return [{ label: "Acesso", value: currentIdentity?.mode === "google" ? "Conta ativa" : "Conta local" }];
+  }
+
+  return [
+    { label: "Acesso", value: currentIdentity?.mode === "google" ? "Conta ativa" : "Conta local" },
+    { label: "Nome", value: activeAccount.name || "Sem conta" },
+    { label: "Telefone", value: activeAccount.phone || "Não informado" },
+    { label: "Email", value: activeAccount.email || "Não informado" }
+  ];
+}
+
+function resolveActiveAccountRecord(accounts, activeAccountId) {
+  if (!Array.isArray(accounts)) return null;
+  return accounts.find((account) => Number(account.id) === Number(activeAccountId)) || null;
 }
 
 function uniqueCaseInsensitive(values) {

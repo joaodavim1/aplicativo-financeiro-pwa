@@ -374,14 +374,29 @@
         </div>
 
         <div class="menu-section">
-          <h3>Dados da conta</h3>
-          <div class="menu-account-card">
-            <strong>Acesso</strong>
-            <p id="menuCurrentAccess" class="muted">Conta local</p>
+          <h3>Contas</h3>
+          <div id="menuAccountsList" class="menu-list-block">
+            <div class="empty-state">Nenhuma conta encontrada.</div>
           </div>
-          <div class="menu-account-card">
-            <strong>Telas</strong>
-            <p id="menuScreenOrder" class="muted">Extrato, Lançamentos, Futuro</p>
+        </div>
+
+        <div class="menu-section">
+          <h3>Dados da conta</h3>
+          <div id="menuAccountDetails" class="menu-list-block">
+            <div class="menu-detail-row">
+              <strong>Acesso</strong>
+              <p id="menuCurrentAccess" class="muted">Conta local</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-section">
+          <h3>Ordem das telas</h3>
+          <div id="menuScreenOrderList" class="menu-list-block">
+            <div class="menu-detail-row">
+              <strong>1.</strong>
+              <p id="menuScreenOrder" class="muted">Extrato, Lançamentos, Futuro</p>
+            </div>
           </div>
         </div>
 
@@ -424,8 +439,8 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260406r"></script>
+    <script src="./supabase-config.js?v=20260406s"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260406r"></script>
+    <script type="module" src="./auth.js?v=20260406s"></script>
   </body>
 </html>
