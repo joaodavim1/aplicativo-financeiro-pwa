@@ -9,6 +9,13 @@ const SESSION_STORAGE_KEY = "financeiro-pwa-supabase-session-v1";
 const SETTINGS_LIST_SEPARATOR = "|||";
 const GOOGLE_BUTTON_WIDTH = 280;
 const BUDGET_COLORS = ["#145c4c", "#6bc5a4", "#f08a24", "#d9604c", "#256d5a"];
+const INSTALL_HELP_TEXT = [
+  "Adicionar a Tela de Inicio:",
+  "1. Abra este endereco no Safari.",
+  "2. Toque em Compartilhar.",
+  "3. Escolha Adicionar a Tela de Inicio.",
+  "4. Confirme a adicao."
+].join("\n");
 
 const nodes = {
   authGate: document.querySelector("#authGate"),
@@ -100,19 +107,16 @@ function bindEvents() {
     nodes.menuDialog?.close();
     await handleAccountAccess();
   });
-  nodes.menuInstallButton?.addEventListener("click", () => {
-    nodes.menuDialog?.close();
-    nodes.installDialog?.showModal();
-  });
+  nodes.menuInstallButton?.addEventListener("click", () => openInstallHelp({ closeMenu: true }));
   nodes.menuLogoutButton?.addEventListener("click", async () => {
     nodes.menuDialog?.close();
     await handleLogout();
   });
-  nodes.installHelpButton?.addEventListener("click", () => nodes.installDialog?.showModal());
-  nodes.openInstallModalButton?.addEventListener("click", () => nodes.installDialog?.showModal());
-  nodes.closeInstallModalButton?.addEventListener("click", () => nodes.installDialog?.close());
+  nodes.installHelpButton?.addEventListener("click", () => openInstallHelp());
+  nodes.openInstallModalButton?.addEventListener("click", () => openInstallHelp());
+  nodes.closeInstallModalButton?.addEventListener("click", closeInstallHelp);
   nodes.settingsLoginButton?.addEventListener("click", handleAccountAccess);
-  nodes.settingsInstallButton?.addEventListener("click", () => nodes.installDialog?.showModal());
+  nodes.settingsInstallButton?.addEventListener("click", () => openInstallHelp());
   nodes.settingsLogoutButton?.addEventListener("click", handleLogout);
   bindDialogBackdrop(nodes.menuDialog);
   bindDialogBackdrop(nodes.installDialog);
@@ -131,6 +135,47 @@ function bindDialogBackdrop(dialog) {
       dialog.close();
     }
   });
+}
+
+function openInstallHelp(options = {}) {
+  const { closeMenu = false } = options;
+
+  if (closeMenu) {
+    nodes.menuDialog?.close();
+  }
+
+  window.setTimeout(() => {
+    const dialog = nodes.installDialog;
+    if (!dialog) {
+      window.alert(INSTALL_HELP_TEXT);
+      return;
+    }
+
+    try {
+      if (typeof dialog.showModal === "function") {
+        if (!dialog.open) {
+          dialog.showModal();
+        }
+        return;
+      }
+    } catch (error) {
+      console.warn("Falha ao abrir orientacao de instalacao:", error);
+    }
+
+    dialog.setAttribute("open", "open");
+  }, closeMenu ? 120 : 0);
+}
+
+function closeInstallHelp() {
+  const dialog = nodes.installDialog;
+  if (!dialog) return;
+
+  if (typeof dialog.close === "function" && dialog.open) {
+    dialog.close();
+    return;
+  }
+
+  dialog.removeAttribute("open");
 }
 
 function openSettingsScreen() {
