@@ -1,4 +1,4 @@
-import { bootFinanceiroApp } from "./app.js?v=20260405d";
+import { bootFinanceiroApp } from "./app.js?v=20260406c";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -713,6 +713,12 @@ function buildStateFromRemote({ activeAccount, transactions, settings, appSettin
       dateMillis: Number(transaction.date_millis || Date.now()),
       dateLabel: formatRelativeDate(Number(transaction.date_millis || Date.now())),
       paymentMethod: transaction.payment_method || "",
+      installments: Math.max(1, Number.parseInt(String(transaction.installments || "1"), 10) || 1),
+      installmentNumber: Math.max(1, Number.parseInt(String(transaction.installment_number || "1"), 10) || 1),
+      originalTotalAmount: Number(transaction.original_total_amount || transaction.amount || 0),
+      cardPaymentDateMillis: Number.isFinite(Number(transaction.card_payment_date_millis))
+        ? Number(transaction.card_payment_date_millis)
+        : null,
       notes: transaction.notes || ""
     })),
     goals: [],
@@ -783,6 +789,14 @@ function decodeDoubleMap(raw) {
 function toSupabaseTransaction(transaction, context) {
   const amount = Number(transaction.amount || 0);
   const dateMillis = Number(transaction.dateMillis || Date.now());
+  const installments = Math.max(1, Number.parseInt(String(transaction.installments || "1"), 10) || 1);
+  const installmentNumber = Math.max(1, Number.parseInt(String(transaction.installmentNumber || transaction.installment_number || "1"), 10) || 1);
+  const originalTotalAmount = Number.isFinite(Number(transaction.originalTotalAmount))
+    ? Number(transaction.originalTotalAmount)
+    : amount * installments;
+  const cardPaymentDateMillis = Number.isFinite(Number(transaction.cardPaymentDateMillis))
+    ? Number(transaction.cardPaymentDateMillis)
+    : null;
 
   return {
     id: Number(transaction.id),
@@ -793,10 +807,10 @@ function toSupabaseTransaction(transaction, context) {
     type: transaction.type === "income" ? "RECEITA" : "DESPESA",
     category: String(transaction.category || "Sem categoria").trim() || "Sem categoria",
     payment_method: String(transaction.paymentMethod || context.defaultPaymentMethod || "Pix").trim() || "Pix",
-    installments: 1,
-    installment_number: 1,
-    original_total_amount: amount,
-    card_payment_date_millis: null,
+    installments,
+    installment_number: installmentNumber,
+    original_total_amount: originalTotalAmount,
+    card_payment_date_millis: cardPaymentDateMillis,
     notes: String(transaction.notes || "").trim(),
     date_millis: dateMillis
   };

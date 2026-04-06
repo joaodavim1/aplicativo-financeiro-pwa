@@ -8,9 +8,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Financeiro" />
     <title>Financeiro</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260406b" />
+    <link rel="manifest" href="./manifest.webmanifest?v=20260406c" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260406b" />
+    <link rel="stylesheet" href="./styles.css?v=20260406c" />
   </head>
   <body>
     <div class="app-shell">
@@ -163,8 +163,8 @@
 
               <form id="transactionForm" class="transaction-form">
                 <label>
-                  <span>Titulo</span>
-                  <input id="titleInput" name="title" type="text" placeholder="Ex: Pix cliente" required />
+                  <span>Descrição</span>
+                  <input id="titleInput" name="title" type="text" placeholder="Ex: Mercado do mês" required />
                 </label>
 
                 <label>
@@ -210,6 +210,25 @@
                 </label>
 
                 <label>
+                  <span>Data de vencimento</span>
+                  <input id="dateInput" name="date" type="date" required />
+                </label>
+
+                <label>
+                  <span>Nr Parcelas</span>
+                  <input
+                    id="installmentsInput"
+                    name="installments"
+                    type="number"
+                    inputmode="numeric"
+                    min="1"
+                    step="1"
+                    value="1"
+                    required
+                  />
+                </label>
+
+                <label>
                   <span>Valor</span>
                   <input
                     id="amountInput"
@@ -223,7 +242,7 @@
                   />
                 </label>
 
-                <button class="primary-button" type="submit">Salvar transacao</button>
+                <button class="primary-button" type="submit">SALVAR</button>
               </form>
             </article>
 
@@ -372,8 +391,8 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260406b"></script>
+    <script src="./supabase-config.js?v=20260406c"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260406b"></script>
+    <script type="module" src="./auth.js?v=20260406c"></script>
   </body>
 </html>

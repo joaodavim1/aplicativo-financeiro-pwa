@@ -79,6 +79,8 @@ const nodes = {
   userBadge: document.querySelector("#userBadge"),
   categoryInput: document.querySelector("#categoryInput"),
   paymentMethodInput: document.querySelector("#paymentMethodInput"),
+  dateInput: document.querySelector("#dateInput"),
+  installmentsInput: document.querySelector("#installmentsInput"),
   typeInput: document.querySelector("#typeInput"),
   typeToggle: document.querySelector("#typeToggle"),
   typeToggleButtons: [...document.querySelectorAll(".type-toggle-button")],
@@ -151,11 +153,13 @@ async function handleSubmit(event) {
   const category = String(formData.get("category") || "Casa");
   const type = String(formData.get("type") || "expense");
   const paymentMethod = String(formData.get("paymentMethod") || derivePaymentMethodOptions()[0] || "Pix");
+  const installments = Math.max(1, Number.parseInt(String(formData.get("installments") || "1"), 10) || 1);
+  const dateValue = String(formData.get("date") || todayDateInputValue());
   const amount = Number(formData.get("amount"));
 
   if (!title || !Number.isFinite(amount) || amount <= 0) return;
 
-  const now = Date.now();
+  const dateMillis = toStartOfDayMillis(dateValue);
 
   currentState.transactions.unshift({
     id: generateId(),
@@ -163,9 +167,13 @@ async function handleSubmit(event) {
     category,
     type,
     amount,
-    dateMillis: now,
-    dateLabel: formatRelativeDate(now),
+    dateMillis,
+    dateLabel: formatRelativeDate(dateMillis),
     paymentMethod,
+    installments,
+    installmentNumber: 1,
+    originalTotalAmount: amount * installments,
+    cardPaymentDateMillis: null,
     notes: ""
   });
 
@@ -175,6 +183,7 @@ async function handleSubmit(event) {
   syncTypeToggle(selectDefaultTransactionType());
   renderCategoryOptions();
   renderPaymentMethodOptions();
+  syncLaunchFormDefaults();
   render();
 }
 
@@ -199,6 +208,7 @@ function render() {
   syncTypeToggle(selectDefaultTransactionType());
   renderCategoryOptions();
   renderPaymentMethodOptions();
+  syncLaunchFormDefaults();
   renderScreenTabs();
   renderScreenPanels();
   renderSettings();
@@ -509,6 +519,16 @@ function renderPaymentMethodOptions() {
   nodes.paymentMethodInput.value = options[0] || "";
 }
 
+function syncLaunchFormDefaults() {
+  if (nodes.dateInput && !nodes.dateInput.value) {
+    nodes.dateInput.value = todayDateInputValue();
+  }
+
+  if (nodes.installmentsInput && !nodes.installmentsInput.value) {
+    nodes.installmentsInput.value = "1";
+  }
+}
+
 function renderScreenTabs() {
   const order = currentState.ui.screenOrder;
   if (!order.includes(activeScreen)) {
@@ -714,7 +734,13 @@ function deriveHistoryPaymentOptions() {
 
 function renderTransactionItem(transaction) {
   const sign = transaction.type === "income" ? "+" : "-";
-  const details = [transaction.category, transaction.paymentMethod, transaction.dateLabel].filter(Boolean).join(" · ");
+  const installmentText =
+    transaction.installments > 1
+      ? `Parcela ${transaction.installmentNumber}/${transaction.installments}`
+      : "";
+  const details = [transaction.category, transaction.paymentMethod, installmentText, transaction.dateLabel]
+    .filter(Boolean)
+    .join(" · ");
   const notes = transaction.notes ? `<div class="transaction-notes">${escapeHtml(transaction.notes)}</div>` : "";
 
   return `
@@ -956,6 +982,18 @@ function sanitizeTransaction(transaction) {
       ? transaction.dateLabel
       : formatRelativeDate(dateMillis),
     paymentMethod: String(transaction?.paymentMethod || "").trim(),
+    installments: Math.max(1, Number.parseInt(String(transaction?.installments || "1"), 10) || 1),
+    installmentNumber: Math.max(1, Number.parseInt(String(transaction?.installmentNumber || transaction?.installment_number || "1"), 10) || 1),
+    originalTotalAmount: Number.isFinite(Number(transaction?.originalTotalAmount))
+      ? Number(transaction.originalTotalAmount)
+      : Number.isFinite(Number(transaction?.original_total_amount))
+        ? Number(transaction.original_total_amount)
+        : Number(transaction?.amount || 0),
+    cardPaymentDateMillis: Number.isFinite(Number(transaction?.cardPaymentDateMillis))
+      ? Number(transaction.cardPaymentDateMillis)
+      : Number.isFinite(Number(transaction?.card_payment_date_millis))
+        ? Number(transaction.card_payment_date_millis)
+        : null,
     notes: String(transaction?.notes || "").trim()
   };
 }
@@ -1056,6 +1094,14 @@ function toStartOfDayMillis(dateText) {
 function toEndOfDayMillis(dateText) {
   const [year, month, day] = String(dateText).split("-").map(Number);
   return new Date(year, (month || 1) - 1, day || 1, 23, 59, 59, 999).getTime();
+}
+
+function todayDateInputValue() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function fallbackBudgetColor(index) {
