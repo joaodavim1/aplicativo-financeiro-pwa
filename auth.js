@@ -9,6 +9,7 @@ const SESSION_STORAGE_KEY = "financeiro-pwa-supabase-session-v1";
 const SETTINGS_LIST_SEPARATOR = "|||";
 const GOOGLE_BUTTON_WIDTH = 280;
 const BUDGET_COLORS = ["#145c4c", "#6bc5a4", "#f08a24", "#d9604c", "#256d5a"];
+const SESSION_TIMEOUT_MS = 4000;
 const nodes = {
   authGate: document.querySelector("#authGate"),
   protectedApp: document.querySelector("#protectedApp"),
@@ -38,46 +39,62 @@ let currentSession = null;
 bootstrap();
 
 async function bootstrap() {
-  bindEvents();
+  try {
+    bindEvents();
 
-  if (!isSupabaseConfigured(runtimeConfig)) {
+    if (!isSupabaseConfigured(runtimeConfig)) {
+      nodes.authGate.classList.remove("hidden");
+      nodes.protectedApp.classList.remove("hidden");
+      nodes.authDescription.textContent =
+        "Entre com sua conta para abrir os dados.";
+      nodes.authStatusMessage.textContent =
+        "Enquanto isso, voce pode abrir a versao local.";
+      openDemoMode();
+      return;
+    }
+
+    nodes.authDescription.textContent =
+      "Entre com a mesma conta usada no Android.";
+    nodes.authStatusMessage.textContent =
+      "Os dados desta conta serao carregados ao entrar.";
+
+    try {
+      await withTimeout(mountGoogleButton(), SESSION_TIMEOUT_MS, "Tempo esgotado ao preparar o acesso.");
+    } catch (error) {
+      nodes.authStatusMessage.textContent = formatAuthError(error);
+    }
+
+    let restoredSession = null;
+    try {
+      restoredSession = await withTimeout(restoreSession(), SESSION_TIMEOUT_MS, "Tempo esgotado ao restaurar a conta.");
+    } catch (error) {
+      console.warn("Falha ao restaurar sessao:", error);
+      currentSession = null;
+      clearPersistedSession();
+    }
+
+    if (restoredSession) {
+      await openSupabaseMode(restoredSession);
+      return;
+    }
+
+    nodes.logoutButton.classList.add("hidden");
+
+    if (authOptions.requireLogin) {
+      nodes.authGate.classList.remove("hidden");
+      nodes.protectedApp.classList.add("hidden");
+      nodes.authStatusMessage.textContent = "Use sua conta para entrar.";
+      return;
+    }
+
+    openDemoMode();
+  } catch (error) {
+    console.warn("Falha ao iniciar app:", error);
     nodes.authGate.classList.remove("hidden");
     nodes.protectedApp.classList.remove("hidden");
-    nodes.authDescription.textContent =
-      "Entre com sua conta para abrir os dados.";
-    nodes.authStatusMessage.textContent =
-      "Enquanto isso, voce pode abrir a versao local.";
-    openDemoMode();
-    return;
+    nodes.authStatusMessage.textContent = "Versao local aberta.";
+    openDemoMode({ statusMessage: "Versao local aberta." });
   }
-
-  nodes.authDescription.textContent =
-    "Entre com a mesma conta usada no Android.";
-  nodes.authStatusMessage.textContent =
-    "Os dados desta conta serao carregados ao entrar.";
-
-  try {
-    await mountGoogleButton();
-  } catch (error) {
-    nodes.authStatusMessage.textContent = formatAuthError(error);
-  }
-
-  const restoredSession = await restoreSession();
-  if (restoredSession) {
-    await openSupabaseMode(restoredSession);
-    return;
-  }
-
-  nodes.logoutButton.classList.add("hidden");
-
-  if (authOptions.requireLogin) {
-    nodes.authGate.classList.remove("hidden");
-    nodes.protectedApp.classList.add("hidden");
-    nodes.authStatusMessage.textContent = "Use sua conta para entrar.";
-    return;
-  }
-
-  openDemoMode();
 }
 
 function bindEvents() {
@@ -960,6 +977,15 @@ function waitForGoogleClient() {
       }
     }, 100);
   });
+}
+
+function withTimeout(promise, timeoutMs, message) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      window.setTimeout(() => reject(new Error(message)), timeoutMs);
+    })
+  ]);
 }
 
 function tryParseJson(raw) {
