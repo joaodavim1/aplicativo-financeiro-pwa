@@ -21,13 +21,18 @@ const nodes = {
   logoutButton: document.querySelector("#logoutButton"),
   menuDialog: document.querySelector("#menuDialog"),
   closeMenuButton: document.querySelector("#closeMenuButton"),
+  menuOpenExtratoButton: document.querySelector("#menuOpenExtratoButton"),
+  menuOpenLancamentosButton: document.querySelector("#menuOpenLancamentosButton"),
+  menuOpenQuadroButton: document.querySelector("#menuOpenQuadroButton"),
   menuOpenSettingsButton: document.querySelector("#menuOpenSettingsButton"),
+  menuLoginButton: document.querySelector("#menuLoginButton"),
   menuInstallButton: document.querySelector("#menuInstallButton"),
   menuLogoutButton: document.querySelector("#menuLogoutButton"),
   installDialog: document.querySelector("#installDialog"),
   openInstallModalButton: document.querySelector("#openInstallModalButton"),
   closeInstallModalButton: document.querySelector("#closeInstallModalButton"),
   installHelpButton: document.querySelector("#installHelpButton"),
+  settingsLoginButton: document.querySelector("#settingsLoginButton"),
   settingsInstallButton: document.querySelector("#settingsInstallButton"),
   settingsLogoutButton: document.querySelector("#settingsLogoutButton")
 };
@@ -84,9 +89,16 @@ function bindEvents() {
   nodes.logoutButton.addEventListener("click", handleLogout);
   nodes.menuButton?.addEventListener("click", () => nodes.menuDialog?.showModal());
   nodes.closeMenuButton?.addEventListener("click", () => nodes.menuDialog?.close());
+  nodes.menuOpenExtratoButton?.addEventListener("click", () => openScreenFromMenu("EXTRATO"));
+  nodes.menuOpenLancamentosButton?.addEventListener("click", () => openScreenFromMenu("LANCAMENTOS"));
+  nodes.menuOpenQuadroButton?.addEventListener("click", () => openScreenFromMenu("QUADRO"));
   nodes.menuOpenSettingsButton?.addEventListener("click", () => {
     nodes.menuDialog?.close();
     openSettingsScreen();
+  });
+  nodes.menuLoginButton?.addEventListener("click", () => {
+    nodes.menuDialog?.close();
+    openLoginArea();
   });
   nodes.menuInstallButton?.addEventListener("click", () => {
     nodes.menuDialog?.close();
@@ -99,6 +111,7 @@ function bindEvents() {
   nodes.installHelpButton?.addEventListener("click", () => nodes.installDialog?.showModal());
   nodes.openInstallModalButton?.addEventListener("click", () => nodes.installDialog?.showModal());
   nodes.closeInstallModalButton?.addEventListener("click", () => nodes.installDialog?.close());
+  nodes.settingsLoginButton?.addEventListener("click", openLoginArea);
   nodes.settingsInstallButton?.addEventListener("click", () => nodes.installDialog?.showModal());
   nodes.settingsLogoutButton?.addEventListener("click", handleLogout);
   bindDialogBackdrop(nodes.menuDialog);
@@ -123,6 +136,18 @@ function bindDialogBackdrop(dialog) {
 function openSettingsScreen() {
   const button = document.querySelector('.screen-tab[data-screen="CONFIG"]');
   button?.click();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function openScreenFromMenu(screen) {
+  nodes.menuDialog?.close();
+  const button = document.querySelector(`.screen-tab[data-screen="${screen}"]`);
+  button?.click();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function openLoginArea() {
+  nodes.authGate.classList.remove("hidden");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -157,6 +182,7 @@ function openDemoMode() {
   nodes.authGate.classList.remove("hidden");
   nodes.logoutButton.classList.add("hidden");
   nodes.authStatusMessage.textContent = "Versao local aberta.";
+  syncAccountActions(false);
   bootFinanceiroApp({ mode: "demo" });
 }
 
@@ -202,6 +228,7 @@ async function openSupabaseMode(session) {
   nodes.protectedApp.classList.remove("hidden");
   nodes.logoutButton.classList.remove("hidden");
   nodes.authStatusMessage.textContent = "Conta aberta.";
+  syncAccountActions(true);
 
   try {
     await bootFinanceiroApp({
@@ -214,6 +241,13 @@ async function openSupabaseMode(session) {
     nodes.authStatusMessage.textContent = formatAuthError(error);
     await bootFinanceiroApp({ mode: "demo" });
   }
+}
+
+function syncAccountActions(isLoggedIn) {
+  nodes.settingsLoginButton?.classList.toggle("hidden", isLoggedIn);
+  nodes.menuLoginButton?.classList.toggle("hidden", isLoggedIn);
+  nodes.settingsLogoutButton?.classList.toggle("hidden", !isLoggedIn);
+  nodes.menuLogoutButton?.classList.toggle("hidden", !isLoggedIn);
 }
 
 function isSupabaseConfigured(config) {
