@@ -1,4 +1,4 @@
-import { bootFinanceiroApp } from "./app.js?v=20260406c";
+import { bootFinanceiroApp } from "./app.js?v=20260406e";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -147,8 +147,9 @@ async function refreshAppVersion(options = {}) {
       console.warn("Falha ao limpar cache da versao:", error);
     }
 
-    const separator = window.location.href.includes("?") ? "&" : "?";
-    window.location.replace(`${window.location.pathname}${separator}refresh=${Date.now()}`);
+    const refreshUrl = new URL(window.location.href);
+    refreshUrl.searchParams.set("refresh", String(Date.now()));
+    window.location.replace(refreshUrl.toString());
   }, closeMenu ? 120 : 0);
 }
 
