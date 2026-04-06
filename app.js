@@ -1158,7 +1158,6 @@ function sanitizePaymentMethodConfigs(configs) {
 function escapeAttribute(value) {
   return escapeHtml(value).replaceAll("`", "&#96;");
 }
-}
 
 function sanitizeUi(ui) {
   const allowed = ["EXTRATO", "LANCAMENTOS", "QUADRO", "CONFIG"];
