@@ -432,14 +432,42 @@ function createSupabasePersistence(ensureSessionFn) {
         })
       );
 
-      await requestSupabase({
-        method: "POST",
-        path: "/rest/v1/transactions",
-        query: { on_conflict: "owner_id,id" },
-        body: payload,
-        bearerToken: session.accessToken,
-        prefer: "resolution=merge-duplicates,return=minimal"
+      const settingsPayload = toSupabaseAccountSettings(state, {
+        accountId: context.activeAccountId,
+        ownerId: session.user.uid,
+        activeSettings: context.activeSettings
       });
+
+      await Promise.all([
+        requestSupabase({
+          method: "POST",
+          path: "/rest/v1/transactions",
+          query: { on_conflict: "owner_id,id" },
+          body: payload,
+          bearerToken: session.accessToken,
+          prefer: "resolution=merge-duplicates,return=minimal"
+        }),
+        requestSupabase({
+          method: "POST",
+          path: "/rest/v1/account_settings",
+          query: { on_conflict: "owner_id,account_id" },
+          body: [settingsPayload],
+          bearerToken: session.accessToken,
+          prefer: "resolution=merge-duplicates,return=minimal"
+        })
+      ]);
+
+      context.activeSettings = {
+        ...(context.activeSettings || {}),
+        expense_categories: settingsPayload.expense_categories,
+        income_categories: settingsPayload.income_categories,
+        payment_methods: settingsPayload.payment_methods,
+        expense_category_limits: settingsPayload.expense_category_limits,
+        payment_method_card_configs: settingsPayload.payment_method_card_configs,
+        multi_launch_expense_category_amounts: settingsPayload.multi_launch_expense_category_amounts,
+        multi_launch_income_category_amounts: settingsPayload.multi_launch_income_category_amounts
+      };
+      context.defaultPaymentMethod = decodeStringList(settingsPayload.payment_methods)[0] || "Pix";
     }
   };
 }
@@ -728,6 +756,13 @@ function decodeStringList(raw) {
     .filter(Boolean);
 }
 
+function encodeStringList(values) {
+  return values
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .join(SETTINGS_LIST_SEPARATOR);
+}
+
 function decodeDoubleMap(raw) {
   if (!raw) return {};
 
@@ -760,6 +795,20 @@ function toSupabaseTransaction(transaction, context) {
     card_payment_date_millis: null,
     notes: String(transaction.notes || "").trim(),
     date_millis: dateMillis
+  };
+}
+
+function toSupabaseAccountSettings(state, context) {
+  return {
+    owner_id: context.ownerId,
+    account_id: context.accountId,
+    expense_categories: encodeStringList(state?.catalog?.expenseCategories || []),
+    income_categories: encodeStringList(state?.catalog?.incomeCategories || []),
+    payment_methods: encodeStringList(state?.catalog?.paymentMethods || []),
+    payment_method_card_configs: context.activeSettings?.payment_method_card_configs || "",
+    expense_category_limits: context.activeSettings?.expense_category_limits || "",
+    multi_launch_expense_category_amounts: context.activeSettings?.multi_launch_expense_category_amounts || "",
+    multi_launch_income_category_amounts: context.activeSettings?.multi_launch_income_category_amounts || ""
   };
 }
 

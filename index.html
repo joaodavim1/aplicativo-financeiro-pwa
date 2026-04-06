@@ -8,9 +8,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Financeiro" />
     <title>Financeiro</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260405e" />
+    <link rel="manifest" href="./manifest.webmanifest?v=20260405f" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260405e" />
+    <link rel="stylesheet" href="./styles.css?v=20260405f" />
   </head>
   <body>
     <div class="app-shell">
@@ -188,6 +188,13 @@
                 </label>
 
                 <label>
+                  <span>Forma de pagamento</span>
+                  <select id="paymentMethodInput" name="paymentMethod">
+                    <option value="Pix">Pix</option>
+                  </select>
+                </label>
+
+                <label>
                   <span>Valor</span>
                   <input
                     id="amountInput"
@@ -278,6 +285,42 @@
                 <button id="settingsLogoutButton" class="ghost-button dark-ghost" type="button">Sair da conta</button>
               </div>
             </article>
+
+            <article class="card">
+              <div class="card-heading">
+                <p class="eyebrow">Categorias</p>
+                <h2>Despesas</h2>
+              </div>
+              <div class="catalog-add-row">
+                <input id="addExpenseCategoryInput" type="text" placeholder="Nova categoria de despesa" />
+                <button id="addExpenseCategoryButton" class="primary-button" type="button">Incluir</button>
+              </div>
+              <div id="settingsExpenseCategoriesList" class="stack"></div>
+            </article>
+
+            <article class="card">
+              <div class="card-heading">
+                <p class="eyebrow">Categorias</p>
+                <h2>Receitas</h2>
+              </div>
+              <div class="catalog-add-row">
+                <input id="addIncomeCategoryInput" type="text" placeholder="Nova categoria de receita" />
+                <button id="addIncomeCategoryButton" class="primary-button" type="button">Incluir</button>
+              </div>
+              <div id="settingsIncomeCategoriesList" class="stack"></div>
+            </article>
+
+            <article class="card">
+              <div class="card-heading">
+                <p class="eyebrow">Lançamentos</p>
+                <h2>Formas de pagamento</h2>
+              </div>
+              <div class="catalog-add-row">
+                <input id="addPaymentMethodInput" type="text" placeholder="Nova forma de pagamento" />
+                <button id="addPaymentMethodButton" class="primary-button" type="button">Incluir</button>
+              </div>
+              <div id="settingsPaymentMethodsList" class="stack"></div>
+            </article>
           </section>
         </section>
       </main>
@@ -314,8 +357,8 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260405e"></script>
+    <script src="./supabase-config.js?v=20260405f"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260405e"></script>
+    <script type="module" src="./auth.js?v=20260405f"></script>
   </body>
 </html>

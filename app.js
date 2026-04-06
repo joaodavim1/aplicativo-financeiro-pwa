@@ -23,7 +23,8 @@ const defaults = {
   ],
   catalog: {
     expenseCategories: ["Casa", "Mercado", "Transporte", "Lazer", "Investimentos"],
-    incomeCategories: ["Trabalho", "Pix", "Venda", "Servico", "Bonus"]
+    incomeCategories: ["Trabalho", "Pix", "Venda", "Servico", "Bonus"],
+    paymentMethods: ["Pix", "Debito", "Credito", "Cartao", "Transferencia"]
   }
 };
 
@@ -77,10 +78,20 @@ const nodes = {
   screenPanels: [...document.querySelectorAll(".screen-panel")],
   userBadge: document.querySelector("#userBadge"),
   categoryInput: document.querySelector("#categoryInput"),
+  paymentMethodInput: document.querySelector("#paymentMethodInput"),
   typeInput: document.querySelector("#typeInput"),
   settingsAccountName: document.querySelector("#settingsAccountName"),
   settingsDataSource: document.querySelector("#settingsDataSource"),
-  settingsScreenOrder: document.querySelector("#settingsScreenOrder")
+  settingsScreenOrder: document.querySelector("#settingsScreenOrder"),
+  settingsExpenseCategoriesList: document.querySelector("#settingsExpenseCategoriesList"),
+  settingsIncomeCategoriesList: document.querySelector("#settingsIncomeCategoriesList"),
+  settingsPaymentMethodsList: document.querySelector("#settingsPaymentMethodsList"),
+  addExpenseCategoryInput: document.querySelector("#addExpenseCategoryInput"),
+  addIncomeCategoryInput: document.querySelector("#addIncomeCategoryInput"),
+  addPaymentMethodInput: document.querySelector("#addPaymentMethodInput"),
+  addExpenseCategoryButton: document.querySelector("#addExpenseCategoryButton"),
+  addIncomeCategoryButton: document.querySelector("#addIncomeCategoryButton"),
+  addPaymentMethodButton: document.querySelector("#addPaymentMethodButton")
 };
 
 export async function bootFinanceiroApp({ mode = "demo", user = null, persistence = null } = {}) {
@@ -104,6 +115,12 @@ window.financeiroNavigateToScreen = navigateToScreen;
 function bindEvents() {
   nodes.transactionForm.addEventListener("submit", handleSubmit);
   nodes.typeInput.addEventListener("change", renderCategoryOptions);
+  nodes.addExpenseCategoryButton?.addEventListener("click", () => handleAddCatalogItem("expense"));
+  nodes.addIncomeCategoryButton?.addEventListener("click", () => handleAddCatalogItem("income"));
+  nodes.addPaymentMethodButton?.addEventListener("click", () => handleAddCatalogItem("payment"));
+  nodes.settingsExpenseCategoriesList?.addEventListener("click", handleCatalogListClick);
+  nodes.settingsIncomeCategoriesList?.addEventListener("click", handleCatalogListClick);
+  nodes.settingsPaymentMethodsList?.addEventListener("click", handleCatalogListClick);
   nodes.screenTabs.addEventListener("click", handleScreenTabClick);
   [
     nodes.historyStartDate,
@@ -131,6 +148,7 @@ async function handleSubmit(event) {
   const title = String(formData.get("title") || "").trim();
   const category = String(formData.get("category") || "Casa");
   const type = String(formData.get("type") || "expense");
+  const paymentMethod = String(formData.get("paymentMethod") || derivePaymentMethodOptions()[0] || "Pix");
   const amount = Number(formData.get("amount"));
 
   if (!title || !Number.isFinite(amount) || amount <= 0) return;
@@ -145,14 +163,15 @@ async function handleSubmit(event) {
     amount,
     dateMillis: now,
     dateLabel: formatRelativeDate(now),
-    paymentMethod: "",
+    paymentMethod,
     notes: ""
   });
 
-  updateCatalogForTransaction(category, type);
+  updateCatalogForTransaction(category, type, paymentMethod);
   await saveState();
   event.currentTarget.reset();
   renderCategoryOptions();
+  renderPaymentMethodOptions();
   render();
 }
 
@@ -175,6 +194,7 @@ function render() {
   renderBudgets();
   renderTransactions();
   renderCategoryOptions();
+  renderPaymentMethodOptions();
   renderScreenTabs();
   renderScreenPanels();
   renderSettings();
@@ -444,6 +464,24 @@ function renderCategoryOptions() {
   }
 }
 
+function renderPaymentMethodOptions() {
+  if (!nodes.paymentMethodInput) return;
+
+  const previousValue = nodes.paymentMethodInput.value;
+  const options = derivePaymentMethodOptions();
+
+  nodes.paymentMethodInput.innerHTML = options
+    .map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`)
+    .join("");
+
+  if (options.includes(previousValue)) {
+    nodes.paymentMethodInput.value = previousValue;
+    return;
+  }
+
+  nodes.paymentMethodInput.value = options[0] || "";
+}
+
 function renderScreenTabs() {
   const order = currentState.ui.screenOrder;
   if (!order.includes(activeScreen)) {
@@ -494,6 +532,55 @@ function renderSettings() {
   nodes.settingsAccountName.textContent = userName;
   nodes.settingsDataSource.textContent = dataSource;
   nodes.settingsScreenOrder.textContent = orderLabel;
+  renderCatalogManagers();
+}
+
+function renderCatalogManagers() {
+  renderCatalogManager({
+    node: nodes.settingsExpenseCategoriesList,
+    kind: "expense",
+    items: currentState.catalog.expenseCategories,
+    emptyMessage: "Nenhuma categoria de despesa cadastrada."
+  });
+  renderCatalogManager({
+    node: nodes.settingsIncomeCategoriesList,
+    kind: "income",
+    items: currentState.catalog.incomeCategories,
+    emptyMessage: "Nenhuma categoria de receita cadastrada."
+  });
+  renderCatalogManager({
+    node: nodes.settingsPaymentMethodsList,
+    kind: "payment",
+    items: currentState.catalog.paymentMethods,
+    emptyMessage: "Nenhuma forma de pagamento cadastrada."
+  });
+}
+
+function renderCatalogManager({ node, kind, items, emptyMessage }) {
+  if (!node) return;
+
+  if (!items.length) {
+    node.innerHTML = emptyStateHtml(emptyMessage);
+    return;
+  }
+
+  node.innerHTML = items
+    .map(
+      (item) => `
+        <div class="catalog-item">
+          <strong>${escapeHtml(item)}</strong>
+          <div class="catalog-item-actions">
+            <button class="ghost-button dark-ghost compact-button" data-action="edit" data-kind="${kind}" data-value="${escapeHtml(item)}" type="button">
+              Alterar
+            </button>
+            <button class="ghost-button dark-ghost compact-button" data-action="delete" data-kind="${kind}" data-value="${escapeHtml(item)}" type="button">
+              Excluir
+            </button>
+          </div>
+        </div>
+      `
+    )
+    .join("");
 }
 
 function totalsByCategoryForFilters(type) {
@@ -583,7 +670,7 @@ function deriveHistoryCategoryOptions(type) {
 
 function deriveHistoryPaymentOptions() {
   return uniqueCaseInsensitive(
-    currentState.transactions.map((transaction) => transaction.paymentMethod).filter(Boolean)
+    [...currentState.catalog.paymentMethods, ...currentState.transactions.map((transaction) => transaction.paymentMethod).filter(Boolean)]
   );
 }
 
@@ -731,9 +818,84 @@ function deriveCategoryOptions(type) {
   return uniqueCaseInsensitive([...typeCatalog, ...transactionCategories, ...budgetCategories, ...fallback]);
 }
 
-function updateCatalogForTransaction(category, type) {
+function derivePaymentMethodOptions() {
+  return uniqueCaseInsensitive([
+    ...currentState.catalog.paymentMethods,
+    ...currentState.transactions.map((transaction) => transaction.paymentMethod).filter(Boolean),
+    ...defaults.catalog.paymentMethods
+  ]);
+}
+
+function updateCatalogForTransaction(category, type, paymentMethod = "") {
   const key = type === "income" ? "incomeCategories" : "expenseCategories";
   currentState.catalog[key] = uniqueCaseInsensitive([...currentState.catalog[key], category]);
+  if (paymentMethod) {
+    currentState.catalog.paymentMethods = uniqueCaseInsensitive([...currentState.catalog.paymentMethods, paymentMethod]);
+  }
+}
+
+async function handleAddCatalogItem(kind) {
+  const input = catalogInputForKind(kind);
+  if (!input) return;
+
+  const value = String(input.value || "").trim();
+  if (!value) return;
+
+  currentState.catalog[catalogKeyForKind(kind)] = uniqueCaseInsensitive([
+    ...currentState.catalog[catalogKeyForKind(kind)],
+    value
+  ]);
+
+  input.value = "";
+  await saveState();
+  render();
+}
+
+async function handleCatalogListClick(event) {
+  const button = event.target.closest("[data-action][data-kind][data-value]");
+  if (!button) return;
+
+  const action = button.dataset.action;
+  const kind = button.dataset.kind;
+  const value = button.dataset.value;
+  if (!action || !kind || !value) return;
+
+  if (action === "delete") {
+    currentState.catalog[catalogKeyForKind(kind)] = currentState.catalog[catalogKeyForKind(kind)].filter((item) => item !== value);
+    await saveState();
+    render();
+    return;
+  }
+
+  if (action === "edit") {
+    const renamed = window.prompt(renamePromptForKind(kind), value);
+    const nextValue = String(renamed || "").trim();
+    if (!nextValue || nextValue === value) return;
+
+    currentState.catalog[catalogKeyForKind(kind)] = uniqueCaseInsensitive(
+      currentState.catalog[catalogKeyForKind(kind)].map((item) => (item === value ? nextValue : item))
+    );
+    await saveState();
+    render();
+  }
+}
+
+function catalogKeyForKind(kind) {
+  if (kind === "income") return "incomeCategories";
+  if (kind === "payment") return "paymentMethods";
+  return "expenseCategories";
+}
+
+function catalogInputForKind(kind) {
+  if (kind === "income") return nodes.addIncomeCategoryInput;
+  if (kind === "payment") return nodes.addPaymentMethodInput;
+  return nodes.addExpenseCategoryInput;
+}
+
+function renamePromptForKind(kind) {
+  if (kind === "income") return "Alterar categoria de receita";
+  if (kind === "payment") return "Alterar forma de pagamento";
+  return "Alterar categoria de despesa";
 }
 
 function sanitizeTransaction(transaction) {
@@ -781,6 +943,9 @@ function sanitizeCatalog(catalog) {
     ),
     incomeCategories: uniqueCaseInsensitive(
       Array.isArray(catalog?.incomeCategories) ? catalog.incomeCategories : defaults.catalog.incomeCategories
+    ),
+    paymentMethods: uniqueCaseInsensitive(
+      Array.isArray(catalog?.paymentMethods) ? catalog.paymentMethods : defaults.catalog.paymentMethods
     )
   };
 }

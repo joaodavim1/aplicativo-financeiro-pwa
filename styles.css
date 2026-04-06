@@ -193,6 +193,22 @@ select {
   gap: 12px;
 }
 
+.catalog-add-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.catalog-add-row input {
+  width: 100%;
+  padding: 14px 15px;
+  border: 1px solid rgba(17, 39, 32, 0.08);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--ink);
+}
+
 .menu-dark {
   background: rgba(17, 39, 32, 0.08);
   color: var(--ink);
@@ -427,10 +443,29 @@ select {
 .insight-item,
 .goal-item,
 .budget-item,
-.transaction-item {
+.transaction-item,
+.catalog-item {
   padding: 14px 16px;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.9);
+}
+
+.catalog-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.catalog-item-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.compact-button {
+  padding: 10px 12px;
 }
 
 .empty-state {
@@ -596,6 +631,10 @@ select {
   }
 
   .filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .catalog-add-row {
     grid-template-columns: 1fr;
   }
 
