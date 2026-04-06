@@ -257,6 +257,7 @@ function renderCategoryBarsByType({ node, type, emptyMessage, fallbackColor }) {
   if (!node) return;
 
   const totals = totalsByCategoryForFilters(type);
+  const launchCounts = countsByCategoryForFilters(type);
   const entries = Object.entries(totals);
   const max = Math.max(...Object.values(totals), 1);
 
@@ -271,11 +272,12 @@ function renderCategoryBarsByType({ node, type, emptyMessage, fallbackColor }) {
       const budget = currentState.budgets.find((item) => item.name === name);
       const color = budget?.color || fallbackColor;
       const width = `${Math.max((total / max) * 100, 6)}%`;
+      const launchCount = launchCounts[name] || 0;
 
       return `
         <div class="bar-item">
           <div class="bar-head">
-            <strong>${escapeHtml(name)}</strong>
+            <strong>${escapeHtml(`${name} (${launchCount})`)}</strong>
             <span>${currency.format(total)}</span>
           </div>
           <div class="bar-track">
@@ -615,6 +617,15 @@ function totalsByCategoryForFilters(type) {
     .filter((item) => item.type === type)
     .reduce((accumulator, transaction) => {
       accumulator[transaction.category] = (accumulator[transaction.category] || 0) + transaction.amount;
+      return accumulator;
+    }, {});
+}
+
+function countsByCategoryForFilters(type) {
+  return getHistoryFilteredTransactions()
+    .filter((item) => item.type === type)
+    .reduce((accumulator, transaction) => {
+      accumulator[transaction.category] = (accumulator[transaction.category] || 0) + 1;
       return accumulator;
     }, {});
 }
