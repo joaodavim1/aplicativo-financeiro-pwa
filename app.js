@@ -133,6 +133,8 @@ function bindEvents() {
   nodes.settingsIncomeCategoriesList?.addEventListener("click", handleCatalogListClick);
   nodes.settingsPaymentMethodsList?.addEventListener("click", handleCatalogListClick);
   nodes.screenTabs.addEventListener("click", handleScreenTabClick);
+  nodes.incomeCategoryBars?.addEventListener("click", handleCategoryBarClick);
+  nodes.expenseCategoryBars?.addEventListener("click", handleCategoryBarClick);
   [
     nodes.historyStartDate,
     nodes.historyEndDate,
@@ -192,6 +194,7 @@ async function handleSubmit(event) {
   renderPaymentMethodOptions();
   syncLaunchFormDefaults();
   render();
+  navigateToScreen("EXTRATO");
 }
 
 function render() {
@@ -290,9 +293,10 @@ function renderCategoryBarsByType({ node, type, emptyMessage, fallbackColor }) {
       const color = budget?.color || fallbackColor;
       const width = `${Math.max((total / max) * 100, 6)}%`;
       const launchCount = launchCounts[name] || 0;
+      const isActive = currentHistoryFilters.type === type && currentHistoryFilters.category === name;
 
       return `
-        <div class="bar-item">
+        <button class="bar-item category-bar-button ${isActive ? "active" : ""}" data-bar-type="${escapeAttribute(type)}" data-bar-category="${escapeAttribute(name)}" type="button">
           <div class="bar-head">
             <strong>${escapeHtml(`${name} (${launchCount})`)}</strong>
             <span>${currency.format(total)}</span>
@@ -300,7 +304,7 @@ function renderCategoryBarsByType({ node, type, emptyMessage, fallbackColor }) {
           <div class="bar-track">
             <div class="bar-fill" style="width:${width}; background:${color};"></div>
           </div>
-        </div>
+        </button>
       `;
     })
     .join("");
@@ -710,6 +714,20 @@ function handleHistoryTypeToggleClick(event) {
     currentHistoryFilters.category = "";
     currentHistoryFilters.payment = "";
   }
+
+  syncHistoryFilterInputs();
+  renderHistoryFilterOptions();
+  renderExtratoCategoryBars();
+  renderExtratoList();
+}
+
+function handleCategoryBarClick(event) {
+  const button = event.target.closest("[data-bar-type][data-bar-category]");
+  if (!button) return;
+
+  currentHistoryFilters.type = button.dataset.barType || "all";
+  currentHistoryFilters.category = button.dataset.barCategory || "";
+  currentHistoryFilters.payment = "";
 
   syncHistoryFilterInputs();
   renderHistoryFilterOptions();
