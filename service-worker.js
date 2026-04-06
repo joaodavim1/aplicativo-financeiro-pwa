@@ -1,4 +1,4 @@
-const CACHE_NAME = "financeiro-pwa-cache-v20";
+const CACHE_NAME = "financeiro-pwa-cache-v22";
 const APP_SHELL = [
   "./",
   "./index.html",
