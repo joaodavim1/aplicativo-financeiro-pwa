@@ -134,15 +134,23 @@ function bindDialogBackdrop(dialog) {
 }
 
 function openSettingsScreen() {
-  const button = document.querySelector('.screen-tab[data-screen="CONFIG"]');
-  button?.click();
+  if (typeof window.financeiroNavigateToScreen === "function") {
+    window.financeiroNavigateToScreen("CONFIG");
+  } else {
+    const button = document.querySelector('.screen-tab[data-screen="CONFIG"]');
+    button?.click();
+  }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function openScreenFromMenu(screen) {
   nodes.menuDialog?.close();
-  const button = document.querySelector(`.screen-tab[data-screen="${screen}"]`);
-  button?.click();
+  if (typeof window.financeiroNavigateToScreen === "function") {
+    window.financeiroNavigateToScreen(screen);
+  } else {
+    const button = document.querySelector(`.screen-tab[data-screen="${screen}"]`);
+    button?.click();
+  }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 

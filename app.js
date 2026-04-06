@@ -99,6 +99,8 @@ export async function bootFinanceiroApp({ mode = "demo", user = null, persistenc
   render();
 }
 
+window.financeiroNavigateToScreen = navigateToScreen;
+
 function bindEvents() {
   nodes.transactionForm.addEventListener("submit", handleSubmit);
   nodes.typeInput.addEventListener("change", renderCategoryOptions);
@@ -449,6 +451,7 @@ function renderScreenTabs() {
   }
 
   nodes.screenTabs.innerHTML = order
+    .filter((screen) => screen !== "CONFIG")
     .map(
       (screen) => `
         <button class="screen-tab ${screen === activeScreen ? "active" : ""}" data-screen="${screen}" type="button">
@@ -468,7 +471,11 @@ function renderScreenPanels() {
 function handleScreenTabClick(event) {
   const button = event.target.closest(".screen-tab");
   if (!button) return;
-  activeScreen = button.dataset.screen;
+  navigateToScreen(button.dataset.screen);
+}
+
+function navigateToScreen(screen) {
+  activeScreen = screen;
   renderScreenTabs();
   renderScreenPanels();
 }
