@@ -1,4 +1,4 @@
-import { bootFinanceiroApp } from "./app.js?v=20260405c";
+import { bootFinanceiroApp } from "./app.js?v=20260405d";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -281,8 +281,14 @@ function syncAccountActions(isLoggedIn) {
     nodes.menuLoginButton.textContent = isLoggedIn ? "Trocar conta" : "Entrar com Google";
     nodes.menuLoginButton.classList.remove("hidden");
   }
-  nodes.settingsLogoutButton?.classList.toggle("hidden", !isLoggedIn);
-  nodes.menuLogoutButton?.classList.toggle("hidden", !isLoggedIn);
+  if (nodes.settingsLogoutButton) {
+    nodes.settingsLogoutButton.textContent = isLoggedIn ? "Sair da conta" : "Limpar acesso";
+    nodes.settingsLogoutButton.classList.remove("hidden");
+  }
+  if (nodes.menuLogoutButton) {
+    nodes.menuLogoutButton.textContent = isLoggedIn ? "Sair" : "Limpar acesso";
+    nodes.menuLogoutButton.classList.remove("hidden");
+  }
 }
 
 function isSupabaseConfigured(config) {
