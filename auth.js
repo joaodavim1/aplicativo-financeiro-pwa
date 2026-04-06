@@ -1,4 +1,4 @@
-import { bootFinanceiroApp } from "./app.js?v=20260405b";
+import { bootFinanceiroApp } from "./app.js?v=20260405c";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -96,9 +96,9 @@ function bindEvents() {
     nodes.menuDialog?.close();
     openSettingsScreen();
   });
-  nodes.menuLoginButton?.addEventListener("click", () => {
+  nodes.menuLoginButton?.addEventListener("click", async () => {
     nodes.menuDialog?.close();
-    openLoginArea();
+    await handleAccountAccess();
   });
   nodes.menuInstallButton?.addEventListener("click", () => {
     nodes.menuDialog?.close();
@@ -111,7 +111,7 @@ function bindEvents() {
   nodes.installHelpButton?.addEventListener("click", () => nodes.installDialog?.showModal());
   nodes.openInstallModalButton?.addEventListener("click", () => nodes.installDialog?.showModal());
   nodes.closeInstallModalButton?.addEventListener("click", () => nodes.installDialog?.close());
-  nodes.settingsLoginButton?.addEventListener("click", openLoginArea);
+  nodes.settingsLoginButton?.addEventListener("click", handleAccountAccess);
   nodes.settingsInstallButton?.addEventListener("click", () => nodes.installDialog?.showModal());
   nodes.settingsLogoutButton?.addEventListener("click", handleLogout);
   bindDialogBackdrop(nodes.menuDialog);
@@ -148,7 +148,30 @@ function openScreenFromMenu(screen) {
 
 function openLoginArea() {
   nodes.authGate.classList.remove("hidden");
+  nodes.protectedApp.classList.remove("hidden");
+  nodes.authStatusMessage.textContent = "Escolha a conta para entrar.";
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+async function handleAccountAccess() {
+  if (currentSession?.accessToken) {
+    await switchAccount();
+    return;
+  }
+  openLoginArea();
+}
+
+async function switchAccount() {
+  try {
+    window.google?.accounts?.id?.disableAutoSelect?.();
+  } catch (error) {
+    console.warn("Falha ao desativar selecao automatica:", error);
+  }
+
+  await handleLogout({
+    reopenLogin: true,
+    statusMessage: "Escolha outra conta para entrar."
+  });
 }
 
 async function mountGoogleButton() {
@@ -177,11 +200,12 @@ async function mountGoogleButton() {
   });
 }
 
-function openDemoMode() {
+function openDemoMode(options = {}) {
+  const { statusMessage = "Versao local aberta." } = options;
   nodes.protectedApp.classList.remove("hidden");
   nodes.authGate.classList.remove("hidden");
   nodes.logoutButton.classList.add("hidden");
-  nodes.authStatusMessage.textContent = "Versao local aberta.";
+  nodes.authStatusMessage.textContent = statusMessage;
   syncAccountActions(false);
   bootFinanceiroApp({ mode: "demo" });
 }
@@ -197,7 +221,8 @@ async function handleGoogleCredential(response, nonce) {
   }
 }
 
-async function handleLogout() {
+async function handleLogout(options = {}) {
+  const { reopenLogin = false, statusMessage = "Voce saiu da conta." } = options;
   try {
     const session = await ensureSession();
     if (session?.accessToken) {
@@ -213,8 +238,12 @@ async function handleLogout() {
 
   currentSession = null;
   clearPersistedSession();
-  nodes.authStatusMessage.textContent = "Voce saiu da conta.";
-  openDemoMode();
+  nodes.authStatusMessage.textContent = statusMessage;
+  openDemoMode({ statusMessage });
+
+  if (reopenLogin) {
+    openLoginArea();
+  }
 }
 
 async function openSupabaseMode(session) {
@@ -244,8 +273,14 @@ async function openSupabaseMode(session) {
 }
 
 function syncAccountActions(isLoggedIn) {
-  nodes.settingsLoginButton?.classList.toggle("hidden", isLoggedIn);
-  nodes.menuLoginButton?.classList.toggle("hidden", isLoggedIn);
+  if (nodes.settingsLoginButton) {
+    nodes.settingsLoginButton.textContent = isLoggedIn ? "Trocar conta" : "Entrar com Google";
+    nodes.settingsLoginButton.classList.remove("hidden");
+  }
+  if (nodes.menuLoginButton) {
+    nodes.menuLoginButton.textContent = isLoggedIn ? "Trocar conta" : "Entrar com Google";
+    nodes.menuLoginButton.classList.remove("hidden");
+  }
   nodes.settingsLogoutButton?.classList.toggle("hidden", !isLoggedIn);
   nodes.menuLogoutButton?.classList.toggle("hidden", !isLoggedIn);
 }
