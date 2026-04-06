@@ -1,4 +1,4 @@
-import { bootFinanceiroApp } from "./app.js?v=20260406m";
+import { bootFinanceiroApp } from "./app.js?v=20260406n";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -22,10 +22,8 @@ const nodes = {
   menuDialog: document.querySelector("#menuDialog"),
   closeMenuButton: document.querySelector("#closeMenuButton"),
   menuCurrentAccountName: document.querySelector("#menuCurrentAccountName"),
-  menuOpenExtratoButton: document.querySelector("#menuOpenExtratoButton"),
-  menuOpenLancamentosButton: document.querySelector("#menuOpenLancamentosButton"),
-  menuOpenQuadroButton: document.querySelector("#menuOpenQuadroButton"),
   menuOpenSettingsButton: document.querySelector("#menuOpenSettingsButton"),
+  menuUpdateButton: document.querySelector("#menuUpdateButton"),
   menuLoginButton: document.querySelector("#menuLoginButton"),
   menuLogoutButton: document.querySelector("#menuLogoutButton"),
   installHelpButton: document.querySelector("#installHelpButton"),
@@ -102,13 +100,11 @@ function bindEvents() {
   nodes.logoutButton.addEventListener("click", handleLogout);
   nodes.menuButton?.addEventListener("click", openMenuDialog);
   nodes.closeMenuButton?.addEventListener("click", closeMenuDialog);
-  nodes.menuOpenExtratoButton?.addEventListener("click", () => openScreenFromMenu("EXTRATO"));
-  nodes.menuOpenLancamentosButton?.addEventListener("click", () => openScreenFromMenu("LANCAMENTOS"));
-  nodes.menuOpenQuadroButton?.addEventListener("click", () => openScreenFromMenu("QUADRO"));
   nodes.menuOpenSettingsButton?.addEventListener("click", () => {
     closeMenuDialog();
     openSettingsScreen();
   });
+  nodes.menuUpdateButton?.addEventListener("click", () => refreshAppVersion({ closeMenu: true }));
   nodes.menuLoginButton?.addEventListener("click", async () => {
     closeMenuDialog();
     await handleAccountAccess();
@@ -216,17 +212,6 @@ function openSettingsScreen() {
     window.financeiroNavigateToScreen("CONFIG");
   } else {
     const button = document.querySelector('.screen-tab[data-screen="CONFIG"]');
-    button?.click();
-  }
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function openScreenFromMenu(screen) {
-  closeMenuDialog();
-  if (typeof window.financeiroNavigateToScreen === "function") {
-    window.financeiroNavigateToScreen(screen);
-  } else {
-    const button = document.querySelector(`.screen-tab[data-screen="${screen}"]`);
     button?.click();
   }
   window.scrollTo({ top: 0, behavior: "smooth" });
