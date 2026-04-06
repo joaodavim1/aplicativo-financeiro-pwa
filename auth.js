@@ -1,4 +1,4 @@
-import { bootFinanceiroApp } from "./app.js?v=20260406o";
+import { bootFinanceiroApp } from "./app.js?v=20260406p";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -22,7 +22,6 @@ const nodes = {
   menuDialog: document.querySelector("#menuDialog"),
   closeMenuButton: document.querySelector("#closeMenuButton"),
   menuCurrentAccountName: document.querySelector("#menuCurrentAccountName"),
-  menuOpenSettingsButton: document.querySelector("#menuOpenSettingsButton"),
   menuUpdateButton: document.querySelector("#menuUpdateButton"),
   menuLoginButton: document.querySelector("#menuLoginButton"),
   menuLogoutButton: document.querySelector("#menuLogoutButton"),
@@ -100,10 +99,6 @@ function bindEvents() {
   nodes.logoutButton.addEventListener("click", handleLogout);
   nodes.menuButton?.addEventListener("click", openMenuDialog);
   nodes.closeMenuButton?.addEventListener("click", closeMenuDialog);
-  nodes.menuOpenSettingsButton?.addEventListener("click", () => {
-    closeMenuDialog();
-    openSettingsScreen();
-  });
   nodes.menuUpdateButton?.addEventListener("click", () => refreshAppVersion({ closeMenu: true }));
   nodes.menuLoginButton?.addEventListener("click", async () => {
     closeMenuDialog();
@@ -205,16 +200,6 @@ function refreshAppVersion(options = {}) {
     refreshUrl.searchParams.set("refresh", String(Date.now()));
     window.location.assign(refreshUrl.toString());
   }, closeMenu ? 120 : 0);
-}
-
-function openSettingsScreen() {
-  if (typeof window.financeiroNavigateToScreen === "function") {
-    window.financeiroNavigateToScreen("CONFIG");
-  } else {
-    const button = document.querySelector('.screen-tab[data-screen="CONFIG"]');
-    button?.click();
-  }
-  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function openLoginArea() {
