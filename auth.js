@@ -704,8 +704,22 @@ function selectActiveAccount(people, transactions) {
 function buildStateFromRemote({ activeAccount, transactions, settings, appSettings }) {
   const sortedTransactions = [...transactions].sort((left, right) => Number(right.date_millis || 0) - Number(left.date_millis || 0));
   const budgets = buildBudgets(settings?.expense_category_limits || "");
-  const expenseCategories = decodeStringList(settings?.expense_categories || "");
-  const incomeCategories = decodeStringList(settings?.income_categories || "");
+  const expenseCategories = uniqueCaseInsensitive([
+    ...decodeStringList(settings?.expense_categories || ""),
+    ...sortedTransactions
+      .filter((transaction) => transaction.type !== "RECEITA")
+      .map((transaction) => transaction.category || "")
+  ]);
+  const incomeCategories = uniqueCaseInsensitive([
+    ...decodeStringList(settings?.income_categories || ""),
+    ...sortedTransactions
+      .filter((transaction) => transaction.type === "RECEITA")
+      .map((transaction) => transaction.category || "")
+  ]);
+  const paymentMethods = uniqueCaseInsensitive([
+    ...decodeStringList(settings?.payment_methods || ""),
+    ...sortedTransactions.map((transaction) => transaction.payment_method || "")
+  ]);
   const allowedScreens = ["EXTRATO", "LANCAMENTOS", "QUADRO"];
   const rawScreenOrder = decodeStringList(appSettings?.screen_order || "EXTRATO|||LANCAMENTOS|||QUADRO")
     .filter((screen) => allowedScreens.includes(screen));
@@ -731,7 +745,8 @@ function buildStateFromRemote({ activeAccount, transactions, settings, appSettin
     budgets,
     catalog: {
       expenseCategories,
-      incomeCategories
+      incomeCategories,
+      paymentMethods
     },
     ui: {
       screenOrder
@@ -754,6 +769,21 @@ function decodeStringList(raw) {
     .split(SETTINGS_LIST_SEPARATOR)
     .map((value) => value.trim())
     .filter(Boolean);
+}
+
+function uniqueCaseInsensitive(values) {
+  const seen = new Set();
+
+  return values
+    .map((value) => String(value || "").trim())
+    .filter((value) => {
+      if (!value) return false;
+      const key = value.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((left, right) => left.localeCompare(right, "pt-BR"));
 }
 
 function encodeStringList(values) {
