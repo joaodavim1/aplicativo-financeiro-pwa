@@ -195,7 +195,7 @@ select {
 
 .catalog-add-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) 92px 92px auto;
   gap: 10px;
   margin-bottom: 14px;
 }
@@ -492,6 +492,10 @@ select {
 
 .catalog-item-copy {
   min-width: 0;
+}
+
+.catalog-item-copy p {
+  margin: 4px 0 0;
 }
 
 .catalog-item-actions {

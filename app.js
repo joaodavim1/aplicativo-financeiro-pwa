@@ -24,7 +24,8 @@ const defaults = {
   catalog: {
     expenseCategories: ["Casa", "Mercado", "Transporte", "Lazer", "Investimentos"],
     incomeCategories: ["Trabalho", "Pix", "Venda", "Servico", "Bonus"],
-    paymentMethods: ["Pix", "Debito", "Credito", "Cartao", "Transferencia"]
+    paymentMethods: ["Pix", "Debito", "Credito", "Cartao", "Transferencia"],
+    paymentMethodConfigs: {}
   }
 };
 
@@ -93,6 +94,8 @@ const nodes = {
   addExpenseCategoryInput: document.querySelector("#addExpenseCategoryInput"),
   addIncomeCategoryInput: document.querySelector("#addIncomeCategoryInput"),
   addPaymentMethodInput: document.querySelector("#addPaymentMethodInput"),
+  addPaymentClosingDayInput: document.querySelector("#addPaymentClosingDayInput"),
+  addPaymentDueDayInput: document.querySelector("#addPaymentDueDayInput"),
   addExpenseCategoryButton: document.querySelector("#addExpenseCategoryButton"),
   addIncomeCategoryButton: document.querySelector("#addIncomeCategoryButton"),
   addPaymentMethodButton: document.querySelector("#addPaymentMethodButton")
@@ -617,6 +620,7 @@ function renderCatalogManager({ node, kind, items, emptyMessage }) {
         <div class="catalog-item">
           <div class="catalog-item-copy">
             <strong>${escapeHtml(item)}</strong>
+            ${kind === "payment" ? renderPaymentConfigText(item) : ""}
           </div>
           <div class="catalog-item-actions">
             <button class="primary-button compact-button catalog-edit-button" data-action="edit" data-kind="${kind}" data-value="${escapeHtml(item)}" type="button">
@@ -630,6 +634,12 @@ function renderCatalogManager({ node, kind, items, emptyMessage }) {
       `
     )
     .join("");
+}
+
+function renderPaymentConfigText(method) {
+  const config = currentState.catalog.paymentMethodConfigs?.[method];
+  if (!config) return "";
+  return `<p class="muted">Fechamento: ${escapeHtml(String(config.closingDay))} · Pagamento: ${escapeHtml(String(config.paymentDay))}</p>`;
 }
 
 function totalsByCategoryForFilters(type) {
@@ -911,12 +921,24 @@ async function handleAddCatalogItem(kind) {
   const value = String(input.value || "").trim();
   if (!value) return;
 
+  if (kind === "payment") {
+    const config = readPaymentConfigInputs();
+    if (config === "invalid") {
+      window.alert("Fechamento e pagamento do cartao devem estar entre 1 e 31.");
+      return;
+    }
+    if (config) {
+      currentState.catalog.paymentMethodConfigs[value] = config;
+    }
+  }
+
   currentState.catalog[catalogKeyForKind(kind)] = uniqueCaseInsensitive([
     ...currentState.catalog[catalogKeyForKind(kind)],
     value
   ]);
 
   input.value = "";
+  clearPaymentConfigInputs();
   await saveState();
   render();
 }
@@ -931,7 +953,18 @@ async function handleCatalogListClick(event) {
   if (!action || !kind || !value) return;
 
   if (action === "delete") {
+    if (kind !== "payment" && currentState.transactions.some((item) => item.category === value)) {
+      window.alert("Categoria com lançamentos não pode ser excluída.");
+      return;
+    }
+    if (kind === "payment" && currentState.transactions.some((item) => item.paymentMethod === value)) {
+      window.alert("Forma de pagamento com lançamentos não pode ser excluída.");
+      return;
+    }
     currentState.catalog[catalogKeyForKind(kind)] = currentState.catalog[catalogKeyForKind(kind)].filter((item) => item !== value);
+    if (kind === "payment") {
+      delete currentState.catalog.paymentMethodConfigs[value];
+    }
     await saveState();
     render();
     return;
@@ -942,9 +975,28 @@ async function handleCatalogListClick(event) {
     const nextValue = String(renamed || "").trim();
     if (!nextValue || nextValue === value) return;
 
+    if (kind === "payment") {
+      const existingConfig = currentState.catalog.paymentMethodConfigs?.[value] || null;
+      const editedConfig = editPaymentConfig(value, existingConfig);
+      if (editedConfig === "cancel") return;
+      delete currentState.catalog.paymentMethodConfigs[value];
+      if (editedConfig) {
+        currentState.catalog.paymentMethodConfigs[nextValue] = editedConfig;
+      }
+    }
+
     currentState.catalog[catalogKeyForKind(kind)] = uniqueCaseInsensitive(
       currentState.catalog[catalogKeyForKind(kind)].map((item) => (item === value ? nextValue : item))
     );
+    if (kind !== "payment") {
+      currentState.transactions = currentState.transactions.map((item) =>
+        item.category === value ? { ...item, category: nextValue } : item
+      );
+    } else {
+      currentState.transactions = currentState.transactions.map((item) =>
+        item.paymentMethod === value ? { ...item, paymentMethod: nextValue } : item
+      );
+    }
     await saveState();
     render();
   }
@@ -966,6 +1018,52 @@ function renamePromptForKind(kind) {
   if (kind === "income") return "Alterar categoria de receita";
   if (kind === "payment") return "Alterar forma de pagamento";
   return "Alterar categoria de despesa";
+}
+
+function readPaymentConfigInputs() {
+  const closingRaw = String(nodes.addPaymentClosingDayInput?.value || "").trim();
+  const paymentRaw = String(nodes.addPaymentDueDayInput?.value || "").trim();
+  if (!closingRaw && !paymentRaw) return null;
+
+  const closingDay = Number.parseInt(closingRaw, 10);
+  const paymentDay = Number.parseInt(paymentRaw, 10);
+  if (closingDay < 1 || closingDay > 31 || paymentDay < 1 || paymentDay > 31) {
+    return "invalid";
+  }
+
+  return { closingDay, paymentDay };
+}
+
+function clearPaymentConfigInputs() {
+  if (nodes.addPaymentClosingDayInput) nodes.addPaymentClosingDayInput.value = "";
+  if (nodes.addPaymentDueDayInput) nodes.addPaymentDueDayInput.value = "";
+}
+
+function editPaymentConfig(method, existingConfig) {
+  const closingAnswer = window.prompt(
+    `Dia de fechamento do cartao para ${method} (1 a 31, deixe vazio se nao for cartao)`,
+    existingConfig ? String(existingConfig.closingDay) : ""
+  );
+  if (closingAnswer === null) return "cancel";
+
+  const paymentAnswer = window.prompt(
+    `Dia de pagamento do cartao para ${method} (1 a 31, deixe vazio se nao for cartao)`,
+    existingConfig ? String(existingConfig.paymentDay) : ""
+  );
+  if (paymentAnswer === null) return "cancel";
+
+  const closingRaw = String(closingAnswer).trim();
+  const paymentRaw = String(paymentAnswer).trim();
+  if (!closingRaw && !paymentRaw) return null;
+
+  const closingDay = Number.parseInt(closingRaw, 10);
+  const paymentDay = Number.parseInt(paymentRaw, 10);
+  if (closingDay < 1 || closingDay > 31 || paymentDay < 1 || paymentDay > 31) {
+    window.alert("Fechamento e pagamento do cartao devem estar entre 1 e 31.");
+    return "cancel";
+  }
+
+  return { closingDay, paymentDay };
 }
 
 function sanitizeTransaction(transaction) {
@@ -1028,8 +1126,30 @@ function sanitizeCatalog(catalog) {
     ),
     paymentMethods: uniqueCaseInsensitive(
       Array.isArray(catalog?.paymentMethods) ? catalog.paymentMethods : defaults.catalog.paymentMethods
-    )
+    ),
+    paymentMethodConfigs: sanitizePaymentMethodConfigs(catalog?.paymentMethodConfigs)
   };
+}
+
+function sanitizePaymentMethodConfigs(configs) {
+  if (!configs || typeof configs !== "object" || Array.isArray(configs)) {
+    return {};
+  }
+
+  return Object.entries(configs).reduce((accumulator, [method, value]) => {
+    const cleanMethod = String(method || "").trim();
+    const closingDay = Number.parseInt(String(value?.closingDay || ""), 10);
+    const paymentDay = Number.parseInt(String(value?.paymentDay || ""), 10);
+    if (!cleanMethod) return accumulator;
+    if (closingDay < 1 || closingDay > 31 || paymentDay < 1 || paymentDay > 31) return accumulator;
+    accumulator[cleanMethod] = { closingDay, paymentDay };
+    return accumulator;
+  }, {});
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value).replaceAll("`", "&#96;");
+}
 }
 
 function sanitizeUi(ui) {

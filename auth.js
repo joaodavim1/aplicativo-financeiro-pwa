@@ -694,6 +694,7 @@ function buildStateFromRemote({ activeAccount, transactions, settings, appSettin
     ...decodeStringList(settings?.payment_methods || ""),
     ...sortedTransactions.map((transaction) => transaction.payment_method || "")
   ]);
+  const paymentMethodConfigs = decodeCardPaymentConfigMap(settings?.payment_method_card_configs || "");
   const allowedScreens = ["EXTRATO", "LANCAMENTOS", "QUADRO"];
   const rawScreenOrder = decodeStringList(appSettings?.screen_order || "EXTRATO|||LANCAMENTOS|||QUADRO")
     .filter((screen) => allowedScreens.includes(screen));
@@ -726,7 +727,8 @@ function buildStateFromRemote({ activeAccount, transactions, settings, appSettin
     catalog: {
       expenseCategories,
       incomeCategories,
-      paymentMethods
+      paymentMethods,
+      paymentMethodConfigs
     },
     ui: {
       screenOrder
@@ -786,6 +788,38 @@ function decodeDoubleMap(raw) {
   }, {});
 }
 
+function decodeCardPaymentConfigMap(raw) {
+  if (!raw) return {};
+
+  return raw.split(SETTINGS_LIST_SEPARATOR).reduce((accumulator, entry) => {
+    const parts = entry.split("::", 3).map((item) => item?.trim() || "");
+    if (parts.length !== 3) return accumulator;
+    const [method, closingText, paymentText] = parts;
+    const closingDay = Number.parseInt(closingText, 10);
+    const paymentDay = Number.parseInt(paymentText, 10);
+    if (!method || closingDay < 1 || closingDay > 31 || paymentDay < 1 || paymentDay > 31) {
+      return accumulator;
+    }
+    accumulator[method] = { closingDay, paymentDay };
+    return accumulator;
+  }, {});
+}
+
+function encodeCardPaymentConfigMap(values) {
+  if (!values || typeof values !== "object") return "";
+
+  return Object.entries(values)
+    .filter(([method, config]) => {
+      const cleanMethod = String(method || "").trim();
+      const closingDay = Number.parseInt(String(config?.closingDay || ""), 10);
+      const paymentDay = Number.parseInt(String(config?.paymentDay || ""), 10);
+      return Boolean(cleanMethod) && closingDay >= 1 && closingDay <= 31 && paymentDay >= 1 && paymentDay <= 31;
+    })
+    .sort((left, right) => left[0].localeCompare(right[0], "pt-BR"))
+    .map(([method, config]) => `${String(method).trim()}::${config.closingDay}::${config.paymentDay}`)
+    .join(SETTINGS_LIST_SEPARATOR);
+}
+
 function toSupabaseTransaction(transaction, context) {
   const amount = Number(transaction.amount || 0);
   const dateMillis = Number(transaction.dateMillis || Date.now());
@@ -823,7 +857,7 @@ function toSupabaseAccountSettings(state, context) {
     expense_categories: encodeStringList(state?.catalog?.expenseCategories || []),
     income_categories: encodeStringList(state?.catalog?.incomeCategories || []),
     payment_methods: encodeStringList(state?.catalog?.paymentMethods || []),
-    payment_method_card_configs: context.activeSettings?.payment_method_card_configs || "",
+    payment_method_card_configs: encodeCardPaymentConfigMap(state?.catalog?.paymentMethodConfigs || {}),
     expense_category_limits: context.activeSettings?.expense_category_limits || "",
     multi_launch_expense_category_amounts: context.activeSettings?.multi_launch_expense_category_amounts || "",
     multi_launch_income_category_amounts: context.activeSettings?.multi_launch_income_category_amounts || ""

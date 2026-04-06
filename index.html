@@ -8,9 +8,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Financeiro" />
     <title>Financeiro</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260406c" />
+    <link rel="manifest" href="./manifest.webmanifest?v=20260406d" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260406c" />
+    <link rel="stylesheet" href="./styles.css?v=20260406d" />
   </head>
   <body>
     <div class="app-shell">
@@ -351,6 +351,8 @@
               </div>
               <div class="catalog-add-row">
                 <input id="addPaymentMethodInput" type="text" placeholder="Nova forma de pagamento" />
+                <input id="addPaymentClosingDayInput" type="number" inputmode="numeric" min="1" max="31" placeholder="Fech." />
+                <input id="addPaymentDueDayInput" type="number" inputmode="numeric" min="1" max="31" placeholder="Pag." />
                 <button id="addPaymentMethodButton" class="primary-button" type="button">Incluir</button>
               </div>
               <div id="settingsPaymentMethodsList" class="stack"></div>
@@ -391,8 +393,8 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260406c"></script>
+    <script src="./supabase-config.js?v=20260406d"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260406c"></script>
+    <script type="module" src="./auth.js?v=20260406d"></script>
   </body>
 </html>
