@@ -123,7 +123,7 @@ function bindDialogBackdrop(dialog) {
   });
 }
 
-async function refreshAppVersion(options = {}) {
+function refreshAppVersion(options = {}) {
   const { closeMenu = false } = options;
 
   if (closeMenu) {
@@ -132,24 +132,26 @@ async function refreshAppVersion(options = {}) {
 
   nodes.authStatusMessage.textContent = "Atualizando versao...";
 
-  window.setTimeout(async () => {
+  window.setTimeout(() => {
     try {
-      if ("serviceWorker" in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map((registration) => registration.unregister()));
+      if ("serviceWorker" in navigator && typeof navigator.serviceWorker.getRegistrations === "function") {
+        navigator.serviceWorker.getRegistrations()
+          .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+          .catch((error) => console.warn("Falha ao remover service worker:", error));
       }
 
-      if ("caches" in window) {
-        const cacheKeys = await caches.keys();
-        await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+      if ("caches" in window && typeof caches.keys === "function") {
+        caches.keys()
+          .then((cacheKeys) => Promise.all(cacheKeys.map((key) => caches.delete(key))))
+          .catch((error) => console.warn("Falha ao limpar caches:", error));
       }
     } catch (error) {
-      console.warn("Falha ao limpar cache da versao:", error);
+      console.warn("Falha ao preparar atualizacao:", error);
     }
 
-    const refreshUrl = new URL(window.location.href);
+    const refreshUrl = new URL("https://joaodavim1.github.io/aplicativo-financeiro-pwa/");
     refreshUrl.searchParams.set("refresh", String(Date.now()));
-    window.location.replace(refreshUrl.toString());
+    window.location.assign(refreshUrl.toString());
   }, closeMenu ? 120 : 0);
 }
 
