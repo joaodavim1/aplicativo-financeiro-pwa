@@ -83,22 +83,22 @@ async function bootstrap() {
 function bindEvents() {
   nodes.continueDemoButton.addEventListener("click", openDemoMode);
   nodes.logoutButton.addEventListener("click", handleLogout);
-  nodes.menuButton?.addEventListener("click", () => nodes.menuDialog?.showModal());
-  nodes.closeMenuButton?.addEventListener("click", () => nodes.menuDialog?.close());
+  nodes.menuButton?.addEventListener("click", openMenuDialog);
+  nodes.closeMenuButton?.addEventListener("click", closeMenuDialog);
   nodes.menuOpenExtratoButton?.addEventListener("click", () => openScreenFromMenu("EXTRATO"));
   nodes.menuOpenLancamentosButton?.addEventListener("click", () => openScreenFromMenu("LANCAMENTOS"));
   nodes.menuOpenQuadroButton?.addEventListener("click", () => openScreenFromMenu("QUADRO"));
   nodes.menuOpenSettingsButton?.addEventListener("click", () => {
-    nodes.menuDialog?.close();
+    closeMenuDialog();
     openSettingsScreen();
   });
   nodes.menuLoginButton?.addEventListener("click", async () => {
-    nodes.menuDialog?.close();
+    closeMenuDialog();
     await handleAccountAccess();
   });
   nodes.menuInstallButton?.addEventListener("click", () => refreshAppVersion({ closeMenu: true }));
   nodes.menuLogoutButton?.addEventListener("click", async () => {
-    nodes.menuDialog?.close();
+    closeMenuDialog();
     await handleLogout();
   });
   nodes.installHelpButton?.addEventListener("click", () => refreshAppVersion());
@@ -118,16 +118,56 @@ function bindDialogBackdrop(dialog) {
       event.clientX <= rect.left + rect.width;
 
     if (!clickedInside) {
-      dialog.close();
+      closeDialog(dialog);
     }
   });
+}
+
+function openMenuDialog() {
+  openDialog(nodes.menuDialog);
+}
+
+function closeMenuDialog() {
+  closeDialog(nodes.menuDialog);
+}
+
+function openDialog(dialog) {
+  if (!dialog) return;
+
+  try {
+    if (typeof dialog.showModal === "function") {
+      if (!dialog.open) {
+        dialog.showModal();
+      }
+      return;
+    }
+  } catch (error) {
+    console.warn("Falha ao abrir dialogo:", error);
+  }
+
+  dialog.setAttribute("open", "open");
+}
+
+function closeDialog(dialog) {
+  if (!dialog) return;
+
+  try {
+    if (typeof dialog.close === "function" && dialog.open) {
+      dialog.close();
+      return;
+    }
+  } catch (error) {
+    console.warn("Falha ao fechar dialogo:", error);
+  }
+
+  dialog.removeAttribute("open");
 }
 
 function refreshAppVersion(options = {}) {
   const { closeMenu = false } = options;
 
   if (closeMenu) {
-    nodes.menuDialog?.close();
+    closeMenuDialog();
   }
 
   nodes.authStatusMessage.textContent = "Atualizando versao...";
@@ -166,7 +206,7 @@ function openSettingsScreen() {
 }
 
 function openScreenFromMenu(screen) {
-  nodes.menuDialog?.close();
+  closeMenuDialog();
   if (typeof window.financeiroNavigateToScreen === "function") {
     window.financeiroNavigateToScreen(screen);
   } else {
