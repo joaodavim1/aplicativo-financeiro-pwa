@@ -349,6 +349,8 @@ function renderExtratoList() {
 }
 
 function renderInsights(balance, income, expense) {
+  if (!nodes.insightsList) return;
+
   const savingsRate = income > 0 ? (income - expense) / income : 0;
   const topExpense = Object.entries(totalsByCategoryForFilters("expense"))[0];
   const syncText =
@@ -391,6 +393,8 @@ function renderInsights(balance, income, expense) {
 }
 
 function renderGoals() {
+  if (!nodes.goalsList) return;
+
   if (currentState.goals.length === 0) {
     nodes.goalsList.innerHTML = emptyStateHtml("Nenhuma meta cadastrada.");
     return;
@@ -580,8 +584,12 @@ function renderSettings() {
   const orderLabel = currentState.ui.screenOrder.map((screen) => screenLabel(screen)).join(", ");
 
   nodes.settingsAccountName.textContent = userName;
-  nodes.settingsDataSource.textContent = dataSource;
-  nodes.settingsScreenOrder.textContent = orderLabel;
+  if (nodes.settingsDataSource) {
+    nodes.settingsDataSource.textContent = dataSource;
+  }
+  if (nodes.settingsScreenOrder) {
+    nodes.settingsScreenOrder.textContent = orderLabel;
+  }
   renderCatalogManagers();
 }
 
