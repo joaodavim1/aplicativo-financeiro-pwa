@@ -1,4 +1,4 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260406ab";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260406ac";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {

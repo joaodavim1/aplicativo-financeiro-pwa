@@ -286,12 +286,10 @@ function render() {
   const balance = income - expense;
 
   nodes.currentMonthLabel.textContent = currentState.monthLabel;
-  nodes.balanceValue.textContent = currency.format(balance);
-  nodes.incomeValue.textContent = currency.format(income);
-  nodes.expenseValue.textContent = currency.format(expense);
 
   renderExtratoAccountSnapshot();
   renderHistoryFilterOptions();
+  renderExtratoSummary();
   renderExtratoCategoryBars();
   renderExtratoList();
   renderFutureScreen(balance, income, expense);
@@ -442,6 +440,21 @@ function renderExtratoList() {
   }
 
   nodes.extratoList.innerHTML = filtered.map((transaction) => renderTransactionItem(transaction)).join("");
+}
+
+function renderExtratoSummary() {
+  const filtered = getHistoryFilteredTransactions();
+  const income = filtered
+    .filter((transaction) => transaction.type === "income")
+    .reduce((accumulator, transaction) => accumulator + transaction.amount, 0);
+  const expense = filtered
+    .filter((transaction) => transaction.type === "expense")
+    .reduce((accumulator, transaction) => accumulator + transaction.amount, 0);
+  const balance = income - expense;
+
+  if (nodes.balanceValue) nodes.balanceValue.textContent = currency.format(balance);
+  if (nodes.incomeValue) nodes.incomeValue.textContent = currency.format(income);
+  if (nodes.expenseValue) nodes.expenseValue.textContent = currency.format(expense);
 }
 
 function renderFutureScreen(balance, income, expense) {
@@ -813,6 +826,7 @@ function handleHistoryFilterChange() {
   };
 
   renderHistoryFilterOptions();
+  renderExtratoSummary();
   renderExtratoCategoryBars();
   renderExtratoList();
 }
@@ -832,6 +846,7 @@ function handleHistoryTypeToggleClick(event) {
 
   syncHistoryFilterInputs();
   renderHistoryFilterOptions();
+  renderExtratoSummary();
   renderExtratoCategoryBars();
   renderExtratoList();
 }
@@ -846,6 +861,7 @@ function handleCategoryBarClick(event) {
 
   syncHistoryFilterInputs();
   renderHistoryFilterOptions();
+  renderExtratoSummary();
   renderExtratoCategoryBars();
   renderExtratoList();
 }
@@ -860,6 +876,7 @@ function clearHistoryFilters() {
   };
   syncHistoryFilterInputs();
   renderHistoryFilterOptions();
+  renderExtratoSummary();
   renderExtratoCategoryBars();
   renderExtratoList();
 }
