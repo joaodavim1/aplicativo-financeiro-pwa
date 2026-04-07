@@ -63,6 +63,9 @@ let currentFutureFilters = {
   payment: ""
 };
 let selectedFutureIds = new Set();
+let multiLaunchType = "expense";
+let multiLaunchRows = [createMultiLaunchRow()];
+let multiLaunchFinalizeOpen = false;
 
 const nodes = {
   themeColorMeta: document.querySelector('meta[name="theme-color"]'),
@@ -146,7 +149,14 @@ const nodes = {
   addExpenseCategoryButton: document.querySelector("#addExpenseCategoryButton"),
   addIncomeCategoryButton: document.querySelector("#addIncomeCategoryButton"),
   addPaymentMethodButton: document.querySelector("#addPaymentMethodButton"),
-  multiLaunchInput: document.querySelector("#multiLaunchInput"),
+  multiLaunchTypeInput: document.querySelector("#multiLaunchTypeInput"),
+  multiLaunchTypeToggle: document.querySelector("#multiLaunchTypeToggle"),
+  multiLaunchRows: document.querySelector("#multiLaunchRows"),
+  multiLaunchAddRowButton: document.querySelector("#multiLaunchAddRowButton"),
+  multiLaunchFinalizeButton: document.querySelector("#multiLaunchFinalizeButton"),
+  multiLaunchFinalizeCard: document.querySelector("#multiLaunchFinalizeCard"),
+  multiLaunchPaymentMethodInput: document.querySelector("#multiLaunchPaymentMethodInput"),
+  multiLaunchDateInput: document.querySelector("#multiLaunchDateInput"),
   multiLaunchSaveButton: document.querySelector("#multiLaunchSaveButton")
 };
 
@@ -223,6 +233,11 @@ function bindEvents() {
   nodes.screenTabs.addEventListener("click", handleScreenTabClick);
   nodes.incomeCategoryBars?.addEventListener("click", handleCategoryBarClick);
   nodes.expenseCategoryBars?.addEventListener("click", handleCategoryBarClick);
+  nodes.multiLaunchTypeToggle?.addEventListener("click", handleMultiLaunchTypeToggleClick);
+  nodes.multiLaunchRows?.addEventListener("input", handleMultiLaunchRowsInput);
+  nodes.multiLaunchRows?.addEventListener("change", handleMultiLaunchRowsInput);
+  nodes.multiLaunchAddRowButton?.addEventListener("click", handleAddMultiLaunchRow);
+  nodes.multiLaunchFinalizeButton?.addEventListener("click", handleToggleMultiLaunchFinalize);
   nodes.multiLaunchSaveButton?.addEventListener("click", handleSaveMultiLaunch);
   [
     nodes.historyStartDate,
@@ -303,6 +318,141 @@ async function handleSubmit(event) {
   navigateToScreen("EXTRATO");
 }
 
+function createMultiLaunchRow() {
+  return {
+    id: generateId(),
+    amount: "",
+    quantity: "1",
+    category: ""
+  };
+}
+
+function renderMultiLaunchScreen() {
+  if (nodes.multiLaunchTypeInput) {
+    nodes.multiLaunchTypeInput.value = multiLaunchType;
+  }
+
+  if (nodes.multiLaunchTypeToggle) {
+    nodes.multiLaunchTypeToggle
+      .querySelectorAll("[data-multi-type]")
+      .forEach((button) => {
+        button.classList.toggle("active", button.dataset.multiType === multiLaunchType);
+      });
+  }
+
+  if (nodes.multiLaunchRows) {
+    const categoryOptions = deriveMultiLaunchCategoryOptions();
+    nodes.multiLaunchRows.innerHTML = multiLaunchRows
+      .map((row, index) => renderMultiLaunchRow(row, index, categoryOptions))
+      .join("");
+  }
+
+  if (nodes.multiLaunchPaymentMethodInput) {
+    const paymentMethods = derivePaymentMethodOptions();
+    const currentValue = nodes.multiLaunchPaymentMethodInput.value;
+    nodes.multiLaunchPaymentMethodInput.innerHTML = [
+      `<option value="">Selecione</option>`,
+      ...paymentMethods.map((method) => `<option value="${escapeAttribute(method)}">${escapeHtml(method)}</option>`)
+    ].join("");
+    if (paymentMethods.includes(currentValue)) {
+      nodes.multiLaunchPaymentMethodInput.value = currentValue;
+    }
+  }
+
+  if (nodes.multiLaunchDateInput && !nodes.multiLaunchDateInput.value) {
+    nodes.multiLaunchDateInput.value = todayDateInputValue();
+  }
+
+  nodes.multiLaunchFinalizeCard?.classList.toggle("hidden", !multiLaunchFinalizeOpen);
+}
+
+function renderMultiLaunchRow(row, index, categoryOptions) {
+  const options = [
+    `<option value="">Categoria</option>`,
+    ...categoryOptions.map((option) => `
+      <option value="${escapeAttribute(option)}" ${option === row.category ? "selected" : ""}>${escapeHtml(option)}</option>
+    `)
+  ].join("");
+
+  return `
+    <article class="multi-launch-entry-card">
+      <div class="card-heading compact">
+        <h3>Lançamento ${index + 1}</h3>
+      </div>
+      <label>
+        <span>Valor</span>
+        <input
+          data-multi-row-id="${row.id}"
+          data-multi-field="amount"
+          type="number"
+          inputmode="decimal"
+          min="0.01"
+          step="0.01"
+          placeholder="0,00"
+          value="${escapeAttribute(row.amount)}"
+        />
+      </label>
+      <label>
+        <span>Quantidade</span>
+        <input
+          data-multi-row-id="${row.id}"
+          data-multi-field="quantity"
+          type="number"
+          inputmode="numeric"
+          min="1"
+          step="1"
+          value="${escapeAttribute(row.quantity || "1")}"
+        />
+      </label>
+      <label>
+        <span>Categoria</span>
+        <select data-multi-row-id="${row.id}" data-multi-field="category">
+          ${options}
+        </select>
+      </label>
+    </article>
+  `;
+}
+
+function deriveMultiLaunchCategoryOptions() {
+  return multiLaunchType === "income"
+    ? deriveCategoryOptions("income")
+    : deriveCategoryOptions("expense");
+}
+
+function handleMultiLaunchTypeToggleClick(event) {
+  const button = event.target.closest("[data-multi-type]");
+  if (!button) return;
+  multiLaunchType = button.dataset.multiType === "income" ? "income" : "expense";
+  renderMultiLaunchScreen();
+}
+
+function handleMultiLaunchRowsInput(event) {
+  const field = event.target.closest("[data-multi-row-id][data-multi-field]");
+  if (!field) return;
+  const rowId = Number(field.dataset.multiRowId);
+  const row = multiLaunchRows.find((item) => item.id === rowId);
+  if (!row) return;
+
+  if (field.dataset.multiField === "amount") {
+    row.amount = field.value;
+  } else if (field.dataset.multiField === "quantity") {
+    row.quantity = field.value;
+  } else if (field.dataset.multiField === "category") {
+    row.category = field.value;
+  }
+}
+
+function handleAddMultiLaunchRow() {
+  multiLaunchRows.push(createMultiLaunchRow());
+  renderMultiLaunchScreen();
+}
+
+function handleToggleMultiLaunchFinalize() {
+  multiLaunchFinalizeOpen = !multiLaunchFinalizeOpen;
+  renderMultiLaunchScreen();
+}
+
 function render() {
   const income = sumByType("income");
   const expense = sumByType("expense");
@@ -319,6 +469,7 @@ function render() {
   renderFutureFilterOptions();
   renderBudgets();
   renderTransactions();
+  renderMultiLaunchScreen();
   syncTypeToggle(selectDefaultTransactionType());
   renderCategoryOptions();
   renderPaymentMethodOptions();
@@ -1403,63 +1554,85 @@ async function handleTransactionListClick(event) {
 }
 
 async function handleSaveMultiLaunch() {
-  const raw = nodes.multiLaunchInput?.value || "";
-  const lines = raw
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const validRows = multiLaunchRows
+    .map((row) => ({
+      ...row,
+      amountNumber: Number.parseFloat(String(row.amount || "").replace(",", ".")),
+      quantityNumber: Math.max(1, Number.parseInt(String(row.quantity || "1"), 10) || 1),
+      categoryValue: String(row.category || "").trim()
+    }))
+    .filter((row) => row.categoryValue || row.amountNumber);
 
-  if (!lines.length) {
+  if (!validRows.length) {
     window.alert("Informe ao menos um lançamento.");
     return;
   }
 
+  const invalidRow = validRows.find((row) => !Number.isFinite(row.amountNumber) || row.amountNumber <= 0 || !row.categoryValue);
+  if (invalidRow) {
+    window.alert("Revise os campos de valor, quantidade e categoria dos múltiplos lançamentos.");
+    return;
+  }
+
+  if (!multiLaunchFinalizeOpen) {
+    window.alert("Toque em Mesmo pagamento para escolher a forma de pagamento final.");
+    return;
+  }
+
+  const paymentMethod = String(nodes.multiLaunchPaymentMethodInput?.value || "").trim();
+  const dateValue = String(nodes.multiLaunchDateInput?.value || todayDateInputValue());
+
+  if (!paymentMethod) {
+    window.alert("Escolha a forma de pagamento antes de salvar.");
+    return;
+  }
+
+  const dateMillis = toStartOfDayMillis(dateValue);
   const createdTransactions = [];
 
-  for (const line of lines) {
-    const parts = line.split(";").map((part) => part.trim());
-    if (parts.length < 7) {
-      window.alert("Cada linha precisa ter: descricao;categoria;despesa ou receita;pagamento;data;parcelas;valor");
-      return;
+  for (const row of validRows) {
+    const parts = splitAmountEvenly(row.amountNumber, row.quantityNumber);
+    for (const partialAmount of parts) {
+      createdTransactions.push({
+        id: generateId(),
+        title: row.categoryValue,
+        category: row.categoryValue,
+        type: multiLaunchType,
+        amount: partialAmount,
+        dateMillis,
+        dateLabel: formatRelativeDate(dateMillis),
+        paymentMethod,
+        installments: 1,
+        installmentNumber: 1,
+        originalTotalAmount: partialAmount,
+        cardPaymentDateMillis: null,
+        notes: ""
+      });
     }
-
-    const [title, category, rawType, paymentMethod, dateValue, rawInstallments, rawAmount] = parts;
-    const normalizedType = rawType.toLowerCase();
-    const type = normalizedType === "receita" ? "income" : normalizedType === "despesa" ? "expense" : "";
-    const installments = Math.max(1, Number.parseInt(rawInstallments, 10) || 1);
-    const amount = Number.parseFloat(rawAmount.replace(/\./g, "").replace(",", "."));
-
-    if (!title || !category || !type || !paymentMethod || !dateValue || !Number.isFinite(amount) || amount <= 0) {
-      window.alert("Revise as linhas dos múltiplos lançamentos.");
-      return;
-    }
-
-    const dateMillis = toStartOfDayMillis(dateValue);
-    createdTransactions.push({
-      id: generateId(),
-      title,
-      category,
-      type,
-      amount,
-      dateMillis,
-      dateLabel: formatRelativeDate(dateMillis),
-      paymentMethod,
-      installments,
-      installmentNumber: 1,
-      originalTotalAmount: amount * installments,
-      cardPaymentDateMillis: null,
-      notes: ""
-    });
-    updateCatalogForTransaction(category, type, paymentMethod);
+    updateCatalogForTransaction(row.categoryValue, multiLaunchType, paymentMethod);
   }
 
   currentState.transactions = [...createdTransactions, ...currentState.transactions]
     .sort((left, right) => right.dateMillis - left.dateMillis);
   await saveState();
-  nodes.multiLaunchInput.value = "";
+  multiLaunchRows = [createMultiLaunchRow()];
+  multiLaunchFinalizeOpen = false;
+  if (nodes.multiLaunchPaymentMethodInput) nodes.multiLaunchPaymentMethodInput.value = "";
+  if (nodes.multiLaunchDateInput) nodes.multiLaunchDateInput.value = todayDateInputValue();
   render();
   showAppToast("Lançamentos salvos.");
   navigateToScreen("EXTRATO");
+}
+
+function splitAmountEvenly(totalAmount, quantity) {
+  const safeQuantity = Math.max(1, Number(quantity) || 1);
+  const totalCents = Math.round(totalAmount * 100);
+  const baseCents = Math.floor(totalCents / safeQuantity);
+  const remainder = totalCents % safeQuantity;
+  return Array.from({ length: safeQuantity }, (_, index) => {
+    const cents = baseCents + (index < remainder ? 1 : 0);
+    return cents / 100;
+  });
 }
 
 function exportTransactionsCsv() {

@@ -8,9 +8,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Financeiro" />
     <title>Financeiro</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260407ad" />
+    <link rel="manifest" href="./manifest.webmanifest?v=20260407ae" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260407ad" />
+    <link rel="stylesheet" href="./styles.css?v=20260407ae" />
   </head>
   <body>
     <div id="appToast" class="app-toast hidden" role="status" aria-live="polite"></div>
@@ -49,23 +49,49 @@
 
         <section data-screen="MULTIPLOS" class="screen-panel">
           <section class="transactions-section single-column">
-            <article class="card composer-card">
+            <article class="card composer-card multi-launch-card">
               <div class="card-heading">
-                <p class="eyebrow">Lançamentos</p>
                 <h2>Múltiplos lançamentos</h2>
               </div>
               <p class="muted">
-                Use uma linha por lançamento no formato:
-                descricao;categoria;despesa ou receita;pagamento;data;parcelas;valor
+                Monte vários valores com categorias diferentes e escolha uma única forma de pagamento no final.
               </p>
-              <textarea
-                id="multiLaunchInput"
-                class="multi-launch-input"
-                rows="8"
-                placeholder="Mercado;Alimentacao;despesa;Pix;2026-04-06;1;120,50"
-              ></textarea>
+
+              <label>
+                <span>Despesa ou receita</span>
+                <input id="multiLaunchTypeInput" type="hidden" value="expense" />
+                <div id="multiLaunchTypeToggle" class="type-toggle" role="group" aria-label="Despesa ou receita">
+                  <button class="type-toggle-button active expense" data-multi-type="expense" type="button">
+                    Despesas
+                  </button>
+                  <button class="type-toggle-button income" data-multi-type="income" type="button">
+                    Receitas
+                  </button>
+                </div>
+              </label>
+
+              <div id="multiLaunchRows" class="multi-launch-rows"></div>
+
+              <div class="multi-launch-actions">
+                <button id="multiLaunchAddRowButton" class="ghost-button dark-ghost" type="button">+ Outro valor</button>
+                <button id="multiLaunchFinalizeButton" class="ghost-button dark-ghost" type="button">Mesmo pagamento</button>
+              </div>
+
+              <div id="multiLaunchFinalizeCard" class="multi-launch-finalize hidden">
+                <label>
+                  <span>Pagamento</span>
+                  <select id="multiLaunchPaymentMethodInput">
+                    <option value="">Selecione</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Data de vencimento</span>
+                  <input id="multiLaunchDateInput" type="date" />
+                </label>
+              </div>
+
               <div class="settings-actions">
-                <button id="multiLaunchSaveButton" class="primary-button" type="button">Salvar lançamentos</button>
+                <button id="multiLaunchSaveButton" class="primary-button" type="button">SALVAR TODOS</button>
               </div>
             </article>
           </section>
@@ -483,7 +509,7 @@
         <div class="menu-title-row">
           <h2>Menu</h2>
         </div>
-        <p id="menuAppVersion" class="menu-version-line">Versão atual: iOS 20260407ad</p>
+        <p id="menuAppVersion" class="menu-version-line">Versão atual: iOS 20260407ae</p>
 
         <div class="menu-account-card">
           <strong>Conta em uso</strong>
@@ -562,8 +588,8 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260407ad"></script>
+    <script src="./supabase-config.js?v=20260407ae"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260407ad"></script>
+    <script type="module" src="./auth.js?v=20260407ae"></script>
   </body>
 </html>

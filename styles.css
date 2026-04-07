@@ -1118,6 +1118,47 @@ select {
   resize: vertical;
 }
 
+.multi-launch-card {
+  display: grid;
+  gap: 16px;
+}
+
+.multi-launch-rows {
+  display: grid;
+  gap: 14px;
+}
+
+.multi-launch-entry-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--surface-alt);
+}
+
+.card-heading.compact {
+  margin-bottom: 0;
+}
+
+.card-heading.compact h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.multi-launch-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.multi-launch-finalize {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--surface-alt);
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;
