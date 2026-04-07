@@ -1084,14 +1084,26 @@ select {
   align-items: center;
 }
 
-.menu-order-actions {
-  display: inline-flex;
-  gap: 6px;
+.menu-order-copy {
+  display: grid;
+  gap: 4px;
 }
 
-.compact-icon-button {
-  min-width: 42px;
-  padding: 10px 12px;
+.menu-order-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.compact-order-button {
+  min-width: 84px;
+  padding: 10px 14px;
+}
+
+.compact-order-button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .multi-launch-input {

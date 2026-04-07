@@ -1,6 +1,6 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260407ab";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260407ac";
 
-const IOS_APP_VERSION = "iOS 20260407ab";
+const IOS_APP_VERSION = "iOS 20260407ac";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -490,10 +490,29 @@ function renderMenuScreenOrder(actions) {
   return actions
     .map((action, index) => `
       <div class="menu-detail-row menu-order-row">
-        <strong>${index + 1}. ${escapeHtml(action.label || "")}</strong>
+        <div class="menu-order-copy">
+          <strong>${index + 1}. ${escapeHtml(action.label || "")}</strong>
+          <p class="muted">Toque para mudar a posição no app.</p>
+        </div>
         <div class="menu-order-actions">
-          <button class="ghost-button dark-ghost compact-icon-button" data-order-move="up" data-menu-action="${escapeHtml(action.id || "")}" type="button">↑</button>
-          <button class="ghost-button dark-ghost compact-icon-button" data-order-move="down" data-menu-action="${escapeHtml(action.id || "")}" type="button">↓</button>
+          <button
+            class="ghost-button dark-ghost compact-order-button"
+            data-order-move="up"
+            data-menu-action="${escapeHtml(action.id || "")}"
+            type="button"
+            ${index === 0 ? "disabled" : ""}
+          >
+            Subir
+          </button>
+          <button
+            class="ghost-button dark-ghost compact-order-button"
+            data-order-move="down"
+            data-menu-action="${escapeHtml(action.id || "")}"
+            type="button"
+            ${index === actions.length - 1 ? "disabled" : ""}
+          >
+            Descer
+          </button>
         </div>
       </div>
     `)

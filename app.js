@@ -699,6 +699,7 @@ async function moveMenuAction(actionId, direction) {
   currentState.ui.screenOrder = [...order, "CONFIG"];
   await saveState();
   render();
+  showAppToast("Ordem das telas atualizada.");
 }
 
 async function runMenuAction(actionId) {
