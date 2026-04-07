@@ -47,6 +47,7 @@ let eventsBound = false;
 let activeScreen = "EXTRATO";
 let isCategoryManagerOpen = false;
 let isPaymentManagerOpen = false;
+let appToastTimer = null;
 let currentHistoryFilters = {
   startDate: "",
   endDate: "",
@@ -84,6 +85,7 @@ const nodes = {
   screenTabs: document.querySelector("#screenTabs"),
   screenPanels: [...document.querySelectorAll(".screen-panel")],
   userBadge: document.querySelector("#userBadge"),
+  appToast: document.querySelector("#appToast"),
   categoryInput: document.querySelector("#categoryInput"),
   paymentMethodInput: document.querySelector("#paymentMethodInput"),
   manageCategoryToggleButton: document.querySelector("#manageCategoryToggleButton"),
@@ -91,11 +93,13 @@ const nodes = {
   manageExpenseCategoryCard: document.querySelector("#manageExpenseCategoryCard"),
   manageIncomeCategoryCard: document.querySelector("#manageIncomeCategoryCard"),
   managePaymentCard: document.querySelector("#managePaymentCard"),
+  titleInput: document.querySelector("#titleInput"),
   dateInput: document.querySelector("#dateInput"),
   installmentsInput: document.querySelector("#installmentsInput"),
   typeInput: document.querySelector("#typeInput"),
   typeToggle: document.querySelector("#typeToggle"),
   typeToggleButtons: [...document.querySelectorAll(".type-toggle-button")],
+  amountInput: document.querySelector("#amountInput"),
   settingsAccountName: document.querySelector("#settingsAccountName"),
   settingsDataSource: document.querySelector("#settingsDataSource"),
   settingsScreenOrder: document.querySelector("#settingsScreenOrder"),
@@ -234,12 +238,14 @@ async function handleSubmit(event) {
 
   updateCatalogForTransaction(category, type, paymentMethod);
   await saveState();
-  event.currentTarget.reset();
+  clearTransactionForm();
   syncTypeToggle(selectDefaultTransactionType());
   renderCategoryOptions();
   renderPaymentMethodOptions();
+  syncManagerSections();
   syncLaunchFormDefaults();
   render();
+  showAppToast("Lançamento salvo.");
   navigateToScreen("EXTRATO");
 }
 
@@ -626,6 +632,16 @@ function syncLaunchFormDefaults() {
   if (nodes.installmentsInput && !nodes.installmentsInput.value) {
     nodes.installmentsInput.value = "1";
   }
+}
+
+function clearTransactionForm() {
+  nodes.transactionForm?.reset();
+  if (nodes.titleInput) nodes.titleInput.value = "";
+  if (nodes.amountInput) nodes.amountInput.value = "";
+  if (nodes.dateInput) nodes.dateInput.value = todayDateInputValue();
+  if (nodes.installmentsInput) nodes.installmentsInput.value = "1";
+  isCategoryManagerOpen = false;
+  isPaymentManagerOpen = false;
 }
 
 function renderScreenTabs() {
@@ -1093,6 +1109,21 @@ function triggerDownload(content, mimeType, fileName) {
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function showAppToast(message) {
+  if (!nodes.appToast) return;
+
+  nodes.appToast.textContent = message;
+  nodes.appToast.classList.remove("hidden");
+
+  if (appToastTimer) {
+    window.clearTimeout(appToastTimer);
+  }
+
+  appToastTimer = window.setTimeout(() => {
+    nodes.appToast?.classList.add("hidden");
+  }, 2200);
 }
 
 async function saveState() {
