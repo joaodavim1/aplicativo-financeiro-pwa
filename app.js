@@ -155,6 +155,7 @@ const nodes = {
   multiLaunchAddRowButton: document.querySelector("#multiLaunchAddRowButton"),
   multiLaunchFinalizeButton: document.querySelector("#multiLaunchFinalizeButton"),
   multiLaunchFinalizeCard: document.querySelector("#multiLaunchFinalizeCard"),
+  multiLaunchFinalizeHint: document.querySelector("#multiLaunchFinalizeHint"),
   multiLaunchPaymentMethodInput: document.querySelector("#multiLaunchPaymentMethodInput"),
   multiLaunchDateInput: document.querySelector("#multiLaunchDateInput"),
   multiLaunchTotalValue: document.querySelector("#multiLaunchTotalValue"),
@@ -235,6 +236,7 @@ function bindEvents() {
   nodes.incomeCategoryBars?.addEventListener("click", handleCategoryBarClick);
   nodes.expenseCategoryBars?.addEventListener("click", handleCategoryBarClick);
   nodes.multiLaunchTypeToggle?.addEventListener("click", handleMultiLaunchTypeToggleClick);
+  nodes.multiLaunchRows?.addEventListener("click", handleMultiLaunchRowsClick);
   nodes.multiLaunchRows?.addEventListener("input", handleMultiLaunchRowsInput);
   nodes.multiLaunchRows?.addEventListener("change", handleMultiLaunchRowsInput);
   nodes.multiLaunchAddRowButton?.addEventListener("click", handleAddMultiLaunchRow);
@@ -368,7 +370,16 @@ function renderMultiLaunchScreen() {
     nodes.multiLaunchDateInput.value = todayDateInputValue();
   }
 
-  nodes.multiLaunchFinalizeCard?.classList.toggle("hidden", !multiLaunchFinalizeOpen);
+  nodes.multiLaunchFinalizeCard?.classList.toggle("is-inactive", !multiLaunchFinalizeOpen);
+  nodes.multiLaunchFinalizeHint?.classList.toggle("hidden", multiLaunchFinalizeOpen);
+
+  if (nodes.multiLaunchPaymentMethodInput) {
+    nodes.multiLaunchPaymentMethodInput.disabled = !multiLaunchFinalizeOpen;
+  }
+
+  if (nodes.multiLaunchDateInput) {
+    nodes.multiLaunchDateInput.disabled = !multiLaunchFinalizeOpen;
+  }
 }
 
 function computeMultiLaunchTotal() {
@@ -424,6 +435,15 @@ function renderMultiLaunchRow(row, index, categoryOptions) {
           ${options}
         </select>
       </label>
+      ${multiLaunchRows.length > 1 ? `
+        <button
+          class="ghost-button dark-ghost multi-launch-remove-button"
+          data-multi-remove-row-id="${row.id}"
+          type="button"
+        >
+          Remover lançamento
+        </button>
+      ` : ""}
     </article>
   `;
 }
@@ -457,14 +477,36 @@ function handleMultiLaunchRowsInput(event) {
   }
 }
 
-function handleAddMultiLaunchRow() {
-  multiLaunchRows.push(createMultiLaunchRow());
+function handleMultiLaunchRowsClick(event) {
+  const removeButton = event.target.closest("[data-multi-remove-row-id]");
+  if (!removeButton) return;
+
+  const rowId = Number(removeButton.dataset.multiRemoveRowId);
+  multiLaunchRows = multiLaunchRows.filter((row) => row.id !== rowId);
+  if (!multiLaunchRows.length) {
+    multiLaunchRows = [createMultiLaunchRow()];
+  }
   renderMultiLaunchScreen();
 }
 
-function handleToggleMultiLaunchFinalize() {
-  multiLaunchFinalizeOpen = !multiLaunchFinalizeOpen;
+function handleAddMultiLaunchRow() {
+  multiLaunchRows.push(createMultiLaunchRow());
+  multiLaunchFinalizeOpen = false;
   renderMultiLaunchScreen();
+  const lastCard = nodes.multiLaunchRows?.lastElementChild;
+  if (lastCard && typeof lastCard.scrollIntoView === "function") {
+    lastCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+}
+
+function handleToggleMultiLaunchFinalize() {
+  multiLaunchFinalizeOpen = true;
+  renderMultiLaunchScreen();
+  const finalizeCard = nodes.multiLaunchFinalizeCard;
+  if (finalizeCard && typeof finalizeCard.scrollIntoView === "function") {
+    finalizeCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  showAppToast("Forma de pagamento geral liberada.");
 }
 
 function render() {

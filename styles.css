@@ -1172,6 +1172,11 @@ select {
   padding: 16px;
   border-radius: 18px;
   background: var(--surface-alt);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.multi-launch-finalize.is-inactive {
+  opacity: 0.72;
 }
 
 .multi-launch-finalize-head {
@@ -1184,6 +1189,14 @@ select {
 .multi-launch-total {
   font-weight: 800;
   color: var(--primary);
+}
+
+.multi-launch-hint {
+  margin: 0;
+}
+
+.multi-launch-remove-button {
+  width: 100%;
 }
 
 .status-badge {

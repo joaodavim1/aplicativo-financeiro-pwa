@@ -8,9 +8,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Financeiro" />
     <title>Financeiro</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260407al" />
+    <link rel="manifest" href="./manifest.webmanifest?v=20260407am" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260407al" />
+    <link rel="stylesheet" href="./styles.css?v=20260407am" />
   </head>
   <body>
     <div id="appToast" class="app-toast hidden" role="status" aria-live="polite"></div>
@@ -77,11 +77,14 @@
                 <button id="multiLaunchFinalizeButton" class="ghost-button dark-ghost" type="button">Mesmo pagamento</button>
               </div>
 
-              <div id="multiLaunchFinalizeCard" class="multi-launch-finalize hidden">
+              <div id="multiLaunchFinalizeCard" class="multi-launch-finalize">
                 <div class="multi-launch-finalize-head">
                   <strong>Forma de pagamento geral</strong>
                   <span id="multiLaunchTotalValue" class="multi-launch-total">R$ 0,00</span>
                 </div>
+                <p id="multiLaunchFinalizeHint" class="muted multi-launch-hint">
+                  Toque em Mesmo pagamento para definir a forma de pagamento final.
+                </p>
                 <label>
                   <span>Forma de pagamento geral</span>
                   <select id="multiLaunchPaymentMethodInput">
@@ -593,8 +596,8 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260407al"></script>
+    <script src="./supabase-config.js?v=20260407am"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260407al"></script>
+    <script type="module" src="./auth.js?v=20260407am"></script>
   </body>
 </html>
