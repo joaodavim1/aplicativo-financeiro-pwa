@@ -1,7 +1,9 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260407an";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260407ao";
 
 const IOS_APP_VERSION = "Versão atual: 1.14";
 const IOS_SETTINGS_VERSION = "1.14";
+const IOS_BUILD_TOKEN = "20260407ao";
+const BUILD_STORAGE_KEY = "financeiro-pwa-build-token";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -46,7 +48,45 @@ const nodes = {
 
 let currentSession = null;
 
-bootstrap();
+ensureLatestBuild().then((ready) => {
+  if (ready) {
+    bootstrap();
+  }
+});
+
+async function ensureLatestBuild() {
+  try {
+    const currentUrl = new URL(window.location.href);
+    const currentBuild = currentUrl.searchParams.get("build");
+    const storedBuild = window.localStorage.getItem(BUILD_STORAGE_KEY);
+
+    if (storedBuild === IOS_BUILD_TOKEN && currentBuild === IOS_BUILD_TOKEN) {
+      return true;
+    }
+
+    if (storedBuild !== IOS_BUILD_TOKEN || currentBuild !== IOS_BUILD_TOKEN) {
+      window.localStorage.setItem(BUILD_STORAGE_KEY, IOS_BUILD_TOKEN);
+
+      if ("serviceWorker" in navigator && typeof navigator.serviceWorker.getRegistrations === "function") {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+      }
+
+      if ("caches" in window && typeof caches.keys === "function") {
+        const cacheKeys = await caches.keys();
+        await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+      }
+
+      currentUrl.searchParams.set("build", IOS_BUILD_TOKEN);
+      window.location.replace(currentUrl.toString());
+      return false;
+    }
+  } catch (error) {
+    console.warn("Falha ao preparar build atual:", error);
+  }
+
+  return true;
+}
 
 async function bootstrap() {
   try {
