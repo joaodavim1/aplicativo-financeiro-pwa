@@ -1,6 +1,6 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260406ag";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260407aa";
 
-const IOS_APP_VERSION = "iOS 20260406ag";
+const IOS_APP_VERSION = "iOS 20260407aa";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -783,7 +783,7 @@ async function fetchAppSettings(accessToken) {
     method: "GET",
     path: "/rest/v1/app_settings",
     query: {
-      select: "id,visualizacao_modo,screen_order,updated_at",
+      select: "id,dark_theme_enabled,visualizacao_modo,voice_auto_listen_enabled,voice_wake_word,notifications_enabled,notification_hour,notification_minute,screen_order,updated_at",
       order: "updated_at.desc,id.asc",
       limit: "1"
     },
@@ -987,6 +987,13 @@ function buildStateFromRemote({ people, activeAccount, activeAccountId, transact
     },
     ui: {
       screenOrder,
+      themeMode: appSettings?.dark_theme_enabled ? "dark" : "light",
+      visualizacaoModo: appSettings?.visualizacao_modo === "DUAS_TELAS" ? "DUAS_TELAS" : "UMA_TELA",
+      voiceAutoListenEnabled: Boolean(appSettings?.voice_auto_listen_enabled),
+      voiceWakeWord: String(appSettings?.voice_wake_word || "financeiro").trim() || "financeiro",
+      notificationsEnabled: appSettings?.notifications_enabled !== false,
+      notificationHour: Number.isFinite(Number(appSettings?.notification_hour)) ? Number(appSettings.notification_hour) : 10,
+      notificationMinute: Number.isFinite(Number(appSettings?.notification_minute)) ? Number(appSettings.notification_minute) : 0,
       activeAccountId,
       accounts: Array.isArray(people)
         ? people.map((person) => ({
@@ -1136,6 +1143,13 @@ function toSupabaseAppSettings(state, context) {
   return {
     owner_id: context.ownerId,
     id: Number(context.activeAppSettings?.id ?? 0),
+    dark_theme_enabled: state?.ui?.themeMode === "dark",
+    visualizacao_modo: state?.ui?.visualizacaoModo === "DUAS_TELAS" ? "DUAS_TELAS" : "UMA_TELA",
+    voice_auto_listen_enabled: Boolean(state?.ui?.voiceAutoListenEnabled),
+    voice_wake_word: String(state?.ui?.voiceWakeWord || "financeiro").trim() || "financeiro",
+    notifications_enabled: state?.ui?.notificationsEnabled !== false,
+    notification_hour: Number.isFinite(Number(state?.ui?.notificationHour)) ? Number(state.ui.notificationHour) : 10,
+    notification_minute: Number.isFinite(Number(state?.ui?.notificationMinute)) ? Number(state.ui.notificationMinute) : 0,
     screen_order: encodeStringList(screenOrder),
     updated_at: Date.now()
   };

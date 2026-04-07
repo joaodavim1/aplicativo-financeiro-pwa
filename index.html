@@ -8,9 +8,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Financeiro" />
     <title>Financeiro</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260406ag" />
+    <link rel="manifest" href="./manifest.webmanifest?v=20260407aa" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260406ag" />
+    <link rel="stylesheet" href="./styles.css?v=20260407aa" />
   </head>
   <body>
     <div id="appToast" class="app-toast hidden" role="status" aria-live="polite"></div>
@@ -364,6 +364,14 @@
                   <span>Data Fim</span>
                   <input id="futureEndDate" type="date" />
                 </label>
+                <label id="futureCategoryGroup" class="hidden">
+                  <span>Categoria</span>
+                  <select id="futureCategoryFilter"></select>
+                </label>
+                <label id="futurePaymentGroup" class="hidden">
+                  <span>Pagamento</span>
+                  <select id="futurePaymentFilter"></select>
+                </label>
                 <button id="clearFutureFiltersButton" class="ghost-button dark-ghost future-clear-button" type="button">Limpar periodo</button>
               </div>
             </article>
@@ -413,7 +421,7 @@
                 </div>
                 <div class="insight-item">
                   <strong>Versão iOS</strong>
-                  <p id="settingsAppVersion" class="muted">iOS 20260406ag</p>
+                  <p id="settingsAppVersion" class="muted">iOS 20260407aa</p>
                 </div>
               </div>
             </article>
@@ -431,6 +439,39 @@
               </div>
             </article>
 
+            <article class="card">
+              <div class="card-heading">
+                <p class="eyebrow">Aplicativo</p>
+                <h2>Preferências</h2>
+              </div>
+              <div class="stack">
+                <label>
+                  <span>Visualização</span>
+                  <select id="settingsViewMode">
+                    <option value="UMA_TELA">Uma tela</option>
+                    <option value="DUAS_TELAS">Duas telas</option>
+                  </select>
+                </label>
+                <label class="toggle-row">
+                  <span>Escuta por voz automática</span>
+                  <input id="settingsVoiceAutoListen" type="checkbox" />
+                </label>
+                <label>
+                  <span>Palavra de ativação</span>
+                  <input id="settingsVoiceWakeWord" type="text" placeholder="financeiro" />
+                </label>
+                <button id="settingsVoiceWakeWordSave" class="primary-button" type="button">Salvar palavra de ativação</button>
+                <label class="toggle-row">
+                  <span>Notificações</span>
+                  <input id="settingsNotificationsEnabled" type="checkbox" />
+                </label>
+                <label>
+                  <span>Hora da notificação</span>
+                  <input id="settingsNotificationTime" type="time" />
+                </label>
+              </div>
+            </article>
+
           </section>
         </section>
       </main>
@@ -441,7 +482,7 @@
         <p class="eyebrow">Contas</p>
         <div class="menu-title-row">
           <h2>Menu</h2>
-          <span id="menuAppVersion" class="muted menu-version-badge">iOS 20260406ag</span>
+          <span id="menuAppVersion" class="muted menu-version-badge">iOS 20260407aa</span>
         </div>
 
         <div class="menu-account-card">
@@ -521,8 +562,8 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260406ag"></script>
+    <script src="./supabase-config.js?v=20260407aa"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260406ag"></script>
+    <script type="module" src="./auth.js?v=20260407aa"></script>
   </body>
 </html>

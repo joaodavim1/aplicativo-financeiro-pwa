@@ -58,7 +58,9 @@ let currentHistoryFilters = {
 let currentFutureFilters = {
   startDate: "",
   endDate: "",
-  type: "all"
+  type: "all",
+  category: "",
+  payment: ""
 };
 let selectedFutureIds = new Set();
 
@@ -90,6 +92,10 @@ const nodes = {
   futureTypeButtons: [...document.querySelectorAll("[data-future-type]")],
   futureStartDate: document.querySelector("#futureStartDate"),
   futureEndDate: document.querySelector("#futureEndDate"),
+  futureCategoryGroup: document.querySelector("#futureCategoryGroup"),
+  futurePaymentGroup: document.querySelector("#futurePaymentGroup"),
+  futureCategoryFilter: document.querySelector("#futureCategoryFilter"),
+  futurePaymentFilter: document.querySelector("#futurePaymentFilter"),
   clearFutureFiltersButton: document.querySelector("#clearFutureFiltersButton"),
   futureFilteredTotalValue: document.querySelector("#futureFilteredTotalValue"),
   futureLaunchesList: document.querySelector("#futureLaunchesList"),
@@ -122,6 +128,12 @@ const nodes = {
   settingsDataSource: document.querySelector("#settingsDataSource"),
   settingsScreenOrder: document.querySelector("#settingsScreenOrder"),
   settingsThemeStatus: document.querySelector("#settingsThemeStatus"),
+  settingsViewMode: document.querySelector("#settingsViewMode"),
+  settingsVoiceAutoListen: document.querySelector("#settingsVoiceAutoListen"),
+  settingsVoiceWakeWord: document.querySelector("#settingsVoiceWakeWord"),
+  settingsVoiceWakeWordSave: document.querySelector("#settingsVoiceWakeWordSave"),
+  settingsNotificationsEnabled: document.querySelector("#settingsNotificationsEnabled"),
+  settingsNotificationTime: document.querySelector("#settingsNotificationTime"),
   settingsExpenseCategoriesList: document.querySelector("#settingsExpenseCategoriesList"),
   settingsIncomeCategoriesList: document.querySelector("#settingsIncomeCategoriesList"),
   settingsPaymentMethodsList: document.querySelector("#settingsPaymentMethodsList"),
@@ -223,8 +235,8 @@ function bindEvents() {
   nodes.historyTypeToggle?.addEventListener("click", handleHistoryTypeToggleClick);
   nodes.clearHistoryFiltersButton?.addEventListener("click", clearHistoryFilters);
   nodes.futureTypeToggle?.addEventListener("click", handleFutureTypeToggleClick);
-  nodes.futureStartDate?.addEventListener("change", handleFutureFilterChange);
-  nodes.futureEndDate?.addEventListener("change", handleFutureFilterChange);
+  [nodes.futureStartDate, nodes.futureEndDate, nodes.futureCategoryFilter, nodes.futurePaymentFilter]
+    .forEach((node) => node?.addEventListener("change", handleFutureFilterChange));
   nodes.clearFutureFiltersButton?.addEventListener("click", clearFutureFilters);
   nodes.selectAllFutureButton?.addEventListener("click", handleSelectAllFuture);
   nodes.clearFutureSelectionButton?.addEventListener("click", handleClearFutureSelection);
@@ -239,6 +251,11 @@ function bindEvents() {
       renderTransactions();
     });
   });
+  nodes.settingsViewMode?.addEventListener("change", handleViewModeChange);
+  nodes.settingsVoiceAutoListen?.addEventListener("change", handleVoiceAutoListenChange);
+  nodes.settingsNotificationsEnabled?.addEventListener("change", handleNotificationsEnabledChange);
+  nodes.settingsNotificationTime?.addEventListener("change", handleNotificationTimeChange);
+  nodes.settingsVoiceWakeWordSave?.addEventListener("click", handleVoiceWakeWordSave);
 }
 
 async function handleSubmit(event) {
@@ -299,6 +316,7 @@ function render() {
   renderExtratoCategoryBars();
   renderExtratoList();
   renderFutureScreen(balance, income, expense);
+  renderFutureFilterOptions();
   renderBudgets();
   renderTransactions();
   syncTypeToggle(selectDefaultTransactionType());
@@ -732,6 +750,25 @@ function renderSettings() {
   if (nodes.settingsThemeStatus) {
     nodes.settingsThemeStatus.textContent = currentState.ui.themeMode === "dark" ? "Dark" : "Claro";
   }
+  if (nodes.settingsViewMode) {
+    nodes.settingsViewMode.value = currentState.ui.visualizacaoModo || "UMA_TELA";
+  }
+  if (nodes.settingsVoiceAutoListen) {
+    nodes.settingsVoiceAutoListen.checked = Boolean(currentState.ui.voiceAutoListenEnabled);
+  }
+  if (nodes.settingsVoiceWakeWord) {
+    nodes.settingsVoiceWakeWord.value = currentState.ui.voiceWakeWord || "financeiro";
+  }
+  if (nodes.settingsNotificationsEnabled) {
+    nodes.settingsNotificationsEnabled.checked = Boolean(currentState.ui.notificationsEnabled);
+  }
+  if (nodes.settingsNotificationTime) {
+    nodes.settingsNotificationTime.value = formatNotificationTime(
+      currentState.ui.notificationHour,
+      currentState.ui.notificationMinute
+    );
+    nodes.settingsNotificationTime.disabled = !currentState.ui.notificationsEnabled;
+  }
   if (nodes.settingsThemeButton) {
     nodes.settingsThemeButton.textContent = currentState.ui.themeMode === "dark" ? "Usar tema claro" : "Ativar tema dark";
   }
@@ -744,6 +781,53 @@ async function handleThemeToggle() {
   await saveState();
   renderSettings();
   showAppToast(currentState.ui.themeMode === "dark" ? "Tema dark ativado." : "Tema claro ativado.");
+}
+
+async function handleViewModeChange() {
+  currentState.ui.visualizacaoModo = nodes.settingsViewMode?.value === "DUAS_TELAS" ? "DUAS_TELAS" : "UMA_TELA";
+  await saveState();
+  showAppToast("Visualização do app atualizada.");
+}
+
+async function handleVoiceAutoListenChange() {
+  currentState.ui.voiceAutoListenEnabled = Boolean(nodes.settingsVoiceAutoListen?.checked);
+  await saveState();
+  showAppToast("Ajuste de voz atualizado.");
+}
+
+async function handleVoiceWakeWordSave() {
+  const sanitized = String(nodes.settingsVoiceWakeWord?.value || "").trim() || "financeiro";
+  currentState.ui.voiceWakeWord = sanitized;
+  if (nodes.settingsVoiceWakeWord) {
+    nodes.settingsVoiceWakeWord.value = sanitized;
+  }
+  await saveState();
+  showAppToast("Palavra de ativação salva.");
+}
+
+async function handleNotificationsEnabledChange() {
+  currentState.ui.notificationsEnabled = Boolean(nodes.settingsNotificationsEnabled?.checked);
+  if (nodes.settingsNotificationTime) {
+    nodes.settingsNotificationTime.disabled = !currentState.ui.notificationsEnabled;
+  }
+  await saveState();
+  showAppToast("Notificações atualizadas.");
+}
+
+async function handleNotificationTimeChange() {
+  const [hourRaw, minuteRaw] = String(nodes.settingsNotificationTime?.value || "10:00").split(":");
+  const hour = Number.parseInt(hourRaw || "10", 10);
+  const minute = Number.parseInt(minuteRaw || "0", 10);
+  currentState.ui.notificationHour = Number.isFinite(hour) ? Math.min(23, Math.max(0, hour)) : 10;
+  currentState.ui.notificationMinute = Number.isFinite(minute) ? Math.min(59, Math.max(0, minute)) : 0;
+  await saveState();
+  showAppToast("Hora da notificação salva.");
+}
+
+function formatNotificationTime(hour, minute) {
+  const safeHour = Number.isFinite(Number(hour)) ? Math.min(23, Math.max(0, Number(hour))) : 10;
+  const safeMinute = Number.isFinite(Number(minute)) ? Math.min(59, Math.max(0, Number(minute))) : 0;
+  return `${String(safeHour).padStart(2, "0")}:${String(safeMinute).padStart(2, "0")}`;
 }
 
 function renderCatalogManagers() {
@@ -896,7 +980,9 @@ function handleFutureFilterChange() {
   currentFutureFilters = {
     ...currentFutureFilters,
     startDate: nodes.futureStartDate?.value || "",
-    endDate: nodes.futureEndDate?.value || ""
+    endDate: nodes.futureEndDate?.value || "",
+    category: nodes.futureCategoryFilter?.value || "",
+    payment: nodes.futurePaymentFilter?.value || ""
   };
   renderFutureList();
 }
@@ -905,7 +991,11 @@ function handleFutureTypeToggleClick(event) {
   const button = event.target.closest("[data-future-type]");
   if (!button) return;
   currentFutureFilters.type = button.dataset.futureType || "all";
-  syncFutureFilterInputs();
+  if (currentFutureFilters.type === "all") {
+    currentFutureFilters.category = "";
+    currentFutureFilters.payment = "";
+  }
+  renderFutureFilterOptions();
   renderFutureList();
 }
 
@@ -913,9 +1003,11 @@ function clearFutureFilters() {
   currentFutureFilters = {
     startDate: "",
     endDate: "",
-    type: "all"
+    type: "all",
+    category: "",
+    payment: ""
   };
-  syncFutureFilterInputs();
+  renderFutureFilterOptions();
   renderFutureList();
 }
 
@@ -925,6 +1017,66 @@ function syncFutureFilterInputs() {
   nodes.futureTypeButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.futureType === currentFutureFilters.type);
   });
+  const showDetailedFilters = currentFutureFilters.type !== "all";
+  nodes.futureCategoryGroup?.classList.toggle("hidden", !showDetailedFilters);
+  nodes.futurePaymentGroup?.classList.toggle("hidden", !showDetailedFilters);
+  if (nodes.futureCategoryFilter) nodes.futureCategoryFilter.value = currentFutureFilters.category;
+  if (nodes.futurePaymentFilter) nodes.futurePaymentFilter.value = currentFutureFilters.payment;
+}
+
+function deriveFutureCategoryOptions(type) {
+  const filteredType = type === "all" ? null : type;
+  return uniqueCaseInsensitive(
+    currentState.transactions
+      .filter((transaction) => !filteredType || transaction.type === filteredType)
+      .map((transaction) => transaction.category)
+  );
+}
+
+function deriveFuturePaymentOptions(type) {
+  const filteredType = type === "all" ? null : type;
+  return uniqueCaseInsensitive(
+    [
+      ...currentState.catalog.paymentMethods,
+      ...currentState.transactions
+        .filter((transaction) => !filteredType || transaction.type === filteredType)
+        .map((transaction) => transaction.paymentMethod)
+        .filter(Boolean)
+    ]
+  );
+}
+
+function renderFutureFilterOptions() {
+  if (!nodes.futureCategoryFilter || !nodes.futurePaymentFilter) return;
+
+  const categoryOptions = deriveFutureCategoryOptions(currentFutureFilters.type);
+  const paymentOptions = deriveFuturePaymentOptions(currentFutureFilters.type);
+  const currentCategory = currentFutureFilters.category;
+  const currentPayment = currentFutureFilters.payment;
+
+  nodes.futureCategoryFilter.innerHTML = [`<option value="">Todas</option>`, ...categoryOptions.map((option) =>
+    `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`
+  )].join("");
+
+  nodes.futurePaymentFilter.innerHTML = [`<option value="">Todos</option>`, ...paymentOptions.map((option) =>
+    `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`
+  )].join("");
+
+  if (categoryOptions.includes(currentCategory)) {
+    nodes.futureCategoryFilter.value = currentCategory;
+  } else {
+    currentFutureFilters.category = "";
+    nodes.futureCategoryFilter.value = "";
+  }
+
+  if (paymentOptions.includes(currentPayment)) {
+    nodes.futurePaymentFilter.value = currentPayment;
+  } else {
+    currentFutureFilters.payment = "";
+    nodes.futurePaymentFilter.value = "";
+  }
+
+  syncFutureFilterInputs();
 }
 
 function getFutureTransactions() {
@@ -933,6 +1085,8 @@ function getFutureTransactions() {
     const futureDateMillis = resolveFutureDateMillis(transaction);
     if (futureDateMillis <= todayEnd) return false;
     if (currentFutureFilters.type !== "all" && transaction.type !== currentFutureFilters.type) return false;
+    if (currentFutureFilters.category && transaction.category !== currentFutureFilters.category) return false;
+    if (currentFutureFilters.payment && transaction.paymentMethod !== currentFutureFilters.payment) return false;
     if (currentFutureFilters.startDate) {
       const startMillis = toStartOfDayMillis(currentFutureFilters.startDate);
       if (futureDateMillis < startMillis) return false;
@@ -1993,6 +2147,12 @@ function sanitizeUi(ui) {
     screenOrder,
     menuActionsOrder,
     themeMode: ui?.themeMode === "dark" ? "dark" : "light",
+    visualizacaoModo: ui?.visualizacaoModo === "DUAS_TELAS" ? "DUAS_TELAS" : "UMA_TELA",
+    voiceAutoListenEnabled: Boolean(ui?.voiceAutoListenEnabled),
+    voiceWakeWord: String(ui?.voiceWakeWord || "financeiro").trim() || "financeiro",
+    notificationsEnabled: ui?.notificationsEnabled !== false,
+    notificationHour: Number.isFinite(Number(ui?.notificationHour)) ? Math.min(23, Math.max(0, Number(ui.notificationHour))) : 10,
+    notificationMinute: Number.isFinite(Number(ui?.notificationMinute)) ? Math.min(59, Math.max(0, Number(ui.notificationMinute))) : 0,
     activeAccountId: Number(ui?.activeAccountId) || null,
     accounts: Array.isArray(ui?.accounts)
       ? ui.accounts

@@ -1058,6 +1058,18 @@ select {
   text-align: center;
 }
 
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.toggle-row input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+}
+
 .menu-order-row {
   display: grid;
   grid-template-columns: 1fr auto;
