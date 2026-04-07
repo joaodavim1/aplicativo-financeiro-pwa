@@ -109,7 +109,11 @@ const nodes = {
   addPaymentDueDayInput: document.querySelector("#addPaymentDueDayInput"),
   addExpenseCategoryButton: document.querySelector("#addExpenseCategoryButton"),
   addIncomeCategoryButton: document.querySelector("#addIncomeCategoryButton"),
-  addPaymentMethodButton: document.querySelector("#addPaymentMethodButton")
+  addPaymentMethodButton: document.querySelector("#addPaymentMethodButton"),
+  multiLaunchDialog: document.querySelector("#multiLaunchDialog"),
+  multiLaunchInput: document.querySelector("#multiLaunchInput"),
+  multiLaunchSaveButton: document.querySelector("#multiLaunchSaveButton"),
+  multiLaunchCloseButton: document.querySelector("#multiLaunchCloseButton")
 };
 
 export async function bootFinanceiroApp({ mode = "demo", user = null, persistence = null } = {}) {
@@ -130,12 +134,17 @@ export async function bootFinanceiroApp({ mode = "demo", user = null, persistenc
 
 window.financeiroNavigateToScreen = navigateToScreen;
 window.financeiroGetMenuState = getFinanceiroMenuState;
+window.financeiroMoveMenuAction = moveMenuAction;
+window.financeiroRunMenuAction = runMenuAction;
 
 export function getFinanceiroMenuState() {
   const accounts = Array.isArray(currentState?.ui?.accounts) ? currentState.ui.accounts : [];
   const activeAccountId = currentState?.ui?.activeAccountId ?? null;
   const activeAccount = resolveActiveAccountRecord(accounts, activeAccountId);
   const screenOrder = Array.isArray(currentState?.ui?.screenOrder) ? currentState.ui.screenOrder : ["EXTRATO", "LANCAMENTOS", "QUADRO"];
+  const menuActionsOrder = Array.isArray(currentState?.ui?.menuActionsOrder)
+    ? currentState.ui.menuActionsOrder
+    : defaultMenuActionsOrder();
 
   return {
     accountName: activeAccount?.name || "Sem conta",
@@ -148,7 +157,11 @@ export function getFinanceiroMenuState() {
       email: account.email || "",
       isActive: Number(account.id) === Number(activeAccountId)
     })),
-    screenOrder: screenOrder.filter((screen) => screen !== "CONFIG").map((screen) => screenLabel(screen))
+    screenOrder: screenOrder.filter((screen) => screen !== "CONFIG").map((screen) => screenLabel(screen)),
+    menuActions: menuActionsOrder.map((actionId) => ({
+      id: actionId,
+      label: menuActionLabel(actionId)
+    }))
   };
 }
 
@@ -166,6 +179,8 @@ function bindEvents() {
   nodes.screenTabs.addEventListener("click", handleScreenTabClick);
   nodes.incomeCategoryBars?.addEventListener("click", handleCategoryBarClick);
   nodes.expenseCategoryBars?.addEventListener("click", handleCategoryBarClick);
+  nodes.multiLaunchSaveButton?.addEventListener("click", handleSaveMultiLaunch);
+  nodes.multiLaunchCloseButton?.addEventListener("click", closeMultiLaunchDialog);
   [
     nodes.historyStartDate,
     nodes.historyEndDate,
@@ -649,6 +664,48 @@ function navigateToScreen(screen) {
   renderScreenPanels();
 }
 
+async function moveMenuAction(actionId, direction) {
+  const order = Array.isArray(currentState?.ui?.menuActionsOrder)
+    ? [...currentState.ui.menuActionsOrder]
+    : defaultMenuActionsOrder();
+  const index = order.indexOf(actionId);
+  if (index === -1) return;
+
+  const targetIndex = direction === "up" ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= order.length) return;
+
+  [order[index], order[targetIndex]] = [order[targetIndex], order[index]];
+  currentState.ui.menuActionsOrder = order;
+  await saveState();
+  render();
+}
+
+async function runMenuAction(actionId) {
+  if (actionId === "EXTRATO") {
+    navigateToScreen("EXTRATO");
+    return;
+  }
+  if (actionId === "LANCAMENTOS") {
+    navigateToScreen("LANCAMENTOS");
+    return;
+  }
+  if (actionId === "QUADRO") {
+    navigateToScreen("QUADRO");
+    return;
+  }
+  if (actionId === "MULTIPLOS") {
+    openMultiLaunchDialog();
+    return;
+  }
+  if (actionId === "EXPORT_CSV") {
+    exportTransactionsCsv();
+    return;
+  }
+  if (actionId === "EXPORT_EXCEL") {
+    exportTransactionsExcel();
+  }
+}
+
 function renderSettings() {
   if (!nodes.settingsAccountName) return;
 
@@ -888,6 +945,154 @@ function renderTransactionItem(transaction) {
       </div>
     </div>
   `;
+}
+
+function openMultiLaunchDialog() {
+  if (!nodes.multiLaunchDialog) return;
+  if (!nodes.multiLaunchInput?.value.trim()) {
+    nodes.multiLaunchInput.value = "";
+  }
+  openDialogElement(nodes.multiLaunchDialog);
+}
+
+function closeMultiLaunchDialog() {
+  closeDialogElement(nodes.multiLaunchDialog);
+}
+
+async function handleSaveMultiLaunch() {
+  const raw = nodes.multiLaunchInput?.value || "";
+  const lines = raw
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (!lines.length) {
+    window.alert("Informe ao menos um lançamento.");
+    return;
+  }
+
+  const createdTransactions = [];
+
+  for (const line of lines) {
+    const parts = line.split(";").map((part) => part.trim());
+    if (parts.length < 7) {
+      window.alert("Cada linha precisa ter: descricao;categoria;despesa ou receita;pagamento;data;parcelas;valor");
+      return;
+    }
+
+    const [title, category, rawType, paymentMethod, dateValue, rawInstallments, rawAmount] = parts;
+    const normalizedType = rawType.toLowerCase();
+    const type = normalizedType === "receita" ? "income" : normalizedType === "despesa" ? "expense" : "";
+    const installments = Math.max(1, Number.parseInt(rawInstallments, 10) || 1);
+    const amount = Number.parseFloat(rawAmount.replace(/\./g, "").replace(",", "."));
+
+    if (!title || !category || !type || !paymentMethod || !dateValue || !Number.isFinite(amount) || amount <= 0) {
+      window.alert("Revise as linhas dos múltiplos lançamentos.");
+      return;
+    }
+
+    const dateMillis = toStartOfDayMillis(dateValue);
+    createdTransactions.push({
+      id: generateId(),
+      title,
+      category,
+      type,
+      amount,
+      dateMillis,
+      dateLabel: formatRelativeDate(dateMillis),
+      paymentMethod,
+      installments,
+      installmentNumber: 1,
+      originalTotalAmount: amount * installments,
+      cardPaymentDateMillis: null,
+      notes: ""
+    });
+    updateCatalogForTransaction(category, type, paymentMethod);
+  }
+
+  currentState.transactions = [...createdTransactions, ...currentState.transactions]
+    .sort((left, right) => right.dateMillis - left.dateMillis);
+  await saveState();
+  nodes.multiLaunchInput.value = "";
+  closeMultiLaunchDialog();
+  render();
+  navigateToScreen("LANCAMENTOS");
+}
+
+function exportTransactionsCsv() {
+  const rows = [
+    ["descricao", "categoria", "movimento", "pagamento", "data", "parcelas", "valor", "observacoes"],
+    ...currentState.transactions.map((transaction) => [
+      transaction.title,
+      transaction.category,
+      transaction.type === "income" ? "Receita" : "Despesa",
+      transaction.paymentMethod,
+      new Date(transaction.dateMillis).toISOString().slice(0, 10),
+      String(transaction.installments || 1),
+      String(transaction.amount).replace(".", ","),
+      transaction.notes || ""
+    ])
+  ];
+  const csv = rows
+    .map((row) => row.map((value) => `"${String(value || "").replace(/"/g, '""')}"`).join(";"))
+    .join("\n");
+  triggerDownload("\uFEFF" + csv, "text/csv;charset=utf-8;", buildExportFileName("csv"));
+}
+
+function exportTransactionsExcel() {
+  const tableRows = currentState.transactions
+    .map((transaction) => `
+      <tr>
+        <td>${escapeHtml(transaction.title)}</td>
+        <td>${escapeHtml(transaction.category)}</td>
+        <td>${escapeHtml(transaction.type === "income" ? "Receita" : "Despesa")}</td>
+        <td>${escapeHtml(transaction.paymentMethod)}</td>
+        <td>${escapeHtml(new Date(transaction.dateMillis).toLocaleDateString("pt-BR"))}</td>
+        <td>${escapeHtml(String(transaction.installments || 1))}</td>
+        <td>${escapeHtml(currency.format(transaction.amount))}</td>
+        <td>${escapeHtml(transaction.notes || "")}</td>
+      </tr>
+    `)
+    .join("");
+
+  const html = `
+    <html>
+      <head><meta charset="UTF-8" /></head>
+      <body>
+        <table border="1">
+          <tr>
+            <th>Descrição</th>
+            <th>Categoria</th>
+            <th>Movimento</th>
+            <th>Pagamento</th>
+            <th>Data</th>
+            <th>Parcelas</th>
+            <th>Valor</th>
+            <th>Observações</th>
+          </tr>
+          ${tableRows}
+        </table>
+      </body>
+    </html>
+  `;
+  triggerDownload("\uFEFF" + html, "application/vnd.ms-excel;charset=utf-8;", buildExportFileName("xls"));
+}
+
+function buildExportFileName(extension) {
+  const stamp = new Date().toISOString().slice(0, 10);
+  return `financeiro-${stamp}.${extension}`;
+}
+
+function triggerDownload(content, mimeType, fileName) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 async function saveState() {
@@ -1286,9 +1491,11 @@ function sanitizeUi(ui) {
   if (!screenOrder.includes("CONFIG")) {
     screenOrder.push("CONFIG");
   }
+  const menuActionsOrder = sanitizeMenuActionsOrder(ui?.menuActionsOrder);
 
   return {
     screenOrder,
+    menuActionsOrder,
     activeAccountId: Number(ui?.activeAccountId) || null,
     accounts: Array.isArray(ui?.accounts)
       ? ui.accounts
@@ -1301,6 +1508,21 @@ function sanitizeUi(ui) {
           .filter((account) => account.id > 0 && account.name)
       : []
   };
+}
+
+function sanitizeMenuActionsOrder(rawOrder) {
+  const allowed = defaultMenuActionsOrder();
+  const base = Array.isArray(rawOrder) ? rawOrder.filter((item) => allowed.includes(item)) : [];
+  const seen = new Set();
+  const normalized = [];
+
+  for (const item of [...base, ...allowed]) {
+    if (seen.has(item)) continue;
+    seen.add(item);
+    normalized.push(item);
+  }
+
+  return normalized;
 }
 
 function buildMenuAccountDetails(activeAccountId, accounts) {
@@ -1320,6 +1542,42 @@ function buildMenuAccountDetails(activeAccountId, accounts) {
 function resolveActiveAccountRecord(accounts, activeAccountId) {
   if (!Array.isArray(accounts)) return null;
   return accounts.find((account) => Number(account.id) === Number(activeAccountId)) || null;
+}
+
+function defaultMenuActionsOrder() {
+  return ["LANCAMENTOS", "EXTRATO", "QUADRO", "MULTIPLOS", "EXPORT_CSV", "EXPORT_EXCEL"];
+}
+
+function menuActionLabel(actionId) {
+  if (actionId === "LANCAMENTOS") return "Lançamentos";
+  if (actionId === "EXTRATO") return "Extrato";
+  if (actionId === "QUADRO") return "Futuro";
+  if (actionId === "MULTIPLOS") return "Múltiplos lançamentos";
+  if (actionId === "EXPORT_CSV") return "Exportar CSV";
+  if (actionId === "EXPORT_EXCEL") return "Exportar Excel";
+  return actionId;
+}
+
+function openDialogElement(dialog) {
+  if (!dialog) return;
+  try {
+    if (typeof dialog.showModal === "function") {
+      if (!dialog.open) dialog.showModal();
+      return;
+    }
+  } catch {}
+  dialog.setAttribute("open", "open");
+}
+
+function closeDialogElement(dialog) {
+  if (!dialog) return;
+  try {
+    if (typeof dialog.close === "function" && dialog.open) {
+      dialog.close();
+      return;
+    }
+  } catch {}
+  dialog.removeAttribute("open");
 }
 
 function uniqueCaseInsensitive(values) {

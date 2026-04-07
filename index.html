@@ -391,6 +391,13 @@
         </div>
 
         <div class="menu-section">
+          <h3>Menu do app</h3>
+          <div id="menuActionButtons" class="menu-list-block">
+            <button class="primary-button" type="button">Extrato</button>
+          </div>
+        </div>
+
+        <div class="menu-section">
           <h3>Ordem das telas</h3>
           <div id="menuScreenOrderList" class="menu-list-block">
             <div class="menu-detail-row">
@@ -401,16 +408,16 @@
         </div>
 
         <div class="menu-section">
-          <h3>Ações da conta</h3>
+          <h3>Atualizar aplicativo</h3>
           <div class="settings-actions">
-            <button id="menuLoginButton" class="primary-button" type="button">Entrar com Google</button>
+            <button id="menuUpdateButton" class="primary-button" type="button">Atualizar aplicativo</button>
           </div>
         </div>
 
         <div class="menu-section">
-          <h3>Atualizar aplicativo</h3>
+          <h3>Ações da conta</h3>
           <div class="settings-actions">
-            <button id="menuUpdateButton" class="ghost-button dark-ghost menu-dark" type="button">Atualizar versão</button>
+            <button id="menuLoginButton" class="primary-button" type="button">Entrar com Google</button>
           </div>
         </div>
 
@@ -439,8 +446,29 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260406s"></script>
+    <dialog id="multiLaunchDialog" class="install-dialog">
+      <div class="dialog-content">
+        <p class="eyebrow">Múltiplos lançamentos</p>
+        <h2>Importar vários lançamentos</h2>
+        <p class="muted">
+          Use uma linha por lançamento no formato:
+          descricao;categoria;despesa ou receita;pagamento;data;parcelas;valor
+        </p>
+        <textarea
+          id="multiLaunchInput"
+          class="multi-launch-input"
+          rows="8"
+          placeholder="Mercado;Alimentacao;despesa;Pix;2026-04-06;1;120,50"
+        ></textarea>
+        <div class="settings-actions">
+          <button id="multiLaunchSaveButton" class="primary-button" type="button">Salvar lançamentos</button>
+          <button id="multiLaunchCloseButton" class="ghost-button dark-ghost" type="button">Fechar</button>
+        </div>
+      </div>
+    </dialog>
+
+    <script src="./supabase-config.js?v=20260406t"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260406s"></script>
+    <script type="module" src="./auth.js?v=20260406t"></script>
   </body>
 </html>

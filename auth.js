@@ -1,4 +1,4 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260406s";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260406t";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -6,6 +6,7 @@ const authOptions = {
   ...window.FINANCEIRO_AUTH_OPTIONS
 };
 const SESSION_STORAGE_KEY = "financeiro-pwa-supabase-session-v1";
+const UI_PREFS_STORAGE_KEY_PREFIX = "financeiro-pwa-ui-prefs-";
 const SETTINGS_LIST_SEPARATOR = "|||";
 const GOOGLE_BUTTON_WIDTH = 280;
 const BUDGET_COLORS = ["#145c4c", "#6bc5a4", "#f08a24", "#d9604c", "#256d5a"];
@@ -25,6 +26,7 @@ const nodes = {
   menuAccountsList: document.querySelector("#menuAccountsList"),
   menuAccountDetails: document.querySelector("#menuAccountDetails"),
   menuCurrentAccess: document.querySelector("#menuCurrentAccess"),
+  menuActionButtons: document.querySelector("#menuActionButtons"),
   menuScreenOrder: document.querySelector("#menuScreenOrder"),
   menuScreenOrderList: document.querySelector("#menuScreenOrderList"),
   menuUpdateButton: document.querySelector("#menuUpdateButton"),
@@ -117,6 +119,8 @@ function bindEvents() {
   nodes.settingsLoginButton?.addEventListener("click", handleAccountAccess);
   nodes.settingsInstallButton?.addEventListener("click", () => refreshAppVersion());
   nodes.settingsLogoutButton?.addEventListener("click", handleLogout);
+  nodes.menuActionButtons?.addEventListener("click", handleMenuActionButtonClick);
+  nodes.menuScreenOrderList?.addEventListener("click", handleMenuOrderClick);
   bindDialogBackdrop(nodes.menuDialog);
   window.addEventListener("financeiro:menu-state", (event) => {
     syncMenuState(event.detail);
@@ -362,7 +366,8 @@ function syncMenuState(menuState = null) {
     accessLabel: currentSession?.accessToken ? "Conta ativa" : "Conta local",
     accountDetails: [{ label: "Acesso", value: currentSession?.accessToken ? "Conta ativa" : "Conta local" }],
     accounts: [],
-    screenOrder: ["Extrato", "Lançamentos", "Futuro"]
+    screenOrder: ["Extrato", "Lançamentos", "Futuro"],
+    menuActions: []
   };
 
   if (nodes.menuCurrentAccountName) {
@@ -374,9 +379,25 @@ function syncMenuState(menuState = null) {
   if (nodes.menuAccountDetails) {
     nodes.menuAccountDetails.innerHTML = renderMenuDetails(snapshot.accountDetails || []);
   }
-  if (nodes.menuScreenOrderList) {
-    nodes.menuScreenOrderList.innerHTML = renderMenuScreenOrder(snapshot.screenOrder || []);
+  if (nodes.menuActionButtons) {
+    nodes.menuActionButtons.innerHTML = renderMenuActionButtons(snapshot.menuActions || []);
   }
+  if (nodes.menuScreenOrderList) {
+    nodes.menuScreenOrderList.innerHTML = renderMenuScreenOrder(snapshot.menuActions || []);
+  }
+}
+
+async function handleMenuActionButtonClick(event) {
+  const button = event.target.closest("[data-menu-action]");
+  if (!button) return;
+  closeMenuDialog();
+  await window.financeiroRunMenuAction?.(button.dataset.menuAction);
+}
+
+async function handleMenuOrderClick(event) {
+  const button = event.target.closest("[data-order-move][data-menu-action]");
+  if (!button) return;
+  await window.financeiroMoveMenuAction?.(button.dataset.menuAction, button.dataset.orderMove);
 }
 
 function renderMenuAccounts(accounts) {
@@ -415,15 +436,33 @@ function renderMenuDetails(details) {
     .join("");
 }
 
-function renderMenuScreenOrder(screenOrder) {
-  if (!Array.isArray(screenOrder) || screenOrder.length === 0) {
-    return `<div class="empty-state">Sem telas configuradas.</div>`;
+function renderMenuActionButtons(actions) {
+  if (!Array.isArray(actions) || actions.length === 0) {
+    return `<div class="empty-state">Sem atalhos configurados.</div>`;
   }
 
-  return screenOrder
-    .map((screen, index) => `
-      <div class="menu-detail-row">
-        <strong>${index + 1}. ${escapeHtml(screen)}</strong>
+  return actions
+    .map((action) => `
+      <button class="ghost-button dark-ghost menu-dark menu-action-button" data-menu-action="${escapeHtml(action.id || "")}" type="button">
+        ${escapeHtml(action.label || "")}
+      </button>
+    `)
+    .join("");
+}
+
+function renderMenuScreenOrder(actions) {
+  if (!Array.isArray(actions) || actions.length === 0) {
+    return `<div class="empty-state">Sem itens configurados.</div>`;
+  }
+
+  return actions
+    .map((action, index) => `
+      <div class="menu-detail-row menu-order-row">
+        <strong>${index + 1}. ${escapeHtml(action.label || "")}</strong>
+        <div class="menu-order-actions">
+          <button class="ghost-button dark-ghost compact-icon-button" data-order-move="up" data-menu-action="${escapeHtml(action.id || "")}" type="button">↑</button>
+          <button class="ghost-button dark-ghost compact-icon-button" data-order-move="down" data-menu-action="${escapeHtml(action.id || "")}" type="button">↓</button>
+        </div>
       </div>
     `)
     .join("");
@@ -499,7 +538,7 @@ function createSupabasePersistence(ensureSessionFn) {
       context.activeSettings = activeSettings;
       context.defaultPaymentMethod = decodeStringList(activeSettings?.payment_methods || "")[0] || "Pix";
 
-      return buildStateFromRemote({
+      const remoteState = buildStateFromRemote({
         people,
         activeAccount,
         activeAccountId,
@@ -507,6 +546,8 @@ function createSupabasePersistence(ensureSessionFn) {
         settings: activeSettings,
         appSettings: Array.isArray(appSettings) ? appSettings[0] || null : null
       });
+
+      return mergeUiPreferences(remoteState, readStoredUiPreferences(session.user.uid));
     },
     async saveState(state) {
       const session = await ensureSessionFn();
@@ -561,6 +602,7 @@ function createSupabasePersistence(ensureSessionFn) {
         multi_launch_income_category_amounts: settingsPayload.multi_launch_income_category_amounts
       };
       context.defaultPaymentMethod = decodeStringList(settingsPayload.payment_methods)[0] || "Pix";
+      writeStoredUiPreferences(session.user.uid, state.ui);
     }
   };
 }
@@ -779,6 +821,41 @@ function readPersistedSession() {
 
 function clearPersistedSession() {
   localStorage.removeItem(SESSION_STORAGE_KEY);
+}
+
+function mergeUiPreferences(state, uiPreferences) {
+  if (!uiPreferences || typeof uiPreferences !== "object") return state;
+  return {
+    ...state,
+    ui: {
+      ...state.ui,
+      ...uiPreferences,
+      screenOrder: Array.isArray(state.ui?.screenOrder) ? state.ui.screenOrder : ["EXTRATO", "LANCAMENTOS", "QUADRO", "CONFIG"]
+    }
+  };
+}
+
+function writeStoredUiPreferences(userId, ui) {
+  if (!userId) return;
+  try {
+    localStorage.setItem(getUiPrefsStorageKey(userId), JSON.stringify(ui || {}));
+  } catch (error) {
+    console.warn("Falha ao salvar preferencias da interface:", error);
+  }
+}
+
+function readStoredUiPreferences(userId) {
+  if (!userId) return null;
+  try {
+    const raw = localStorage.getItem(getUiPrefsStorageKey(userId));
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function getUiPrefsStorageKey(userId) {
+  return `${UI_PREFS_STORAGE_KEY_PREFIX}${userId}`;
 }
 
 function selectActiveAccount(people, transactions) {
@@ -1069,4 +1146,13 @@ function extractSupabaseError(payload, raw) {
     return payload.msg || payload.message || payload.error_description || payload.error || raw || "Falha ao carregar os dados.";
   }
   return raw || "Falha ao carregar os dados.";
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
