@@ -155,7 +155,6 @@ const nodes = {
   multiLaunchAddRowButton: document.querySelector("#multiLaunchAddRowButton"),
   multiLaunchFinalizeButton: document.querySelector("#multiLaunchFinalizeButton"),
   multiLaunchFinalizeCard: document.querySelector("#multiLaunchFinalizeCard"),
-  multiLaunchFinalizeHint: document.querySelector("#multiLaunchFinalizeHint"),
   multiLaunchPaymentMethodInput: document.querySelector("#multiLaunchPaymentMethodInput"),
   multiLaunchDateInput: document.querySelector("#multiLaunchDateInput"),
   multiLaunchTotalValue: document.querySelector("#multiLaunchTotalValue"),
@@ -370,8 +369,7 @@ function renderMultiLaunchScreen() {
     nodes.multiLaunchDateInput.value = todayDateInputValue();
   }
 
-  nodes.multiLaunchFinalizeCard?.classList.toggle("is-inactive", !multiLaunchFinalizeOpen);
-  nodes.multiLaunchFinalizeHint?.classList.toggle("hidden", multiLaunchFinalizeOpen);
+  nodes.multiLaunchFinalizeCard?.classList.toggle("hidden", !multiLaunchFinalizeOpen);
 
   if (nodes.multiLaunchPaymentMethodInput) {
     nodes.multiLaunchPaymentMethodInput.disabled = !multiLaunchFinalizeOpen;
@@ -506,7 +504,6 @@ function handleToggleMultiLaunchFinalize() {
   if (finalizeCard && typeof finalizeCard.scrollIntoView === "function") {
     finalizeCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
-  showAppToast("Forma de pagamento geral liberada.");
 }
 
 function render() {

@@ -8,9 +8,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Financeiro" />
     <title>Financeiro</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260407am" />
+    <link rel="manifest" href="./manifest.webmanifest?v=20260407an" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260407am" />
+    <link rel="stylesheet" href="./styles.css?v=20260407an" />
   </head>
   <body>
     <div id="appToast" class="app-toast hidden" role="status" aria-live="polite"></div>
@@ -57,8 +57,7 @@
                 Monte vários valores com categorias diferentes e escolha uma única forma de pagamento no final.
               </p>
 
-              <label>
-                <span>Despesa ou receita</span>
+              <label class="multi-launch-type-field">
                 <input id="multiLaunchTypeInput" type="hidden" value="expense" />
                 <div id="multiLaunchTypeToggle" class="type-toggle" role="group" aria-label="Despesa ou receita">
                   <button class="type-toggle-button active expense" data-multi-type="expense" type="button">
@@ -73,18 +72,15 @@
               <div id="multiLaunchRows" class="multi-launch-rows"></div>
 
               <div class="multi-launch-actions">
-                <button id="multiLaunchAddRowButton" class="ghost-button dark-ghost" type="button">Próximo lançamento</button>
+                <button id="multiLaunchAddRowButton" class="ghost-button dark-ghost" type="button">+ Outro valor</button>
                 <button id="multiLaunchFinalizeButton" class="ghost-button dark-ghost" type="button">Mesmo pagamento</button>
               </div>
 
-              <div id="multiLaunchFinalizeCard" class="multi-launch-finalize">
+              <div id="multiLaunchFinalizeCard" class="multi-launch-finalize hidden">
                 <div class="multi-launch-finalize-head">
                   <strong>Forma de pagamento geral</strong>
                   <span id="multiLaunchTotalValue" class="multi-launch-total">R$ 0,00</span>
                 </div>
-                <p id="multiLaunchFinalizeHint" class="muted multi-launch-hint">
-                  Toque em Mesmo pagamento para definir a forma de pagamento final.
-                </p>
                 <label>
                   <span>Forma de pagamento geral</span>
                   <select id="multiLaunchPaymentMethodInput">
@@ -596,8 +592,8 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260407am"></script>
+    <script src="./supabase-config.js?v=20260407an"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260407am"></script>
+    <script type="module" src="./auth.js?v=20260407an"></script>
   </body>
 </html>
