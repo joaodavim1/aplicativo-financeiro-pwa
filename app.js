@@ -1153,6 +1153,8 @@ function renderFutureTransactionItem(transaction) {
   const isSelected = selectedFutureIds.has(transaction.id);
   const isFlagged = Boolean(transaction.futureFlagged);
   const dueDateMillis = resolveFutureDateMillis(transaction);
+  const title = String(transaction.title || "").trim() || "Sem titulo";
+  const notes = String(transaction.notes || "").trim();
   const meta = [
     transaction.paymentMethod || "Sem pagamento",
     transaction.installments > 1 ? `Parcela ${transaction.installmentNumber}/${transaction.installments}` : null,
@@ -1165,12 +1167,12 @@ function renderFutureTransactionItem(transaction) {
       <div class="future-transaction-row">
         <label class="future-checkbox-row">
           <input data-future-check="${transaction.id}" type="checkbox" ${isSelected ? "checked" : ""} />
-          <strong>${escapeHtml(transaction.title || "Sem titulo")}</strong>
+          <strong>${escapeHtml(title)}</strong>
         </label>
         <strong class="transaction-amount ${transaction.type}">${transaction.type === "income" ? "+" : "-"}${currency.format(transaction.amount)}</strong>
       </div>
       <p class="transaction-meta">${escapeHtml(meta)}</p>
-      <p class="muted">${escapeHtml(transaction.notes || "Sem titulo")}</p>
+      ${notes ? `<p class="muted">${escapeHtml(notes)}</p>` : ""}
       <div class="future-item-actions">
         <button class="ghost-button dark-ghost compact-icon-button ${isFlagged ? "future-flag-button active" : "future-flag-button"}" data-future-action="flag" data-id="${transaction.id}" type="button">⚑</button>
         <button class="ghost-button dark-ghost compact-icon-button" data-future-action="delete" data-id="${transaction.id}" type="button">🗑</button>
@@ -1337,14 +1339,18 @@ function renderTransactionItem(transaction) {
     `de ${amountLine}`,
     `Lanc: ${formatDateShort(transaction.dateMillis)}`
   ].filter(Boolean).join(" • ");
-  const notes = `<div class="transaction-notes">${escapeHtml(transaction.notes || "Sem descricao")}</div>`;
+  const title = String(transaction.title || "").trim() || "Sem titulo";
+  const notes = String(transaction.notes || "").trim();
+  const notesMarkup = notes
+    ? `<div class="transaction-notes">${escapeHtml(notes)}</div>`
+    : "";
 
   return `
     <div class="transaction-item">
       <div class="transaction-copy">
-        <div class="transaction-title">${escapeHtml(transaction.title)}</div>
+        <div class="transaction-title">${escapeHtml(title)}</div>
         <div class="transaction-meta">${escapeHtml(details)}</div>
-        ${notes}
+        ${notesMarkup}
         <div class="transaction-status">Status: ${escapeHtml(transactionStatus)}</div>
       </div>
       <div class="transaction-side">
