@@ -1,4 +1,4 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260407aj";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260407ak";
 
 const IOS_APP_VERSION = "Versão atual: 1.14";
 const IOS_SETTINGS_VERSION = "1.14";
@@ -993,8 +993,8 @@ function buildStateFromRemote({ people, activeAccount, activeAccountId, transact
     monthLabel: activeAccount?.name ? `Conta ${activeAccount.name}` : "Conta",
     transactions: sortedTransactions.map((transaction) => ({
       id: Number(transaction.id),
-      title: transaction.title || "Sem titulo",
       category: transaction.category || "Sem categoria",
+      title: String(transaction.title || "").trim() || String(transaction.category || "").trim() || "Sem titulo",
       type: transaction.type === "RECEITA" ? "income" : "expense",
       amount: Number(transaction.amount || 0),
       dateMillis: Number(transaction.date_millis || Date.now()),
@@ -1138,10 +1138,10 @@ function toSupabaseTransaction(transaction, context) {
     id: Number(transaction.id),
     owner_id: context.ownerId,
     account_id: context.accountId,
-    title: String(transaction.title || "Sem titulo").trim() || "Sem titulo",
+    category: String(transaction.category || "Sem categoria").trim() || "Sem categoria",
+    title: String(transaction.title || "").trim() || String(transaction.category || "").trim() || "Sem titulo",
     amount,
     type: transaction.type === "income" ? "RECEITA" : "DESPESA",
-    category: String(transaction.category || "Sem categoria").trim() || "Sem categoria",
     payment_method: String(transaction.paymentMethod || context.defaultPaymentMethod || "Pix").trim() || "Pix",
     installments,
     installment_number: installmentNumber,

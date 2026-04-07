@@ -1331,7 +1331,7 @@ function renderFutureTransactionItem(transaction) {
   const isSelected = selectedFutureIds.has(transaction.id);
   const isFlagged = Boolean(transaction.futureFlagged);
   const dueDateMillis = resolveFutureDateMillis(transaction);
-  const title = String(transaction.title || "").trim() || "Sem titulo";
+  const title = String(transaction.title || "").trim() || String(transaction.category || "").trim() || "Sem titulo";
   const notes = String(transaction.notes || "").trim();
   const meta = [
     transaction.paymentMethod || "Sem pagamento",
@@ -1517,7 +1517,7 @@ function renderTransactionItem(transaction) {
     `de ${amountLine}`,
     `Lanc: ${formatDateShort(transaction.dateMillis)}`
   ].filter(Boolean).join(" • ");
-  const title = String(transaction.title || "").trim() || "Sem titulo";
+  const title = String(transaction.title || "").trim() || String(transaction.category || "").trim() || "Sem titulo";
   const notes = String(transaction.notes || "").trim();
   const notesMarkup = notes
     ? `<div class="transaction-notes">${escapeHtml(notes)}</div>`
@@ -2266,8 +2266,8 @@ function sanitizeTransaction(transaction) {
 
   return {
     id: normalizeTransactionId(transaction?.id),
-    title: String(transaction?.title || "Sem titulo").trim() || "Sem titulo",
     category: String(transaction?.category || "Sem categoria").trim() || "Sem categoria",
+    title: String(transaction?.title || "").trim() || String(transaction?.category || "").trim() || "Sem titulo",
     type: transaction?.type === "income" ? "income" : "expense",
     amount: Number.isFinite(Number(transaction?.amount)) ? Number(transaction.amount) : 0,
     dateMillis,
