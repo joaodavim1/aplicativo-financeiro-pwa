@@ -848,9 +848,21 @@ async function moveMenuAction(actionId, direction) {
 
   [order[index], order[targetIndex]] = [order[targetIndex], order[index]];
   currentState.ui.screenOrder = [...order, "CONFIG"];
+  persistUiPreferencesLocally();
   await saveState();
   render();
   showAppToast("Ordem das telas atualizada.");
+}
+
+function persistUiPreferencesLocally() {
+  const userId = currentIdentity?.user?.uid;
+  if (!userId) return;
+
+  try {
+    localStorage.setItem(`financeiro-pwa-ui-prefs-${userId}`, JSON.stringify(currentState.ui || {}));
+  } catch (error) {
+    console.warn("Falha ao salvar a ordem localmente:", error);
+  }
 }
 
 async function runMenuAction(actionId) {

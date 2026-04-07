@@ -1,4 +1,4 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260407ag";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260407ah";
 
 const IOS_APP_VERSION = "Versão atual: 1.14";
 const IOS_SETTINGS_VERSION = "1.14";
@@ -430,6 +430,8 @@ async function handleMenuActionButtonClick(event) {
 async function handleMenuOrderClick(event) {
   const button = event.target.closest("[data-order-move][data-menu-action]");
   if (!button) return;
+  event.preventDefault();
+  event.stopPropagation();
   await window.financeiroMoveMenuAction?.(button.dataset.menuAction, button.dataset.orderMove);
 }
 
