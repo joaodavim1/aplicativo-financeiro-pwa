@@ -1,4 +1,4 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260407ah";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260407ai";
 
 const IOS_APP_VERSION = "Versão atual: 1.14";
 const IOS_SETTINGS_VERSION = "1.14";
@@ -32,6 +32,7 @@ const nodes = {
   menuActionButtons: document.querySelector("#menuActionButtons"),
   menuScreenOrder: document.querySelector("#menuScreenOrder"),
   menuScreenOrderList: document.querySelector("#menuScreenOrderList"),
+  menuScreenOrderFeedback: document.querySelector("#menuScreenOrderFeedback"),
   menuUpdateButton: document.querySelector("#menuUpdateButton"),
   menuLoginButton: document.querySelector("#menuLoginButton"),
   menuLogoutButton: document.querySelector("#menuLogoutButton"),
@@ -432,7 +433,15 @@ async function handleMenuOrderClick(event) {
   if (!button) return;
   event.preventDefault();
   event.stopPropagation();
-  await window.financeiroMoveMenuAction?.(button.dataset.menuAction, button.dataset.orderMove);
+  const changed = await window.financeiroMoveMenuAction?.(button.dataset.menuAction, button.dataset.orderMove);
+  if (changed && nodes.menuScreenOrderFeedback) {
+    nodes.menuScreenOrderFeedback.textContent = "Ordem das telas atualizada.";
+    window.setTimeout(() => {
+      if (nodes.menuScreenOrderFeedback?.textContent === "Ordem das telas atualizada.") {
+        nodes.menuScreenOrderFeedback.textContent = "";
+      }
+    }, 2200);
+  }
 }
 
 function renderMenuAccounts(accounts) {

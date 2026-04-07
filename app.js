@@ -833,7 +833,7 @@ function navigateToScreen(screen) {
 
 async function moveMenuAction(actionId, direction) {
   const movableScreens = ["MULTIPLOS", "LANCAMENTOS", "EXTRATO", "QUADRO"];
-  if (!movableScreens.includes(actionId)) return;
+  if (!movableScreens.includes(actionId)) return false;
 
   const currentOrder = Array.isArray(currentState?.ui?.screenOrder)
     ? currentState.ui.screenOrder
@@ -841,17 +841,18 @@ async function moveMenuAction(actionId, direction) {
   const screensOnly = currentOrder.filter((screen) => movableScreens.includes(screen));
   const order = [...screensOnly];
   const index = order.indexOf(actionId);
-  if (index === -1) return;
+  if (index === -1) return false;
 
   const targetIndex = direction === "up" ? index - 1 : index + 1;
-  if (targetIndex < 0 || targetIndex >= order.length) return;
+  if (targetIndex < 0 || targetIndex >= order.length) return false;
 
   [order[index], order[targetIndex]] = [order[targetIndex], order[index]];
   currentState.ui.screenOrder = [...order, "CONFIG"];
   persistUiPreferencesLocally();
-  await saveState();
   render();
   showAppToast("Ordem das telas atualizada.");
+  await saveState();
+  return true;
 }
 
 function persistUiPreferencesLocally() {

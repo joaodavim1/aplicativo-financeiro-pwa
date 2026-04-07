@@ -1106,6 +1106,11 @@ select {
   justify-content: flex-end;
 }
 
+.menu-feedback {
+  min-height: 20px;
+  margin: 8px 4px 0;
+}
+
 .compact-order-button {
   min-width: 84px;
   padding: 10px 14px;
