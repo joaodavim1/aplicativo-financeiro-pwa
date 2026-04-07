@@ -55,6 +55,12 @@ let currentHistoryFilters = {
   category: "",
   payment: ""
 };
+let currentFutureFilters = {
+  startDate: "",
+  endDate: "",
+  type: "all"
+};
+let selectedFutureIds = new Set();
 
 const nodes = {
   themeColorMeta: document.querySelector('meta[name="theme-color"]'),
@@ -77,8 +83,19 @@ const nodes = {
   clearHistoryFiltersButton: document.querySelector("#clearHistoryFiltersButton"),
   filteredTotalValue: document.querySelector("#filteredTotalValue"),
   extratoList: document.querySelector("#extratoList"),
-  insightsList: document.querySelector("#insightsList"),
-  goalsList: document.querySelector("#goalsList"),
+  futureBalanceValue: document.querySelector("#futureBalanceValue"),
+  futureIncomeValue: document.querySelector("#futureIncomeValue"),
+  futureExpenseValue: document.querySelector("#futureExpenseValue"),
+  futureTypeToggle: document.querySelector("#futureTypeToggle"),
+  futureTypeButtons: [...document.querySelectorAll("[data-future-type]")],
+  futureStartDate: document.querySelector("#futureStartDate"),
+  futureEndDate: document.querySelector("#futureEndDate"),
+  clearFutureFiltersButton: document.querySelector("#clearFutureFiltersButton"),
+  futureFilteredTotalValue: document.querySelector("#futureFilteredTotalValue"),
+  futureLaunchesList: document.querySelector("#futureLaunchesList"),
+  selectAllFutureButton: document.querySelector("#selectAllFutureButton"),
+  clearFutureSelectionButton: document.querySelector("#clearFutureSelectionButton"),
+  completeSelectedFutureButton: document.querySelector("#completeSelectedFutureButton"),
   budgetList: document.querySelector("#budgetList"),
   transactionsList: document.querySelector("#transactionsList"),
   transactionForm: document.querySelector("#transactionForm"),
@@ -199,6 +216,14 @@ function bindEvents() {
   });
   nodes.historyTypeToggle?.addEventListener("click", handleHistoryTypeToggleClick);
   nodes.clearHistoryFiltersButton?.addEventListener("click", clearHistoryFilters);
+  nodes.futureTypeToggle?.addEventListener("click", handleFutureTypeToggleClick);
+  nodes.futureStartDate?.addEventListener("change", handleFutureFilterChange);
+  nodes.futureEndDate?.addEventListener("change", handleFutureFilterChange);
+  nodes.clearFutureFiltersButton?.addEventListener("click", clearFutureFilters);
+  nodes.selectAllFutureButton?.addEventListener("click", handleSelectAllFuture);
+  nodes.clearFutureSelectionButton?.addEventListener("click", handleClearFutureSelection);
+  nodes.completeSelectedFutureButton?.addEventListener("click", handleCompleteSelectedFuture);
+  nodes.futureLaunchesList?.addEventListener("click", handleFutureListClick);
   nodes.filterTabs.forEach((tab) => {
     tab.addEventListener("click", () => {
       currentFilter = tab.dataset.filter;
@@ -267,8 +292,7 @@ function render() {
   renderHistoryFilterOptions();
   renderExtratoCategoryBars();
   renderExtratoList();
-  renderInsights(balance, income, expense);
-  renderGoals();
+  renderFutureScreen(balance, income, expense);
   renderBudgets();
   renderTransactions();
   syncTypeToggle(selectDefaultTransactionType());
@@ -418,79 +442,12 @@ function renderExtratoList() {
   nodes.extratoList.innerHTML = filtered.map((transaction) => renderTransactionItem(transaction)).join("");
 }
 
-function renderInsights(balance, income, expense) {
-  if (!nodes.insightsList) return;
-
-  const savingsRate = income > 0 ? (income - expense) / income : 0;
-  const topExpense = Object.entries(totalsByCategoryForFilters("expense"))[0];
-  const syncText =
-    currentIdentity?.mode === "google"
-      ? "Os dados desta tela estao na conta atual."
-      : "Esta e a versao local da conta.";
-
-  const insights = [
-    {
-      title: balance >= 0 ? "Fluxo positivo" : "Fluxo pressionado",
-      text:
-        balance >= 0
-          ? `Seu saldo do mes esta em ${currency.format(balance)}.`
-          : `Voce passou ${currency.format(Math.abs(balance))} do que entrou.`
-    },
-    {
-      title: "Taxa de sobra",
-      text: `A reserva atual do mes esta em ${percent.format(Math.max(savingsRate, 0))}.`
-    },
-    {
-      title: "Maior foco",
-      text: topExpense ? `${topExpense[0]} lidera as saidas com ${currency.format(topExpense[1])}.` : "Sem gastos registrados."
-    },
-    {
-      title: currentIdentity?.mode === "google" ? "Conta ativa" : "Conta local",
-      text: syncText
-    }
-  ];
-
-  nodes.insightsList.innerHTML = insights
-    .map(
-      (item) => `
-        <div class="insight-item">
-          <strong>${escapeHtml(item.title)}</strong>
-          <p class="muted">${escapeHtml(item.text)}</p>
-        </div>
-      `
-    )
-    .join("");
-}
-
-function renderGoals() {
-  if (!nodes.goalsList) return;
-
-  if (currentState.goals.length === 0) {
-    nodes.goalsList.innerHTML = emptyStateHtml("Nenhuma meta cadastrada.");
-    return;
-  }
-
-  nodes.goalsList.innerHTML = currentState.goals
-    .map((goal) => {
-      const progress = Math.min(goal.saved / goal.target, 1);
-      return `
-        <div class="goal-item">
-          <div class="goal-row-head">
-            <strong>${escapeHtml(goal.name)}</strong>
-            <span>${percent.format(progress)}</span>
-          </div>
-          <p class="muted">${escapeHtml(goal.note)}</p>
-          <div class="progress-track">
-            <div class="progress-fill" style="width:${progress * 100}%; background:linear-gradient(90deg, #145c4c, #f08a24);"></div>
-          </div>
-          <div class="amount-strong">
-            <span>${currency.format(goal.saved)}</span>
-            <span>${currency.format(goal.target)}</span>
-          </div>
-        </div>
-      `;
-    })
-    .join("");
+function renderFutureScreen(balance, income, expense) {
+  if (nodes.futureBalanceValue) nodes.futureBalanceValue.textContent = currency.format(balance);
+  if (nodes.futureIncomeValue) nodes.futureIncomeValue.textContent = `+ ${currency.format(income)}`;
+  if (nodes.futureExpenseValue) nodes.futureExpenseValue.textContent = `- ${currency.format(expense)}`;
+  syncFutureFilterInputs();
+  renderFutureList();
 }
 
 function renderBudgets() {
@@ -905,6 +862,217 @@ function clearHistoryFilters() {
   renderExtratoList();
 }
 
+function handleFutureFilterChange() {
+  currentFutureFilters = {
+    ...currentFutureFilters,
+    startDate: nodes.futureStartDate?.value || "",
+    endDate: nodes.futureEndDate?.value || ""
+  };
+  renderFutureList();
+}
+
+function handleFutureTypeToggleClick(event) {
+  const button = event.target.closest("[data-future-type]");
+  if (!button) return;
+  currentFutureFilters.type = button.dataset.futureType || "all";
+  syncFutureFilterInputs();
+  renderFutureList();
+}
+
+function clearFutureFilters() {
+  currentFutureFilters = {
+    startDate: "",
+    endDate: "",
+    type: "all"
+  };
+  syncFutureFilterInputs();
+  renderFutureList();
+}
+
+function syncFutureFilterInputs() {
+  if (nodes.futureStartDate) nodes.futureStartDate.value = currentFutureFilters.startDate;
+  if (nodes.futureEndDate) nodes.futureEndDate.value = currentFutureFilters.endDate;
+  nodes.futureTypeButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.futureType === currentFutureFilters.type);
+  });
+}
+
+function getFutureTransactions() {
+  const todayEnd = toEndOfDayMillis(todayDateInputValue());
+  return currentState.transactions.filter((transaction) => {
+    const futureDateMillis = resolveFutureDateMillis(transaction);
+    if (futureDateMillis <= todayEnd) return false;
+    if (currentFutureFilters.type !== "all" && transaction.type !== currentFutureFilters.type) return false;
+    if (currentFutureFilters.startDate) {
+      const startMillis = toStartOfDayMillis(currentFutureFilters.startDate);
+      if (futureDateMillis < startMillis) return false;
+    }
+    if (currentFutureFilters.endDate) {
+      const endMillis = toEndOfDayMillis(currentFutureFilters.endDate);
+      if (futureDateMillis > endMillis) return false;
+    }
+    return true;
+  });
+}
+
+function renderFutureList() {
+  if (!nodes.futureLaunchesList) return;
+
+  const filtered = getFutureTransactions();
+  const total = filtered.reduce(
+    (accumulator, transaction) => accumulator + (transaction.type === "income" ? transaction.amount : -transaction.amount),
+    0
+  );
+
+  if (nodes.futureFilteredTotalValue) {
+    nodes.futureFilteredTotalValue.textContent = currency.format(total);
+  }
+
+  if (nodes.completeSelectedFutureButton) {
+    nodes.completeSelectedFutureButton.textContent = `Concluir selecionados (${selectedFutureIds.size})`;
+    nodes.completeSelectedFutureButton.disabled = selectedFutureIds.size === 0;
+  }
+  if (nodes.clearFutureSelectionButton) {
+    nodes.clearFutureSelectionButton.disabled = selectedFutureIds.size === 0;
+  }
+
+  if (filtered.length === 0) {
+    nodes.futureLaunchesList.innerHTML = emptyStateHtml("Nenhum lançamento futuro para o filtro selecionado.");
+    return;
+  }
+
+  const grouped = filtered.reduce((accumulator, transaction) => {
+    const key = transaction.paymentMethod || "Sem pagamento";
+    accumulator[key] ||= [];
+    accumulator[key].push(transaction);
+    return accumulator;
+  }, {});
+
+  nodes.futureLaunchesList.innerHTML = Object.entries(grouped)
+    .map(([paymentMethod, items]) => {
+      const sortedItems = [...items].sort((left, right) => resolveFutureDateMillis(left) - resolveFutureDateMillis(right));
+      return `
+        <section class="future-group">
+          <article class="future-group-card">
+            <strong>${escapeHtml(paymentMethod)}</strong>
+            <p class="muted">${escapeHtml(`${sortedItems.length} lançamento(s) · mais recente primeiro`)}</p>
+          </article>
+          ${sortedItems.map((transaction) => renderFutureTransactionItem(transaction)).join("")}
+        </section>
+      `;
+    })
+    .join("");
+}
+
+function renderFutureTransactionItem(transaction) {
+  const isSelected = selectedFutureIds.has(transaction.id);
+  const dueDateMillis = resolveFutureDateMillis(transaction);
+  const meta = [
+    transaction.paymentMethod || "Sem pagamento",
+    transaction.installments > 1 ? `Parcela ${transaction.installmentNumber}/${transaction.installments}` : null,
+    `Lanç: ${formatDateShort(transaction.dateMillis)}`,
+    `Venc: ${formatDateShort(dueDateMillis)}`
+  ].filter(Boolean).join(" • ");
+
+  return `
+    <article class="future-transaction-card ${isSelected ? "selected" : ""}">
+      <div class="future-transaction-row">
+        <label class="future-checkbox-row">
+          <input data-future-check="${transaction.id}" type="checkbox" ${isSelected ? "checked" : ""} />
+          <strong>${escapeHtml(transaction.title || "Sem titulo")}</strong>
+        </label>
+        <strong class="transaction-amount ${transaction.type}">${transaction.type === "income" ? "+" : "-"}${currency.format(transaction.amount)}</strong>
+      </div>
+      <p class="transaction-meta">${escapeHtml(meta)}</p>
+      <p class="muted">${escapeHtml(transaction.notes || "Sem titulo")}</p>
+      <div class="future-item-actions">
+        <button class="ghost-button dark-ghost compact-icon-button" data-future-action="edit" data-id="${transaction.id}" type="button">✎</button>
+        <button class="ghost-button dark-ghost compact-icon-button" data-future-action="delete" data-id="${transaction.id}" type="button">🗑</button>
+        <button class="ghost-button dark-ghost compact-icon-button" data-future-action="complete" data-id="${transaction.id}" type="button">✓</button>
+      </div>
+    </article>
+  `;
+}
+
+function handleSelectAllFuture() {
+  selectedFutureIds = new Set(getFutureTransactions().map((transaction) => transaction.id));
+  renderFutureList();
+}
+
+function handleClearFutureSelection() {
+  selectedFutureIds = new Set();
+  renderFutureList();
+}
+
+async function handleCompleteSelectedFuture() {
+  if (selectedFutureIds.size === 0) return;
+  const todayMillis = toStartOfDayMillis(todayDateInputValue());
+  currentState.transactions = currentState.transactions.map((transaction) => {
+    if (!selectedFutureIds.has(transaction.id)) return transaction;
+    return {
+      ...transaction,
+      dateMillis: todayMillis,
+      dateLabel: formatRelativeDate(todayMillis),
+      cardPaymentDateMillis: null
+    };
+  });
+  selectedFutureIds = new Set();
+  await saveState();
+  render();
+  showAppToast("Lançamentos concluídos.");
+}
+
+async function handleFutureListClick(event) {
+  const checkbox = event.target.closest("[data-future-check]");
+  if (checkbox) {
+    const id = Number(checkbox.getAttribute("data-future-check"));
+    if (checkbox.checked) {
+      selectedFutureIds.add(id);
+    } else {
+      selectedFutureIds.delete(id);
+    }
+    renderFutureList();
+    return;
+  }
+
+  const button = event.target.closest("[data-future-action][data-id]");
+  if (!button) return;
+  const id = Number(button.getAttribute("data-id"));
+  const action = button.getAttribute("data-future-action");
+  if (!id || !action) return;
+
+  if (action === "delete") {
+    currentState.transactions = currentState.transactions.filter((transaction) => transaction.id !== id);
+    selectedFutureIds.delete(id);
+    await saveState();
+    render();
+    showAppToast("Lançamento excluído.");
+    return;
+  }
+
+  if (action === "complete") {
+    selectedFutureIds = new Set([id]);
+    await handleCompleteSelectedFuture();
+    return;
+  }
+
+  if (action === "edit") {
+    const transaction = currentState.transactions.find((item) => item.id === id);
+    if (!transaction) return;
+    navigateToScreen("LANCAMENTOS");
+    syncTypeToggle(transaction.type);
+    renderCategoryOptions();
+    renderPaymentMethodOptions();
+    if (nodes.amountInput) nodes.amountInput.value = String(transaction.amount);
+    if (nodes.categoryInput) nodes.categoryInput.value = transaction.category;
+    if (nodes.paymentMethodInput) nodes.paymentMethodInput.value = transaction.paymentMethod;
+    if (nodes.titleInput) nodes.titleInput.value = transaction.title;
+    if (nodes.dateInput) nodes.dateInput.value = formatDateInputValue(transaction.dateMillis);
+    if (nodes.installmentsInput) nodes.installmentsInput.value = String(transaction.installments || 1);
+    showAppToast("Edite e salve o lançamento.");
+  }
+}
+
 function syncHistoryFilterInputs() {
   if (nodes.historyStartDate) nodes.historyStartDate.value = currentHistoryFilters.startDate;
   if (nodes.historyEndDate) nodes.historyEndDate.value = currentHistoryFilters.endDate;
@@ -1115,6 +1283,12 @@ function triggerDownload(content, mimeType, fileName) {
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function resolveFutureDateMillis(transaction) {
+  return Number.isFinite(Number(transaction.cardPaymentDateMillis))
+    ? Number(transaction.cardPaymentDateMillis)
+    : Number(transaction.dateMillis || Date.now());
 }
 
 function showAppToast(message) {
@@ -1665,6 +1839,22 @@ function formatRelativeDate(dateMillis) {
     month: "2-digit",
     year: "numeric"
   }).format(targetDate);
+}
+
+function formatDateShort(dateMillis) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).format(new Date(dateMillis));
+}
+
+function formatDateInputValue(dateMillis) {
+  const date = new Date(dateMillis);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function toStartOfDayMillis(dateText) {

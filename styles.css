@@ -577,6 +577,145 @@ select {
   font-size: 1.55rem;
 }
 
+.future-summary-card,
+.future-filter-card,
+.future-list-card {
+  background: var(--surface);
+}
+
+.future-heading {
+  margin-bottom: 8px;
+}
+
+.future-summary-balance {
+  color: var(--coral);
+}
+
+.future-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.future-income-value,
+.future-expense-value {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.35rem;
+}
+
+.future-income-value {
+  color: var(--primary);
+}
+
+.future-expense-value {
+  color: var(--coral);
+}
+
+.future-filter-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.future-type-toggle {
+  display: grid;
+  gap: 10px;
+}
+
+.future-filter-button {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--field-border);
+  border-radius: 18px;
+  background: var(--field-bg);
+  color: var(--ink);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.future-filter-button.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.future-clear-button,
+.future-bulk-button {
+  width: 100%;
+  justify-self: stretch;
+  text-align: center;
+}
+
+.future-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 6px 10px;
+}
+
+.future-bulk-actions {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.future-complete-button:disabled,
+.future-bulk-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.future-group {
+  display: grid;
+  gap: 12px;
+}
+
+.future-group-card {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(20, 92, 76, 0.08);
+}
+
+.future-group-card p {
+  margin: 6px 0 0;
+}
+
+.future-transaction-card {
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--surface-soft);
+  border: 1px solid transparent;
+}
+
+.future-transaction-card.selected {
+  border-color: rgba(20, 92, 76, 0.36);
+}
+
+.future-transaction-row {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.future-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.future-checkbox-row input {
+  width: 18px;
+  height: 18px;
+}
+
+.future-item-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
 .bar-item,
 .insight-item,
 .goal-item,

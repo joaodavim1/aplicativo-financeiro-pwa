@@ -8,9 +8,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Financeiro" />
     <title>Financeiro</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260406n" />
+    <link rel="manifest" href="./manifest.webmanifest?v=20260406aa" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260406n" />
+    <link rel="stylesheet" href="./styles.css?v=20260406aa" />
   </head>
   <body>
     <div id="appToast" class="app-toast hidden" role="status" aria-live="polite"></div>
@@ -326,21 +326,63 @@
         </section>
 
         <section data-screen="QUADRO" class="screen-panel">
-          <section class="panel-grid">
-            <article class="card">
-              <div class="card-heading">
-                <p class="eyebrow">Leituras rapidas</p>
-                <h2>Insights do mes</h2>
+          <section class="transactions-section single-column">
+            <article class="card future-summary-card">
+              <div class="card-heading future-heading">
+                <div>
+                  <p class="eyebrow">Resumo: Todo o histórico</p>
+                  <h2>Saldo <span id="futureBalanceValue" class="future-summary-balance"></span></h2>
+                </div>
               </div>
-              <div id="insightsList" class="stack"></div>
+              <div class="future-summary-grid">
+                <div>
+                  <span class="muted">Receitas</span>
+                  <strong id="futureIncomeValue" class="future-income-value"></strong>
+                </div>
+                <div>
+                  <span class="muted">Despesas</span>
+                  <strong id="futureExpenseValue" class="future-expense-value"></strong>
+                </div>
+              </div>
             </article>
 
-            <article class="card">
+            <article class="card future-filter-card">
               <div class="card-heading">
-                <p class="eyebrow">Metas</p>
-                <h2>Reservas em andamento</h2>
+                <h2>FILTRAR POR PERIODO</h2>
               </div>
-              <div id="goalsList" class="stack"></div>
+              <div class="future-filter-stack">
+                <div id="futureTypeToggle" class="future-type-toggle" role="group" aria-label="Filtro do futuro">
+                  <button class="future-filter-button active" data-future-type="all" type="button">Todos</button>
+                  <button class="future-filter-button" data-future-type="income" type="button">Receitas</button>
+                  <button class="future-filter-button" data-future-type="expense" type="button">Despesas</button>
+                </div>
+                <label>
+                  <span>Data Inicio</span>
+                  <input id="futureStartDate" type="date" />
+                </label>
+                <label>
+                  <span>Data Fim</span>
+                  <input id="futureEndDate" type="date" />
+                </label>
+                <button id="clearFutureFiltersButton" class="ghost-button dark-ghost future-clear-button" type="button">Limpar periodo</button>
+              </div>
+            </article>
+
+            <div class="future-total-row">
+              <strong>Total filtrado</strong>
+              <strong id="futureFilteredTotalValue"></strong>
+            </div>
+
+            <article class="card future-list-card">
+              <div class="card-heading">
+                <h2>LANCAMENTOS FUTUROS</h2>
+              </div>
+              <div class="future-bulk-actions">
+                <button id="selectAllFutureButton" class="ghost-button dark-ghost future-bulk-button" type="button">Selecionar todos</button>
+                <button id="clearFutureSelectionButton" class="ghost-button dark-ghost future-bulk-button" type="button">Limpar</button>
+                <button id="completeSelectedFutureButton" class="primary-button future-complete-button" type="button">Concluir selecionados (0)</button>
+              </div>
+              <div id="futureLaunchesList" class="stack"></div>
             </article>
           </section>
         </section>
@@ -476,8 +518,8 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260406z"></script>
+    <script src="./supabase-config.js?v=20260406aa"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260406z"></script>
+    <script type="module" src="./auth.js?v=20260406aa"></script>
   </body>
 </html>
