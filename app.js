@@ -1291,18 +1291,80 @@ async function handleSaveMultiLaunch() {
 }
 
 function exportTransactionsCsv() {
+  const snapshot = buildExportSnapshot();
   const rows = [
-    ["descricao", "categoria", "movimento", "pagamento", "data", "parcelas", "valor", "observacoes"],
+    ["secao", "campo_1", "campo_2", "campo_3", "campo_4", "campo_5", "campo_6", "campo_7", "campo_8", "campo_9", "campo_10"],
+    ["resumo", "conta", snapshot.accountName, "acesso", snapshot.accessLabel, "tema", snapshot.themeMode, "telas", snapshot.screenOrder.join(" | "), "", ""],
+    ...snapshot.accounts.map((account) => [
+      "conta",
+      account.name,
+      account.phone || "",
+      account.email || "",
+      account.isActive ? "Em uso" : "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+    ]),
     ...currentState.transactions.map((transaction) => [
+      "lancamento",
       transaction.title,
       transaction.category,
       transaction.type === "income" ? "Receita" : "Despesa",
       transaction.paymentMethod,
       new Date(transaction.dateMillis).toISOString().slice(0, 10),
+      resolveFutureDateMillis(transaction) ? formatDateInputValue(resolveFutureDateMillis(transaction)) : "",
       String(transaction.installments || 1),
       String(transaction.amount).replace(".", ","),
+      resolveTransactionStatus(transaction),
       transaction.notes || ""
-    ])
+    ]),
+    ...currentState.budgets.map((budget) => [
+      "orcamento",
+      budget.name,
+      String(budget.limit).replace(".", ","),
+      budget.color || "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+    ]),
+    ...currentState.goals.map((goal) => [
+      "meta",
+      goal.name,
+      String(goal.saved).replace(".", ","),
+      String(goal.target).replace(".", ","),
+      goal.note || "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+    ]),
+    ...currentState.catalog.expenseCategories.map((item) => ["categoria_despesa", item, "", "", "", "", "", "", "", "", ""]),
+    ...currentState.catalog.incomeCategories.map((item) => ["categoria_receita", item, "", "", "", "", "", "", "", "", ""]),
+    ...currentState.catalog.paymentMethods.map((item) => {
+      const config = currentState.catalog.paymentMethodConfigs?.[item];
+      return [
+        "pagamento",
+        item,
+        config?.closingDay ? String(config.closingDay) : "",
+        config?.paymentDay ? String(config.paymentDay) : "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ];
+    })
   ];
   const csv = rows
     .map((row) => row.map((value) => `"${String(value || "").replace(/"/g, '""')}"`).join(";"))
@@ -1311,7 +1373,8 @@ function exportTransactionsCsv() {
 }
 
 function exportTransactionsExcel() {
-  const tableRows = currentState.transactions
+  const snapshot = buildExportSnapshot();
+  const transactionRows = currentState.transactions
     .map((transaction) => `
       <tr>
         <td>${escapeHtml(transaction.title)}</td>
@@ -1319,11 +1382,64 @@ function exportTransactionsExcel() {
         <td>${escapeHtml(transaction.type === "income" ? "Receita" : "Despesa")}</td>
         <td>${escapeHtml(transaction.paymentMethod)}</td>
         <td>${escapeHtml(new Date(transaction.dateMillis).toLocaleDateString("pt-BR"))}</td>
+        <td>${escapeHtml(formatDateShort(resolveFutureDateMillis(transaction)))}</td>
         <td>${escapeHtml(String(transaction.installments || 1))}</td>
         <td>${escapeHtml(currency.format(transaction.amount))}</td>
+        <td>${escapeHtml(resolveTransactionStatus(transaction))}</td>
         <td>${escapeHtml(transaction.notes || "")}</td>
       </tr>
     `)
+    .join("");
+
+  const accountRows = snapshot.accounts
+    .map((account) => `
+      <tr>
+        <td>${escapeHtml(account.name)}</td>
+        <td>${escapeHtml(account.phone || "")}</td>
+        <td>${escapeHtml(account.email || "")}</td>
+        <td>${escapeHtml(account.isActive ? "Em uso" : "")}</td>
+      </tr>
+    `)
+    .join("");
+
+  const budgetRows = currentState.budgets
+    .map((budget) => `
+      <tr>
+        <td>${escapeHtml(budget.name)}</td>
+        <td>${escapeHtml(currency.format(budget.limit))}</td>
+        <td>${escapeHtml(budget.color || "")}</td>
+      </tr>
+    `)
+    .join("");
+
+  const goalRows = currentState.goals
+    .map((goal) => `
+      <tr>
+        <td>${escapeHtml(goal.name)}</td>
+        <td>${escapeHtml(currency.format(goal.saved))}</td>
+        <td>${escapeHtml(currency.format(goal.target))}</td>
+        <td>${escapeHtml(goal.note || "")}</td>
+      </tr>
+    `)
+    .join("");
+
+  const expenseCategoryRows = currentState.catalog.expenseCategories
+    .map((item) => `<tr><td>${escapeHtml(item)}</td></tr>`)
+    .join("");
+  const incomeCategoryRows = currentState.catalog.incomeCategories
+    .map((item) => `<tr><td>${escapeHtml(item)}</td></tr>`)
+    .join("");
+  const paymentMethodRows = currentState.catalog.paymentMethods
+    .map((item) => {
+      const config = currentState.catalog.paymentMethodConfigs?.[item];
+      return `
+        <tr>
+          <td>${escapeHtml(item)}</td>
+          <td>${escapeHtml(config?.closingDay ? String(config.closingDay) : "")}</td>
+          <td>${escapeHtml(config?.paymentDay ? String(config.paymentDay) : "")}</td>
+        </tr>
+      `;
+    })
     .join("");
 
   const html = `
@@ -1331,22 +1447,78 @@ function exportTransactionsExcel() {
       <head><meta charset="UTF-8" /></head>
       <body>
         <table border="1">
+          <tr><th colspan="2">Resumo do app</th></tr>
+          <tr><td>Conta em uso</td><td>${escapeHtml(snapshot.accountName)}</td></tr>
+          <tr><td>Acesso</td><td>${escapeHtml(snapshot.accessLabel)}</td></tr>
+          <tr><td>Tema</td><td>${escapeHtml(snapshot.themeMode)}</td></tr>
+          <tr><td>Telas</td><td>${escapeHtml(snapshot.screenOrder.join(" | "))}</td></tr>
+        </table>
+        <br />
+        <table border="1">
+          <tr>
+            <th>Conta</th>
+            <th>Telefone</th>
+            <th>Email</th>
+            <th>Status</th>
+          </tr>
+          ${accountRows}
+        </table>
+        <br />
+        <table border="1">
           <tr>
             <th>Descrição</th>
             <th>Categoria</th>
             <th>Movimento</th>
             <th>Pagamento</th>
-            <th>Data</th>
+            <th>Lançamento</th>
+            <th>Vencimento</th>
             <th>Parcelas</th>
             <th>Valor</th>
+            <th>Status</th>
             <th>Observações</th>
           </tr>
-          ${tableRows}
+          ${transactionRows}
+        </table>
+        <br />
+        <table border="1">
+          <tr><th>Orçamento</th><th>Limite</th><th>Cor</th></tr>
+          ${budgetRows}
+        </table>
+        <br />
+        <table border="1">
+          <tr><th>Meta</th><th>Salvo</th><th>Alvo</th><th>Observação</th></tr>
+          ${goalRows}
+        </table>
+        <br />
+        <table border="1">
+          <tr><th>Categorias de despesa</th></tr>
+          ${expenseCategoryRows}
+        </table>
+        <br />
+        <table border="1">
+          <tr><th>Categorias de receita</th></tr>
+          ${incomeCategoryRows}
+        </table>
+        <br />
+        <table border="1">
+          <tr><th>Pagamento</th><th>Fechamento</th><th>Pagamento</th></tr>
+          ${paymentMethodRows}
         </table>
       </body>
     </html>
   `;
   triggerDownload("\uFEFF" + html, "application/vnd.ms-excel;charset=utf-8;", buildExportFileName("xls"));
+}
+
+function buildExportSnapshot() {
+  const menuState = getFinanceiroMenuState();
+  return {
+    accountName: menuState.accountName || "Sem conta",
+    accessLabel: menuState.accessLabel || "Conta local",
+    themeMode: currentState.ui.themeMode === "dark" ? "Dark" : "Claro",
+    screenOrder: currentState.ui.screenOrder.map((screen) => screenLabel(screen)),
+    accounts: Array.isArray(menuState.accounts) ? menuState.accounts : []
+  };
 }
 
 function buildExportFileName(extension) {

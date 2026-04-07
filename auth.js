@@ -1,4 +1,4 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260406ac";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260406ad";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -459,7 +459,7 @@ function renderMenuActionButtons(actions) {
 
   return actions
     .map((action) => `
-      <button class="ghost-button dark-ghost menu-dark menu-action-button" data-menu-action="${escapeHtml(action.id || "")}" type="button">
+      <button class="${action.id === "EXPORT_CSV" || action.id === "EXPORT_EXCEL" ? "primary-button menu-action-button menu-export-button" : "ghost-button dark-ghost menu-dark menu-action-button"}" data-menu-action="${escapeHtml(action.id || "")}" type="button">
         ${escapeHtml(action.label || "")}
       </button>
     `)
