@@ -2,6 +2,9 @@
   --bg: #f3fbf7;
   --surface: rgba(255, 255, 255, 0.86);
   --surface-strong: #ffffff;
+  --surface-soft: rgba(255, 255, 255, 0.9);
+  --field-bg: #ffffff;
+  --field-border: rgba(17, 39, 32, 0.08);
   --ink: #112720;
   --muted: #587066;
   --primary: #145c4c;
@@ -13,6 +16,53 @@
   --radius-xl: 30px;
   --radius-lg: 24px;
   --radius-md: 18px;
+  --html-background:
+    radial-gradient(circle at top left, rgba(240, 138, 36, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(107, 197, 164, 0.22), transparent 32%),
+    linear-gradient(180deg, #fbfffd 0%, var(--bg) 100%);
+  --hero-background:
+    radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.2), transparent 28%),
+    linear-gradient(135deg, var(--primary) 0%, #0c4236 60%, #153227 100%);
+  --ghost-bg: rgba(255, 255, 255, 0.14);
+  --menu-block-bg: #f6f7fb;
+  --balance-background:
+    radial-gradient(circle at top right, rgba(240, 138, 36, 0.18), transparent 24%),
+    linear-gradient(160deg, #ffffff 0%, #eef9f3 100%);
+  --auth-background:
+    radial-gradient(circle at top right, rgba(240, 138, 36, 0.14), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(241, 250, 245, 0.98));
+}
+
+body[data-theme="dark"] {
+  --bg: #0f1720;
+  --surface: rgba(20, 28, 38, 0.92);
+  --surface-strong: #182231;
+  --surface-soft: rgba(24, 34, 49, 0.92);
+  --field-bg: #121b28;
+  --field-border: rgba(145, 169, 192, 0.18);
+  --ink: #edf6f2;
+  --muted: #9ab0bb;
+  --primary: #6bc5a4;
+  --primary-2: #8ddcc0;
+  --accent: #f0a34b;
+  --mint: #6bc5a4;
+  --coral: #f18c7d;
+  --shadow: 0 26px 56px rgba(0, 0, 0, 0.28);
+  --html-background:
+    radial-gradient(circle at top left, rgba(240, 138, 36, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(107, 197, 164, 0.12), transparent 32%),
+    linear-gradient(180deg, #101722 0%, #0b1119 100%);
+  --hero-background:
+    radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.08), transparent 28%),
+    linear-gradient(135deg, #182433 0%, #101722 58%, #0b1119 100%);
+  --ghost-bg: rgba(145, 169, 192, 0.12);
+  --menu-block-bg: #121b28;
+  --balance-background:
+    radial-gradient(circle at top right, rgba(240, 138, 36, 0.12), transparent 24%),
+    linear-gradient(160deg, #182231 0%, #101722 100%);
+  --auth-background:
+    radial-gradient(circle at top right, rgba(240, 138, 36, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(24, 34, 49, 0.96), rgba(15, 23, 32, 0.98));
 }
 
 * {
@@ -20,10 +70,7 @@
 }
 
 html {
-  background:
-    radial-gradient(circle at top left, rgba(240, 138, 36, 0.18), transparent 28%),
-    radial-gradient(circle at top right, rgba(107, 197, 164, 0.22), transparent 32%),
-    linear-gradient(180deg, #fbfffd 0%, var(--bg) 100%);
+  background: var(--html-background);
   color: var(--ink);
   font-family: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
 }
@@ -63,9 +110,7 @@ select {
   margin-bottom: 24px;
   padding: 28px;
   border-radius: 36px;
-  background:
-    radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.2), transparent 28%),
-    linear-gradient(135deg, var(--primary) 0%, #0c4236 60%, #153227 100%);
+  background: var(--hero-background);
   color: #fff;
   box-shadow: 0 30px 70px rgba(20, 92, 76, 0.26);
 }
@@ -269,7 +314,7 @@ select {
 }
 
 .menu-dark {
-  background: rgba(17, 39, 32, 0.08);
+  background: var(--ghost-bg);
   color: var(--ink);
 }
 
@@ -284,7 +329,7 @@ select {
 .balance-card {
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.58);
+  border: 1px solid var(--field-border);
   background: var(--surface);
   backdrop-filter: blur(14px);
   border-radius: var(--radius-xl);
@@ -298,10 +343,8 @@ select {
 .auth-card {
   padding: 24px;
   border-radius: 30px;
-  background:
-    radial-gradient(circle at top right, rgba(240, 138, 36, 0.14), transparent 28%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(241, 250, 245, 0.98));
-  border: 1px solid rgba(17, 39, 32, 0.08);
+  background: var(--auth-background);
+  border: 1px solid var(--field-border);
   box-shadow: var(--shadow);
 }
 
@@ -328,7 +371,7 @@ select {
 }
 
 .dark-ghost {
-  background: rgba(17, 39, 32, 0.08);
+  background: var(--ghost-bg);
   color: var(--ink);
 }
 
@@ -370,9 +413,7 @@ select {
 
 .balance-card {
   padding: 24px;
-  background:
-    radial-gradient(circle at top right, rgba(240, 138, 36, 0.18), transparent 24%),
-    linear-gradient(160deg, #ffffff 0%, #eef9f3 100%);
+  background: var(--balance-background);
 }
 
 .balance-topline,
@@ -505,9 +546,9 @@ select {
 .filter-grid select {
   width: 100%;
   padding: 14px 15px;
-  border: 1px solid rgba(17, 39, 32, 0.08);
+  border: 1px solid var(--field-border);
   border-radius: 16px;
-  background: #fff;
+  background: var(--field-bg);
   color: var(--ink);
 }
 
@@ -544,7 +585,7 @@ select {
 .catalog-item {
   padding: 14px 16px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--surface-soft);
 }
 
 .catalog-item {
@@ -586,7 +627,7 @@ select {
 .empty-state {
   padding: 16px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--surface-soft);
   color: var(--muted);
 }
 
@@ -597,7 +638,7 @@ select {
 
 .category-bar-button {
   width: 100%;
-  border: 1px solid rgba(17, 39, 32, 0.08);
+  border: 1px solid var(--field-border);
   text-align: left;
   cursor: pointer;
 }
@@ -618,7 +659,7 @@ select {
 .progress-track {
   height: 11px;
   border-radius: 999px;
-  background: rgba(17, 39, 32, 0.08);
+  background: var(--ghost-bg);
   overflow: hidden;
 }
 
@@ -663,9 +704,9 @@ select {
 .transaction-form select {
   width: 100%;
   padding: 14px 15px;
-  border: 1px solid rgba(17, 39, 32, 0.08);
+  border: 1px solid var(--field-border);
   border-radius: 16px;
-  background: #fff;
+  background: var(--field-bg);
   color: var(--ink);
 }
 
@@ -736,7 +777,8 @@ select {
 
 .dialog-content {
   padding: 24px;
-  background: #fff;
+  background: var(--surface-strong);
+  color: var(--ink);
 }
 
 .dialog-content h2 {
@@ -792,7 +834,7 @@ select {
 .menu-detail-row {
   padding: 14px 16px;
   border-radius: 18px;
-  background: #f6f7fb;
+  background: var(--menu-block-bg);
 }
 
 .menu-list-card-header {
@@ -855,11 +897,11 @@ select {
   width: 100%;
   min-height: 180px;
   border-radius: 18px;
-  border: 1px solid rgba(20, 92, 76, 0.18);
+  border: 1px solid var(--field-border);
   padding: 14px 16px;
   font: inherit;
   color: var(--ink);
-  background: #fff;
+  background: var(--field-bg);
   resize: vertical;
 }
 

@@ -57,6 +57,7 @@ let currentHistoryFilters = {
 };
 
 const nodes = {
+  themeColorMeta: document.querySelector('meta[name="theme-color"]'),
   currentMonthLabel: document.querySelector("#currentMonthLabel"),
   balanceValue: document.querySelector("#balanceValue"),
   incomeValue: document.querySelector("#incomeValue"),
@@ -103,9 +104,11 @@ const nodes = {
   settingsAccountName: document.querySelector("#settingsAccountName"),
   settingsDataSource: document.querySelector("#settingsDataSource"),
   settingsScreenOrder: document.querySelector("#settingsScreenOrder"),
+  settingsThemeStatus: document.querySelector("#settingsThemeStatus"),
   settingsExpenseCategoriesList: document.querySelector("#settingsExpenseCategoriesList"),
   settingsIncomeCategoriesList: document.querySelector("#settingsIncomeCategoriesList"),
   settingsPaymentMethodsList: document.querySelector("#settingsPaymentMethodsList"),
+  settingsThemeButton: document.querySelector("#settingsThemeButton"),
   addExpenseCategoryInput: document.querySelector("#addExpenseCategoryInput"),
   addIncomeCategoryInput: document.querySelector("#addIncomeCategoryInput"),
   addPaymentMethodInput: document.querySelector("#addPaymentMethodInput"),
@@ -122,6 +125,7 @@ export async function bootFinanceiroApp({ mode = "demo", user = null, persistenc
   currentIdentity = { mode, user };
   currentPersistence = persistence || createLocalPersistence(mode, user);
   currentState = sanitizeState(await currentPersistence.loadState());
+  applyTheme();
 
   updateUserBadge();
 
@@ -177,6 +181,7 @@ function bindEvents() {
   nodes.addExpenseCategoryButton?.addEventListener("click", () => handleAddCatalogItem("expense"));
   nodes.addIncomeCategoryButton?.addEventListener("click", () => handleAddCatalogItem("income"));
   nodes.addPaymentMethodButton?.addEventListener("click", () => handleAddCatalogItem("payment"));
+  nodes.settingsThemeButton?.addEventListener("click", handleThemeToggle);
   nodes.settingsExpenseCategoriesList?.addEventListener("click", handleCatalogListClick);
   nodes.settingsIncomeCategoriesList?.addEventListener("click", handleCatalogListClick);
   nodes.settingsPaymentMethodsList?.addEventListener("click", handleCatalogListClick);
@@ -741,7 +746,21 @@ function renderSettings() {
   if (nodes.settingsScreenOrder) {
     nodes.settingsScreenOrder.textContent = orderLabel;
   }
+  if (nodes.settingsThemeStatus) {
+    nodes.settingsThemeStatus.textContent = currentState.ui.themeMode === "dark" ? "Dark" : "Claro";
+  }
+  if (nodes.settingsThemeButton) {
+    nodes.settingsThemeButton.textContent = currentState.ui.themeMode === "dark" ? "Usar tema claro" : "Ativar tema dark";
+  }
   renderCatalogManagers();
+}
+
+async function handleThemeToggle() {
+  currentState.ui.themeMode = currentState.ui.themeMode === "dark" ? "light" : "dark";
+  applyTheme();
+  await saveState();
+  renderSettings();
+  showAppToast(currentState.ui.themeMode === "dark" ? "Tema dark ativado." : "Tema claro ativado.");
 }
 
 function renderCatalogManagers() {
@@ -1198,6 +1217,14 @@ function updateUserBadge() {
   nodes.userBadge.classList.remove("hidden");
 }
 
+function applyTheme() {
+  const themeMode = currentState?.ui?.themeMode === "dark" ? "dark" : "light";
+  document.body.dataset.theme = themeMode;
+  if (nodes.themeColorMeta) {
+    nodes.themeColorMeta.setAttribute("content", themeMode === "dark" ? "#0f1720" : "#145c4c");
+  }
+}
+
 function registerServiceWorker() {
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
@@ -1515,6 +1542,7 @@ function sanitizeUi(ui) {
   return {
     screenOrder,
     menuActionsOrder,
+    themeMode: ui?.themeMode === "dark" ? "dark" : "light",
     activeAccountId: Number(ui?.activeAccountId) || null,
     accounts: Array.isArray(ui?.accounts)
       ? ui.accounts
