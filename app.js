@@ -216,13 +216,13 @@ async function handleSubmit(event) {
   const dateValue = String(formData.get("date") || todayDateInputValue());
   const amount = Number(formData.get("amount"));
 
-  if (!title || !Number.isFinite(amount) || amount <= 0) return;
+  if (!Number.isFinite(amount) || amount <= 0) return;
 
   const dateMillis = toStartOfDayMillis(dateValue);
 
   currentState.transactions.unshift({
     id: generateId(),
-    title,
+    title: title || category || "Lançamento",
     category,
     type,
     amount,
