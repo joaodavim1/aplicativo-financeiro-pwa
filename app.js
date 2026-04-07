@@ -140,7 +140,8 @@ const nodes = {
   settingsExpenseCategoriesList: document.querySelector("#settingsExpenseCategoriesList"),
   settingsIncomeCategoriesList: document.querySelector("#settingsIncomeCategoriesList"),
   settingsPaymentMethodsList: document.querySelector("#settingsPaymentMethodsList"),
-  settingsThemeButton: document.querySelector("#settingsThemeButton"),
+  settingsThemeLightButton: document.querySelector("#settingsThemeLightButton"),
+  settingsThemeDarkButton: document.querySelector("#settingsThemeDarkButton"),
   addExpenseCategoryInput: document.querySelector("#addExpenseCategoryInput"),
   addIncomeCategoryInput: document.querySelector("#addIncomeCategoryInput"),
   addPaymentMethodInput: document.querySelector("#addPaymentMethodInput"),
@@ -227,7 +228,8 @@ function bindEvents() {
   nodes.addExpenseCategoryButton?.addEventListener("click", () => handleAddCatalogItem("expense"));
   nodes.addIncomeCategoryButton?.addEventListener("click", () => handleAddCatalogItem("income"));
   nodes.addPaymentMethodButton?.addEventListener("click", () => handleAddCatalogItem("payment"));
-  nodes.settingsThemeButton?.addEventListener("click", handleThemeToggle);
+  nodes.settingsThemeLightButton?.addEventListener("click", () => handleThemeChange("light"));
+  nodes.settingsThemeDarkButton?.addEventListener("click", () => handleThemeChange("dark"));
   nodes.settingsExpenseCategoriesList?.addEventListener("click", handleCatalogListClick);
   nodes.settingsIncomeCategoriesList?.addEventListener("click", handleCatalogListClick);
   nodes.settingsPaymentMethodsList?.addEventListener("click", handleCatalogListClick);
@@ -987,14 +989,19 @@ function renderSettings() {
     );
     nodes.settingsNotificationTime.disabled = !currentState.ui.notificationsEnabled;
   }
-  if (nodes.settingsThemeButton) {
-    nodes.settingsThemeButton.textContent = currentState.ui.themeMode === "dark" ? "Usar tema claro" : "Ativar tema dark";
-  }
+  nodes.settingsThemeLightButton?.classList.toggle("primary-button", currentState.ui.themeMode !== "dark");
+  nodes.settingsThemeLightButton?.classList.toggle("ghost-button", currentState.ui.themeMode === "dark");
+  nodes.settingsThemeLightButton?.classList.toggle("dark-ghost", currentState.ui.themeMode === "dark");
+  nodes.settingsThemeDarkButton?.classList.toggle("primary-button", currentState.ui.themeMode === "dark");
+  nodes.settingsThemeDarkButton?.classList.toggle("ghost-button", currentState.ui.themeMode !== "dark");
+  nodes.settingsThemeDarkButton?.classList.toggle("dark-ghost", currentState.ui.themeMode !== "dark");
   renderCatalogManagers();
 }
 
-async function handleThemeToggle() {
-  currentState.ui.themeMode = currentState.ui.themeMode === "dark" ? "light" : "dark";
+async function handleThemeChange(nextTheme) {
+  const normalizedTheme = nextTheme === "dark" ? "dark" : "light";
+  if (currentState.ui.themeMode === normalizedTheme) return;
+  currentState.ui.themeMode = normalizedTheme;
   applyTheme();
   await saveState();
   renderSettings();
