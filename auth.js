@@ -1,4 +1,4 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260406ad";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260406ae";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -376,11 +376,13 @@ function syncMenuState(menuState = null) {
       }
     ],
     screenOrder: ["Múltiplos", "Lançamentos", "Extrato", "Futuro"],
-    menuActions: [
-      { id: "MULTIPLOS", label: "Múltiplos lançamentos" },
+    screenOrderActions: [
+      { id: "MULTIPLOS", label: "Múltiplos" },
       { id: "LANCAMENTOS", label: "Lançamentos" },
       { id: "EXTRATO", label: "Extrato" },
-      { id: "QUADRO", label: "Futuro" },
+      { id: "QUADRO", label: "Futuro" }
+    ],
+    menuActions: [
       { id: "EXPORT_CSV", label: "Exportar CSV" },
       { id: "EXPORT_EXCEL", label: "Exportar Excel" }
     ]
@@ -399,7 +401,7 @@ function syncMenuState(menuState = null) {
     nodes.menuActionButtons.innerHTML = renderMenuActionButtons(snapshot.menuActions || []);
   }
   if (nodes.menuScreenOrderList) {
-    nodes.menuScreenOrderList.innerHTML = renderMenuScreenOrder(snapshot.menuActions || []);
+    nodes.menuScreenOrderList.innerHTML = renderMenuScreenOrder(snapshot.screenOrderActions || []);
   }
 }
 
@@ -552,6 +554,7 @@ function createSupabasePersistence(ensureSessionFn) {
       context.activeAccount = activeAccount;
       context.activeAccountId = activeAccountId;
       context.activeSettings = activeSettings;
+      context.activeAppSettings = Array.isArray(appSettings) ? appSettings[0] || null : null;
       context.defaultPaymentMethod = decodeStringList(activeSettings?.payment_methods || "")[0] || "Pix";
 
       const remoteState = buildStateFromRemote({
@@ -587,6 +590,10 @@ function createSupabasePersistence(ensureSessionFn) {
         ownerId: session.user.uid,
         activeSettings: context.activeSettings
       });
+      const appSettingsPayload = toSupabaseAppSettings(state, {
+        ownerId: session.user.uid,
+        activeAppSettings: context.activeAppSettings
+      });
 
       await Promise.all([
         requestSupabase({
@@ -604,6 +611,14 @@ function createSupabasePersistence(ensureSessionFn) {
           body: [settingsPayload],
           bearerToken: session.accessToken,
           prefer: "resolution=merge-duplicates,return=minimal"
+        }),
+        requestSupabase({
+          method: "POST",
+          path: "/rest/v1/app_settings",
+          query: { on_conflict: "owner_id,id" },
+          body: [appSettingsPayload],
+          bearerToken: session.accessToken,
+          prefer: "resolution=merge-duplicates,return=minimal"
         })
       ]);
 
@@ -616,6 +631,12 @@ function createSupabasePersistence(ensureSessionFn) {
         payment_method_card_configs: settingsPayload.payment_method_card_configs,
         multi_launch_expense_category_amounts: settingsPayload.multi_launch_expense_category_amounts,
         multi_launch_income_category_amounts: settingsPayload.multi_launch_income_category_amounts
+      };
+      context.activeAppSettings = {
+        ...(context.activeAppSettings || {}),
+        id: appSettingsPayload.id,
+        screen_order: appSettingsPayload.screen_order,
+        updated_at: appSettingsPayload.updated_at
       };
       context.defaultPaymentMethod = decodeStringList(settingsPayload.payment_methods)[0] || "Pix";
       writeStoredUiPreferences(session.user.uid, state.ui);
@@ -846,7 +867,9 @@ function mergeUiPreferences(state, uiPreferences) {
     ui: {
       ...state.ui,
       ...uiPreferences,
-      screenOrder: Array.isArray(state.ui?.screenOrder) ? state.ui.screenOrder : ["MULTIPLOS", "LANCAMENTOS", "EXTRATO", "QUADRO", "CONFIG"]
+      screenOrder: Array.isArray(uiPreferences?.screenOrder)
+        ? uiPreferences.screenOrder
+        : (Array.isArray(state.ui?.screenOrder) ? state.ui.screenOrder : ["MULTIPLOS", "LANCAMENTOS", "EXTRATO", "QUADRO", "CONFIG"])
     }
   };
 }
@@ -910,8 +933,13 @@ function buildStateFromRemote({ people, activeAccount, activeAccountId, transact
   const allowedScreens = ["MULTIPLOS", "EXTRATO", "LANCAMENTOS", "QUADRO"];
   const rawScreenOrder = decodeStringList(appSettings?.screen_order || "MULTIPLOS|||LANCAMENTOS|||EXTRATO|||QUADRO")
     .filter((screen) => allowedScreens.includes(screen));
-  const normalizedScreenOrder = rawScreenOrder.length > 0 ? rawScreenOrder : [...allowedScreens];
-  const screenOrder = ["MULTIPLOS", ...normalizedScreenOrder.filter((screen) => screen !== "MULTIPLOS")];
+  const normalizedScreenOrder = rawScreenOrder.length > 0 ? rawScreenOrder : ["MULTIPLOS", "LANCAMENTOS", "EXTRATO", "QUADRO"];
+  const screenOrder = [];
+  for (const screen of [...normalizedScreenOrder, "MULTIPLOS", "LANCAMENTOS", "EXTRATO", "QUADRO"]) {
+    if (!screenOrder.includes(screen)) {
+      screenOrder.push(screen);
+    }
+  }
   if (!screenOrder.includes("CONFIG")) {
     screenOrder.push("CONFIG");
   }
@@ -1083,6 +1111,19 @@ function toSupabaseAccountSettings(state, context) {
     expense_category_limits: context.activeSettings?.expense_category_limits || "",
     multi_launch_expense_category_amounts: context.activeSettings?.multi_launch_expense_category_amounts || "",
     multi_launch_income_category_amounts: context.activeSettings?.multi_launch_income_category_amounts || ""
+  };
+}
+
+function toSupabaseAppSettings(state, context) {
+  const screenOrder = Array.isArray(state?.ui?.screenOrder)
+    ? state.ui.screenOrder.filter((screen) => screen !== "CONFIG")
+    : ["MULTIPLOS", "LANCAMENTOS", "EXTRATO", "QUADRO"];
+
+  return {
+    owner_id: context.ownerId,
+    id: Number(context.activeAppSettings?.id ?? 0),
+    screen_order: encodeStringList(screenOrder),
+    updated_at: Date.now()
   };
 }
 

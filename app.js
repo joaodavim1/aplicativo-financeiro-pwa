@@ -183,6 +183,12 @@ export function getFinanceiroMenuState() {
       isActive: Number(account.id) === Number(activeAccountId)
     })),
     screenOrder: screenOrder.filter((screen) => screen !== "CONFIG").map((screen) => screenLabel(screen)),
+    screenOrderActions: screenOrder
+      .filter((screen) => screen !== "CONFIG")
+      .map((screen) => ({
+        id: screen,
+        label: screenLabel(screen)
+      })),
     menuActions: menuActionsOrder.map((actionId) => ({
       id: actionId,
       label: menuActionLabel(actionId)
@@ -657,9 +663,14 @@ function navigateToScreen(screen) {
 }
 
 async function moveMenuAction(actionId, direction) {
-  const order = Array.isArray(currentState?.ui?.menuActionsOrder)
-    ? [...currentState.ui.menuActionsOrder]
-    : defaultMenuActionsOrder();
+  const movableScreens = ["MULTIPLOS", "LANCAMENTOS", "EXTRATO", "QUADRO"];
+  if (!movableScreens.includes(actionId)) return;
+
+  const currentOrder = Array.isArray(currentState?.ui?.screenOrder)
+    ? currentState.ui.screenOrder
+    : ["MULTIPLOS", "LANCAMENTOS", "EXTRATO", "QUADRO", "CONFIG"];
+  const screensOnly = currentOrder.filter((screen) => movableScreens.includes(screen));
+  const order = [...screensOnly];
   const index = order.indexOf(actionId);
   if (index === -1) return;
 
@@ -667,7 +678,7 @@ async function moveMenuAction(actionId, direction) {
   if (targetIndex < 0 || targetIndex >= order.length) return;
 
   [order[index], order[targetIndex]] = [order[targetIndex], order[index]];
-  currentState.ui.menuActionsOrder = order;
+  currentState.ui.screenOrder = [...order, "CONFIG"];
   await saveState();
   render();
 }
@@ -1966,7 +1977,13 @@ function sanitizeUi(ui) {
   const rawOrder = Array.isArray(ui?.screenOrder) ? ui.screenOrder : ["MULTIPLOS", "LANCAMENTOS", "EXTRATO", "QUADRO"];
   const baseScreens = rawOrder.filter((item) => allowed.includes(item) && item !== "CONFIG");
   const normalizedBase = baseScreens.length > 0 ? baseScreens : ["MULTIPLOS", "LANCAMENTOS", "EXTRATO", "QUADRO"];
-  const screenOrder = ["MULTIPLOS", ...normalizedBase.filter((item) => item !== "MULTIPLOS")];
+  const screenOrder = [];
+
+  for (const item of [...normalizedBase, "MULTIPLOS", "LANCAMENTOS", "EXTRATO", "QUADRO"]) {
+    if (item === "CONFIG" || screenOrder.includes(item)) continue;
+    screenOrder.push(item);
+  }
+
   if (!screenOrder.includes("CONFIG")) {
     screenOrder.push("CONFIG");
   }
