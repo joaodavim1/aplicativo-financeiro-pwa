@@ -1174,6 +1174,18 @@ select {
   background: var(--surface-alt);
 }
 
+.multi-launch-finalize-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.multi-launch-total {
+  font-weight: 800;
+  color: var(--primary);
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;

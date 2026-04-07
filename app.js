@@ -157,6 +157,7 @@ const nodes = {
   multiLaunchFinalizeCard: document.querySelector("#multiLaunchFinalizeCard"),
   multiLaunchPaymentMethodInput: document.querySelector("#multiLaunchPaymentMethodInput"),
   multiLaunchDateInput: document.querySelector("#multiLaunchDateInput"),
+  multiLaunchTotalValue: document.querySelector("#multiLaunchTotalValue"),
   multiLaunchSaveButton: document.querySelector("#multiLaunchSaveButton")
 };
 
@@ -359,11 +360,24 @@ function renderMultiLaunchScreen() {
     }
   }
 
+  if (nodes.multiLaunchTotalValue) {
+    nodes.multiLaunchTotalValue.textContent = currency.format(computeMultiLaunchTotal());
+  }
+
   if (nodes.multiLaunchDateInput && !nodes.multiLaunchDateInput.value) {
     nodes.multiLaunchDateInput.value = todayDateInputValue();
   }
 
   nodes.multiLaunchFinalizeCard?.classList.toggle("hidden", !multiLaunchFinalizeOpen);
+}
+
+function computeMultiLaunchTotal() {
+  return multiLaunchRows.reduce((total, row) => {
+    const amount = Number.parseFloat(String(row.amount || "").replace(",", "."));
+    const quantity = Math.max(1, Number.parseInt(String(row.quantity || "1"), 10) || 1);
+    if (!Number.isFinite(amount) || amount <= 0) return total;
+    return total + (amount * quantity);
+  }, 0);
 }
 
 function renderMultiLaunchRow(row, index, categoryOptions) {
