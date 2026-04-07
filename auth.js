@@ -1,6 +1,7 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260407af";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260407ag";
 
-const IOS_APP_VERSION = "iOS 20260407af";
+const IOS_APP_VERSION = "Versão atual: 1.14";
+const IOS_SETTINGS_VERSION = "1.14";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -415,7 +416,7 @@ function syncVersionBadges() {
     nodes.menuAppVersion.textContent = IOS_APP_VERSION;
   }
   if (nodes.settingsAppVersion) {
-    nodes.settingsAppVersion.textContent = IOS_APP_VERSION;
+    nodes.settingsAppVersion.textContent = IOS_SETTINGS_VERSION;
   }
 }
 
