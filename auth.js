@@ -1,4 +1,6 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260406af";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260406ag";
+
+const IOS_APP_VERSION = "iOS 20260406ag";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -32,10 +34,12 @@ const nodes = {
   menuUpdateButton: document.querySelector("#menuUpdateButton"),
   menuLoginButton: document.querySelector("#menuLoginButton"),
   menuLogoutButton: document.querySelector("#menuLogoutButton"),
+  menuAppVersion: document.querySelector("#menuAppVersion"),
   installHelpButton: document.querySelector("#installHelpButton"),
   settingsLoginButton: document.querySelector("#settingsLoginButton"),
   settingsInstallButton: document.querySelector("#settingsInstallButton"),
-  settingsLogoutButton: document.querySelector("#settingsLogoutButton")
+  settingsLogoutButton: document.querySelector("#settingsLogoutButton"),
+  settingsAppVersion: document.querySelector("#settingsAppVersion")
 };
 
 let currentSession = null;
@@ -45,6 +49,7 @@ bootstrap();
 async function bootstrap() {
   try {
     bindEvents();
+    syncVersionBadges();
     syncMenuState();
 
     if (!isSupabaseConfigured(runtimeConfig)) {
@@ -402,6 +407,15 @@ function syncMenuState(menuState = null) {
   }
   if (nodes.menuScreenOrderList) {
     nodes.menuScreenOrderList.innerHTML = renderMenuScreenOrder(snapshot.screenOrderActions || []);
+  }
+}
+
+function syncVersionBadges() {
+  if (nodes.menuAppVersion) {
+    nodes.menuAppVersion.textContent = IOS_APP_VERSION;
+  }
+  if (nodes.settingsAppVersion) {
+    nodes.settingsAppVersion.textContent = IOS_APP_VERSION;
   }
 }
 

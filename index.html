@@ -8,9 +8,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Financeiro" />
     <title>Financeiro</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260406af" />
+    <link rel="manifest" href="./manifest.webmanifest?v=20260406ag" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260406af" />
+    <link rel="stylesheet" href="./styles.css?v=20260406ag" />
   </head>
   <body>
     <div id="appToast" class="app-toast hidden" role="status" aria-live="polite"></div>
@@ -411,6 +411,10 @@
                   <strong>Tema</strong>
                   <p id="settingsThemeStatus" class="muted">Claro</p>
                 </div>
+                <div class="insight-item">
+                  <strong>Versão iOS</strong>
+                  <p id="settingsAppVersion" class="muted">iOS 20260406ag</p>
+                </div>
               </div>
             </article>
 
@@ -437,7 +441,7 @@
         <p class="eyebrow">Contas</p>
         <div class="menu-title-row">
           <h2>Menu</h2>
-          <span class="muted menu-version-badge">Versão atual</span>
+          <span id="menuAppVersion" class="muted menu-version-badge">iOS 20260406ag</span>
         </div>
 
         <div class="menu-account-card">
@@ -517,8 +521,8 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260406af"></script>
+    <script src="./supabase-config.js?v=20260406ag"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260406af"></script>
+    <script type="module" src="./auth.js?v=20260406ag"></script>
   </body>
 </html>
