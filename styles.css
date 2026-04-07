@@ -975,6 +975,13 @@ select {
   font-weight: 700;
 }
 
+.menu-version-line {
+  margin: -4px 0 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
 .dialog-content h3 {
   margin: 0 0 10px;
   font-size: 1rem;

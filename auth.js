@@ -1,6 +1,6 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260407aa";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260407ab";
 
-const IOS_APP_VERSION = "iOS 20260407aa";
+const IOS_APP_VERSION = "iOS 20260407ab";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
