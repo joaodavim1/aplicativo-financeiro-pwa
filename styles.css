@@ -691,6 +691,11 @@ select {
   border-color: rgba(20, 92, 76, 0.36);
 }
 
+.future-transaction-card.flagged {
+  border-color: rgba(98, 145, 255, 0.42);
+  box-shadow: inset 0 0 0 1px rgba(98, 145, 255, 0.14);
+}
+
 .future-transaction-row {
   display: flex;
   align-items: start;
@@ -714,6 +719,15 @@ select {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 12px;
+}
+
+.future-flag-button {
+  color: #9ab8ff;
+}
+
+.future-flag-button.active {
+  background: rgba(98, 145, 255, 0.18);
+  color: #6f98ff;
 }
 
 .bar-item,

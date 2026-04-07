@@ -966,6 +966,7 @@ function renderFutureList() {
 
 function renderFutureTransactionItem(transaction) {
   const isSelected = selectedFutureIds.has(transaction.id);
+  const isFlagged = Boolean(transaction.futureFlagged);
   const dueDateMillis = resolveFutureDateMillis(transaction);
   const meta = [
     transaction.paymentMethod || "Sem pagamento",
@@ -975,7 +976,7 @@ function renderFutureTransactionItem(transaction) {
   ].filter(Boolean).join(" • ");
 
   return `
-    <article class="future-transaction-card ${isSelected ? "selected" : ""}">
+    <article class="future-transaction-card ${isSelected ? "selected" : ""} ${isFlagged ? "flagged" : ""}">
       <div class="future-transaction-row">
         <label class="future-checkbox-row">
           <input data-future-check="${transaction.id}" type="checkbox" ${isSelected ? "checked" : ""} />
@@ -986,7 +987,7 @@ function renderFutureTransactionItem(transaction) {
       <p class="transaction-meta">${escapeHtml(meta)}</p>
       <p class="muted">${escapeHtml(transaction.notes || "Sem titulo")}</p>
       <div class="future-item-actions">
-        <button class="ghost-button dark-ghost compact-icon-button" data-future-action="edit" data-id="${transaction.id}" type="button">✎</button>
+        <button class="ghost-button dark-ghost compact-icon-button ${isFlagged ? "future-flag-button active" : "future-flag-button"}" data-future-action="flag" data-id="${transaction.id}" type="button">⚑</button>
         <button class="ghost-button dark-ghost compact-icon-button" data-future-action="delete" data-id="${transaction.id}" type="button">🗑</button>
         <button class="ghost-button dark-ghost compact-icon-button" data-future-action="complete" data-id="${transaction.id}" type="button">✓</button>
       </div>
@@ -1047,6 +1048,18 @@ async function handleFutureListClick(event) {
     await saveState();
     render();
     showAppToast("Lançamento excluído.");
+    return;
+  }
+
+  if (action === "flag") {
+    currentState.transactions = currentState.transactions.map((transaction) =>
+      transaction.id === id
+        ? { ...transaction, futureFlagged: !transaction.futureFlagged }
+        : transaction
+    );
+    await saveState();
+    renderFutureList();
+    showAppToast("Flag do lançamento atualizada.");
     return;
   }
 
@@ -1643,6 +1656,7 @@ function sanitizeTransaction(transaction) {
       : Number.isFinite(Number(transaction?.card_payment_date_millis))
         ? Number(transaction.card_payment_date_millis)
         : null,
+    futureFlagged: Boolean(transaction?.futureFlagged ?? transaction?.future_flagged),
     notes: String(transaction?.notes || "").trim()
   };
 }
