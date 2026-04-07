@@ -941,6 +941,16 @@ select {
   gap: 8px;
 }
 
+.action-edit-button {
+  background: rgba(100, 140, 255, 0.16);
+  color: #8fb0ff;
+}
+
+.action-delete-button {
+  background: rgba(217, 96, 76, 0.16);
+  color: var(--coral);
+}
+
 .install-dialog {
   width: min(520px, calc(100% - 24px));
   border: 0;

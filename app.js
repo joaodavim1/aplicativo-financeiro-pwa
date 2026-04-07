@@ -1509,8 +1509,22 @@ function renderTransactionItem(transaction) {
           ${amountText}
         </div>
         <div class="transaction-item-actions">
-          <button class="ghost-button dark-ghost compact-icon-button" data-transaction-action="edit" data-id="${transaction.id}" type="button">✎</button>
-          <button class="ghost-button dark-ghost compact-icon-button" data-transaction-action="delete" data-id="${transaction.id}" type="button">🗑</button>
+          <button
+            class="ghost-button dark-ghost compact-icon-button action-edit-button"
+            data-transaction-action="edit"
+            data-id="${transaction.id}"
+            type="button"
+            aria-label="Editar lançamento"
+            title="Editar lançamento"
+          >✏</button>
+          <button
+            class="ghost-button dark-ghost compact-icon-button action-delete-button"
+            data-transaction-action="delete"
+            data-id="${transaction.id}"
+            type="button"
+            aria-label="Excluir lançamento"
+            title="Excluir lançamento"
+          >🗑</button>
         </div>
       </div>
     </div>
