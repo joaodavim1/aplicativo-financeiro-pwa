@@ -159,8 +159,40 @@
 
               <form id="transactionForm" class="transaction-form">
                 <label>
-                  <span>Descrição</span>
-                  <input id="titleInput" name="title" type="text" placeholder="Ex: Mercado do mês" required />
+                  <span>Entrada ou saída</span>
+                  <input id="typeInput" name="type" type="hidden" value="expense" />
+                  <div id="typeToggle" class="type-toggle" role="group" aria-label="Entrada ou saída">
+                    <button
+                      id="expenseTypeButton"
+                      class="type-toggle-button active expense"
+                      data-type="expense"
+                      type="button"
+                    >
+                      Despesa
+                    </button>
+                    <button
+                      id="incomeTypeButton"
+                      class="type-toggle-button income"
+                      data-type="income"
+                      type="button"
+                    >
+                      Receita
+                    </button>
+                  </div>
+                </label>
+
+                <label>
+                  <span>Valor</span>
+                  <input
+                    id="amountInput"
+                    name="amount"
+                    type="number"
+                    inputmode="decimal"
+                    min="0.01"
+                    step="0.01"
+                    placeholder="0,00"
+                    required
+                  />
                 </label>
 
                 <label>
@@ -201,30 +233,7 @@
                 </article>
 
                 <label>
-                  <span>Entrada ou saída</span>
-                  <input id="typeInput" name="type" type="hidden" value="expense" />
-                  <div id="typeToggle" class="type-toggle" role="group" aria-label="Entrada ou saída">
-                    <button
-                      id="expenseTypeButton"
-                      class="type-toggle-button active expense"
-                      data-type="expense"
-                      type="button"
-                    >
-                      Despesa
-                    </button>
-                    <button
-                      id="incomeTypeButton"
-                      class="type-toggle-button income"
-                      data-type="income"
-                      type="button"
-                    >
-                      Receita
-                    </button>
-                  </div>
-                </label>
-
-                <label>
-                  <span>Forma de pagamento</span>
+                  <span>Pagamento</span>
                   <select id="paymentMethodInput" name="paymentMethod">
                     <option value="Pix">Pix</option>
                   </select>
@@ -246,6 +255,11 @@
                 </article>
 
                 <label>
+                  <span>Descrição</span>
+                  <input id="titleInput" name="title" type="text" placeholder="Ex: Mercado do mês" required />
+                </label>
+
+                <label>
                   <span>Data de vencimento</span>
                   <input id="dateInput" name="date" type="date" required />
                 </label>
@@ -260,20 +274,6 @@
                     min="1"
                     step="1"
                     value="1"
-                    required
-                  />
-                </label>
-
-                <label>
-                  <span>Valor</span>
-                  <input
-                    id="amountInput"
-                    name="amount"
-                    type="number"
-                    inputmode="decimal"
-                    min="0.01"
-                    step="0.01"
-                    placeholder="0,00"
                     required
                   />
                 </label>
@@ -468,8 +468,8 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260406v"></script>
+    <script src="./supabase-config.js?v=20260406w"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260406v"></script>
+    <script type="module" src="./auth.js?v=20260406w"></script>
   </body>
 </html>
