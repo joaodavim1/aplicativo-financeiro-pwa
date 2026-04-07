@@ -45,6 +45,7 @@ bootstrap();
 async function bootstrap() {
   try {
     bindEvents();
+    syncMenuState();
 
     if (!isSupabaseConfigured(runtimeConfig)) {
       nodes.authGate.classList.remove("hidden");
@@ -365,9 +366,24 @@ function syncMenuState(menuState = null) {
     accountName: currentIdentityLabel() || "Sem conta",
     accessLabel: currentSession?.accessToken ? "Conta ativa" : "Conta local",
     accountDetails: [{ label: "Acesso", value: currentSession?.accessToken ? "Conta ativa" : "Conta local" }],
-    accounts: [],
+    accounts: [
+      {
+        id: "local",
+        name: currentIdentityLabel() || "Sem conta",
+        phone: "",
+        email: "",
+        isActive: true
+      }
+    ],
     screenOrder: ["Extrato", "Lançamentos", "Futuro"],
-    menuActions: []
+    menuActions: [
+      { id: "LANCAMENTOS", label: "Lançamentos" },
+      { id: "EXTRATO", label: "Extrato" },
+      { id: "QUADRO", label: "Futuro" },
+      { id: "MULTIPLOS", label: "Múltiplos lançamentos" },
+      { id: "EXPORT_CSV", label: "Exportar CSV" },
+      { id: "EXPORT_EXCEL", label: "Exportar Excel" }
+    ]
   };
 
   if (nodes.menuCurrentAccountName) {
