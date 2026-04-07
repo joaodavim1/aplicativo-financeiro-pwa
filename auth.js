@@ -1,4 +1,4 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260406x";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260406y";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
 const authOptions = {
@@ -375,12 +375,12 @@ function syncMenuState(menuState = null) {
         isActive: true
       }
     ],
-    screenOrder: ["Extrato", "Lançamentos", "Futuro"],
+    screenOrder: ["Múltiplos", "Lançamentos", "Extrato", "Futuro"],
     menuActions: [
+      { id: "MULTIPLOS", label: "Múltiplos lançamentos" },
       { id: "LANCAMENTOS", label: "Lançamentos" },
       { id: "EXTRATO", label: "Extrato" },
       { id: "QUADRO", label: "Futuro" },
-      { id: "MULTIPLOS", label: "Múltiplos lançamentos" },
       { id: "EXPORT_CSV", label: "Exportar CSV" },
       { id: "EXPORT_EXCEL", label: "Exportar Excel" }
     ]
@@ -846,7 +846,7 @@ function mergeUiPreferences(state, uiPreferences) {
     ui: {
       ...state.ui,
       ...uiPreferences,
-      screenOrder: Array.isArray(state.ui?.screenOrder) ? state.ui.screenOrder : ["EXTRATO", "LANCAMENTOS", "QUADRO", "CONFIG"]
+      screenOrder: Array.isArray(state.ui?.screenOrder) ? state.ui.screenOrder : ["MULTIPLOS", "LANCAMENTOS", "EXTRATO", "QUADRO", "CONFIG"]
     }
   };
 }
@@ -907,10 +907,11 @@ function buildStateFromRemote({ people, activeAccount, activeAccountId, transact
     ...sortedTransactions.map((transaction) => transaction.payment_method || "")
   ]);
   const paymentMethodConfigs = decodeCardPaymentConfigMap(settings?.payment_method_card_configs || "");
-  const allowedScreens = ["EXTRATO", "LANCAMENTOS", "QUADRO"];
-  const rawScreenOrder = decodeStringList(appSettings?.screen_order || "EXTRATO|||LANCAMENTOS|||QUADRO")
+  const allowedScreens = ["MULTIPLOS", "EXTRATO", "LANCAMENTOS", "QUADRO"];
+  const rawScreenOrder = decodeStringList(appSettings?.screen_order || "MULTIPLOS|||LANCAMENTOS|||EXTRATO|||QUADRO")
     .filter((screen) => allowedScreens.includes(screen));
-  const screenOrder = rawScreenOrder.length > 0 ? rawScreenOrder : [...allowedScreens];
+  const normalizedScreenOrder = rawScreenOrder.length > 0 ? rawScreenOrder : [...allowedScreens];
+  const screenOrder = ["MULTIPLOS", ...normalizedScreenOrder.filter((screen) => screen !== "MULTIPLOS")];
   if (!screenOrder.includes("CONFIG")) {
     screenOrder.push("CONFIG");
   }

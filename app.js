@@ -114,10 +114,8 @@ const nodes = {
   addExpenseCategoryButton: document.querySelector("#addExpenseCategoryButton"),
   addIncomeCategoryButton: document.querySelector("#addIncomeCategoryButton"),
   addPaymentMethodButton: document.querySelector("#addPaymentMethodButton"),
-  multiLaunchDialog: document.querySelector("#multiLaunchDialog"),
   multiLaunchInput: document.querySelector("#multiLaunchInput"),
-  multiLaunchSaveButton: document.querySelector("#multiLaunchSaveButton"),
-  multiLaunchCloseButton: document.querySelector("#multiLaunchCloseButton")
+  multiLaunchSaveButton: document.querySelector("#multiLaunchSaveButton")
 };
 
 export async function bootFinanceiroApp({ mode = "demo", user = null, persistence = null } = {}) {
@@ -145,7 +143,9 @@ export function getFinanceiroMenuState() {
   const accounts = Array.isArray(currentState?.ui?.accounts) ? currentState.ui.accounts : [];
   const activeAccountId = currentState?.ui?.activeAccountId ?? null;
   const activeAccount = resolveActiveAccountRecord(accounts, activeAccountId);
-  const screenOrder = Array.isArray(currentState?.ui?.screenOrder) ? currentState.ui.screenOrder : ["EXTRATO", "LANCAMENTOS", "QUADRO"];
+  const screenOrder = Array.isArray(currentState?.ui?.screenOrder)
+    ? currentState.ui.screenOrder
+    : ["MULTIPLOS", "LANCAMENTOS", "EXTRATO", "QUADRO"];
   const menuActionsOrder = Array.isArray(currentState?.ui?.menuActionsOrder)
     ? currentState.ui.menuActionsOrder
     : defaultMenuActionsOrder();
@@ -184,7 +184,6 @@ function bindEvents() {
   nodes.incomeCategoryBars?.addEventListener("click", handleCategoryBarClick);
   nodes.expenseCategoryBars?.addEventListener("click", handleCategoryBarClick);
   nodes.multiLaunchSaveButton?.addEventListener("click", handleSaveMultiLaunch);
-  nodes.multiLaunchCloseButton?.addEventListener("click", closeMultiLaunchDialog);
   [
     nodes.historyStartDate,
     nodes.historyEndDate,
@@ -710,7 +709,7 @@ async function runMenuAction(actionId) {
     return;
   }
   if (actionId === "MULTIPLOS") {
-    openMultiLaunchDialog();
+    navigateToScreen("MULTIPLOS");
     return;
   }
   if (actionId === "EXPORT_CSV") {
@@ -963,18 +962,6 @@ function renderTransactionItem(transaction) {
   `;
 }
 
-function openMultiLaunchDialog() {
-  if (!nodes.multiLaunchDialog) return;
-  if (!nodes.multiLaunchInput?.value.trim()) {
-    nodes.multiLaunchInput.value = "";
-  }
-  openDialogElement(nodes.multiLaunchDialog);
-}
-
-function closeMultiLaunchDialog() {
-  closeDialogElement(nodes.multiLaunchDialog);
-}
-
 async function handleSaveMultiLaunch() {
   const raw = nodes.multiLaunchInput?.value || "";
   const lines = raw
@@ -1030,9 +1017,9 @@ async function handleSaveMultiLaunch() {
     .sort((left, right) => right.dateMillis - left.dateMillis);
   await saveState();
   nodes.multiLaunchInput.value = "";
-  closeMultiLaunchDialog();
   render();
-  navigateToScreen("LANCAMENTOS");
+  showAppToast("Lançamentos salvos.");
+  navigateToScreen("EXTRATO");
 }
 
 function exportTransactionsCsv() {
@@ -1515,10 +1502,11 @@ function escapeAttribute(value) {
 }
 
 function sanitizeUi(ui) {
-  const allowed = ["EXTRATO", "LANCAMENTOS", "QUADRO", "CONFIG"];
-  const rawOrder = Array.isArray(ui?.screenOrder) ? ui.screenOrder : ["EXTRATO", "LANCAMENTOS", "QUADRO"];
+  const allowed = ["MULTIPLOS", "EXTRATO", "LANCAMENTOS", "QUADRO", "CONFIG"];
+  const rawOrder = Array.isArray(ui?.screenOrder) ? ui.screenOrder : ["MULTIPLOS", "LANCAMENTOS", "EXTRATO", "QUADRO"];
   const baseScreens = rawOrder.filter((item) => allowed.includes(item) && item !== "CONFIG");
-  const screenOrder = baseScreens.length > 0 ? baseScreens : ["EXTRATO", "LANCAMENTOS", "QUADRO"];
+  const normalizedBase = baseScreens.length > 0 ? baseScreens : ["MULTIPLOS", "LANCAMENTOS", "EXTRATO", "QUADRO"];
+  const screenOrder = ["MULTIPLOS", ...normalizedBase.filter((item) => item !== "MULTIPLOS")];
   if (!screenOrder.includes("CONFIG")) {
     screenOrder.push("CONFIG");
   }
@@ -1576,14 +1564,14 @@ function resolveActiveAccountRecord(accounts, activeAccountId) {
 }
 
 function defaultMenuActionsOrder() {
-  return ["LANCAMENTOS", "EXTRATO", "QUADRO", "MULTIPLOS", "EXPORT_CSV", "EXPORT_EXCEL"];
+  return ["MULTIPLOS", "LANCAMENTOS", "EXTRATO", "QUADRO", "EXPORT_CSV", "EXPORT_EXCEL"];
 }
 
 function menuActionLabel(actionId) {
+  if (actionId === "MULTIPLOS") return "Múltiplos lançamentos";
   if (actionId === "LANCAMENTOS") return "Lançamentos";
   if (actionId === "EXTRATO") return "Extrato";
   if (actionId === "QUADRO") return "Futuro";
-  if (actionId === "MULTIPLOS") return "Múltiplos lançamentos";
   if (actionId === "EXPORT_CSV") return "Exportar CSV";
   if (actionId === "EXPORT_EXCEL") return "Exportar Excel";
   return actionId;
@@ -1679,6 +1667,7 @@ function emptyStateHtml(message) {
 }
 
 function screenLabel(screen) {
+  if (screen === "MULTIPLOS") return "Múltiplos";
   if (screen === "LANCAMENTOS") return "Lançamentos";
   if (screen === "QUADRO") return "Futuro";
   if (screen === "CONFIG") return "Configurações";

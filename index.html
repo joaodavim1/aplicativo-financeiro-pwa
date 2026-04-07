@@ -47,6 +47,30 @@
       <main id="protectedApp" class="layout">
         <nav id="screenTabs" class="screen-tabs" aria-label="Telas do app"></nav>
 
+        <section data-screen="MULTIPLOS" class="screen-panel">
+          <section class="transactions-section single-column">
+            <article class="card composer-card">
+              <div class="card-heading">
+                <p class="eyebrow">Lançamentos</p>
+                <h2>Múltiplos lançamentos</h2>
+              </div>
+              <p class="muted">
+                Use uma linha por lançamento no formato:
+                descricao;categoria;despesa ou receita;pagamento;data;parcelas;valor
+              </p>
+              <textarea
+                id="multiLaunchInput"
+                class="multi-launch-input"
+                rows="8"
+                placeholder="Mercado;Alimentacao;despesa;Pix;2026-04-06;1;120,50"
+              ></textarea>
+              <div class="settings-actions">
+                <button id="multiLaunchSaveButton" class="primary-button" type="button">Salvar lançamentos</button>
+              </div>
+            </article>
+          </section>
+        </section>
+
         <section data-screen="EXTRATO" class="screen-panel">
           <section class="summary-grid single-column">
             <article class="balance-card">
@@ -447,29 +471,8 @@
       </div>
     </dialog>
 
-    <dialog id="multiLaunchDialog" class="install-dialog">
-      <div class="dialog-content">
-        <p class="eyebrow">Múltiplos lançamentos</p>
-        <h2>Importar vários lançamentos</h2>
-        <p class="muted">
-          Use uma linha por lançamento no formato:
-          descricao;categoria;despesa ou receita;pagamento;data;parcelas;valor
-        </p>
-        <textarea
-          id="multiLaunchInput"
-          class="multi-launch-input"
-          rows="8"
-          placeholder="Mercado;Alimentacao;despesa;Pix;2026-04-06;1;120,50"
-        ></textarea>
-        <div class="settings-actions">
-          <button id="multiLaunchSaveButton" class="primary-button" type="button">Salvar lançamentos</button>
-          <button id="multiLaunchCloseButton" class="ghost-button dark-ghost" type="button">Fechar</button>
-        </div>
-      </div>
-    </dialog>
-
-    <script src="./supabase-config.js?v=20260406x"></script>
+    <script src="./supabase-config.js?v=20260406y"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260406x"></script>
+    <script type="module" src="./auth.js?v=20260406y"></script>
   </body>
 </html>
