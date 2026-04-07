@@ -224,6 +224,8 @@ function bindEvents() {
   nodes.clearFutureSelectionButton?.addEventListener("click", handleClearFutureSelection);
   nodes.completeSelectedFutureButton?.addEventListener("click", handleCompleteSelectedFuture);
   nodes.futureLaunchesList?.addEventListener("click", handleFutureListClick);
+  nodes.extratoList?.addEventListener("click", handleTransactionListClick);
+  nodes.transactionsList?.addEventListener("click", handleTransactionListClick);
   nodes.filterTabs.forEach((tab) => {
     tab.addEventListener("click", () => {
       currentFilter = tab.dataset.filter;
@@ -1139,27 +1141,74 @@ function deriveHistoryPaymentOptions() {
 
 function renderTransactionItem(transaction) {
   const sign = transaction.type === "income" ? "+" : "-";
+  const transactionStatus = resolveTransactionStatus(transaction);
+  const amountText = `${sign} ${currency.format(transaction.amount)}`;
   const installmentText =
     transaction.installments > 1
       ? `Parcela ${transaction.installmentNumber}/${transaction.installments}`
       : "";
-  const details = [transaction.category, transaction.paymentMethod, installmentText, transaction.dateLabel]
-    .filter(Boolean)
-    .join(" · ");
-  const notes = transaction.notes ? `<div class="transaction-notes">${escapeHtml(transaction.notes)}</div>` : "";
+  const amountLine = transaction.originalTotalAmount ? currency.format(transaction.originalTotalAmount) : currency.format(transaction.amount);
+  const details = [
+    transaction.paymentMethod || null,
+    installmentText || null,
+    `de ${amountLine}`,
+    `Lanc: ${formatDateShort(transaction.dateMillis)}`
+  ].filter(Boolean).join(" • ");
+  const notes = `<div class="transaction-notes">${escapeHtml(transaction.notes || "Sem descricao")}</div>`;
 
   return `
     <div class="transaction-item">
-      <div>
+      <div class="transaction-copy">
         <div class="transaction-title">${escapeHtml(transaction.title)}</div>
         <div class="transaction-meta">${escapeHtml(details)}</div>
         ${notes}
+        <div class="transaction-status">Status: ${escapeHtml(transactionStatus)}</div>
       </div>
-      <div class="transaction-amount ${transaction.type}">
-        ${sign}${currency.format(transaction.amount)}
+      <div class="transaction-side">
+        <div class="transaction-amount ${transaction.type}">
+          ${amountText}
+        </div>
+        <div class="transaction-item-actions">
+          <button class="ghost-button dark-ghost compact-icon-button" data-transaction-action="edit" data-id="${transaction.id}" type="button">✎</button>
+          <button class="ghost-button dark-ghost compact-icon-button" data-transaction-action="delete" data-id="${transaction.id}" type="button">🗑</button>
+        </div>
       </div>
     </div>
   `;
+}
+
+async function handleTransactionListClick(event) {
+  const button = event.target.closest("[data-transaction-action][data-id]");
+  if (!button) return;
+
+  const id = Number(button.getAttribute("data-id"));
+  const action = button.getAttribute("data-transaction-action");
+  if (!id || !action) return;
+
+  if (action === "delete") {
+    currentState.transactions = currentState.transactions.filter((transaction) => transaction.id !== id);
+    selectedFutureIds.delete(id);
+    await saveState();
+    render();
+    showAppToast("Lançamento excluído.");
+    return;
+  }
+
+  if (action === "edit") {
+    const transaction = currentState.transactions.find((item) => item.id === id);
+    if (!transaction) return;
+    navigateToScreen("LANCAMENTOS");
+    syncTypeToggle(transaction.type);
+    renderCategoryOptions();
+    renderPaymentMethodOptions();
+    if (nodes.amountInput) nodes.amountInput.value = String(transaction.amount);
+    if (nodes.categoryInput) nodes.categoryInput.value = transaction.category;
+    if (nodes.paymentMethodInput) nodes.paymentMethodInput.value = transaction.paymentMethod;
+    if (nodes.titleInput) nodes.titleInput.value = transaction.title;
+    if (nodes.dateInput) nodes.dateInput.value = formatDateInputValue(transaction.dateMillis);
+    if (nodes.installmentsInput) nodes.installmentsInput.value = String(transaction.installments || 1);
+    showAppToast("Edite e salve o lançamento.");
+  }
 }
 
 async function handleSaveMultiLaunch() {
@@ -1302,6 +1351,11 @@ function resolveFutureDateMillis(transaction) {
   return Number.isFinite(Number(transaction.cardPaymentDateMillis))
     ? Number(transaction.cardPaymentDateMillis)
     : Number(transaction.dateMillis || Date.now());
+}
+
+function resolveTransactionStatus(transaction) {
+  const todayEnd = toEndOfDayMillis(todayDateInputValue());
+  return resolveFutureDateMillis(transaction) <= todayEnd ? "Concluido" : "Pendente";
 }
 
 function showAppToast(message) {
