@@ -1186,6 +1186,8 @@ async function handleTransactionListClick(event) {
   if (!id || !action) return;
 
   if (action === "delete") {
+    const confirmed = window.confirm("Deseja excluir este lançamento?");
+    if (!confirmed) return;
     currentState.transactions = currentState.transactions.filter((transaction) => transaction.id !== id);
     selectedFutureIds.delete(id);
     await saveState();
