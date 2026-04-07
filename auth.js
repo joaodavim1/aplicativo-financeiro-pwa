@@ -230,10 +230,24 @@ async function handleAccountAccess() {
 }
 
 async function switchAccount() {
+  const currentEmail = currentSession?.user?.email || "";
+
   try {
     window.google?.accounts?.id?.disableAutoSelect?.();
+    window.google?.accounts?.id?.cancel?.();
   } catch (error) {
     console.warn("Falha ao desativar selecao automatica:", error);
+  }
+
+  if (currentEmail) {
+    try {
+      await new Promise((resolve) => {
+        window.google?.accounts?.id?.revoke?.(currentEmail, () => resolve());
+        window.setTimeout(resolve, 1200);
+      });
+    } catch (error) {
+      console.warn("Falha ao revogar acesso do Google no navegador:", error);
+    }
   }
 
   await handleLogout({
@@ -310,6 +324,11 @@ async function handleLogout(options = {}) {
   openDemoMode({ statusMessage });
 
   if (reopenLogin) {
+    try {
+      await withTimeout(mountGoogleButton(), SESSION_TIMEOUT_MS, "Tempo esgotado ao preparar a troca de conta.");
+    } catch (error) {
+      console.warn("Falha ao remontar botao do Google:", error);
+    }
     openLoginArea();
   }
 }
