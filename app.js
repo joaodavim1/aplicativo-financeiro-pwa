@@ -357,6 +357,11 @@ function renderMultiLaunchScreen() {
     nodes.multiLaunchCountValue.textContent = `${count} ${count === 1 ? "lançamento" : "lançamentos"}`;
   }
 
+  if (nodes.multiLaunchSaveButton) {
+    const count = multiLaunchRows.length;
+    nodes.multiLaunchSaveButton.textContent = count > 1 ? `SALVAR TODOS (${count})` : "SALVAR LANÇAMENTO";
+  }
+
   if (nodes.multiLaunchPaymentMethodInput) {
     const paymentMethods = derivePaymentMethodOptions();
     const currentValue = nodes.multiLaunchPaymentMethodInput.value;
