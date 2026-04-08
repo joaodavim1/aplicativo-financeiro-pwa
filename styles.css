@@ -550,6 +550,8 @@ select {
   border-radius: 16px;
   background: var(--field-bg);
   color: var(--ink);
+  text-align: left;
+  text-align-last: left;
 }
 
 .history-clear-button {
@@ -861,6 +863,13 @@ select {
   border-radius: 16px;
   background: var(--field-bg);
   color: var(--ink);
+  text-align: left;
+  text-align-last: left;
+}
+
+.filter-grid select option,
+.transaction-form select option {
+  text-align: left;
 }
 
 .filter-tabs {
