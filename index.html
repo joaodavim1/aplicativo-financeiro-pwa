@@ -8,9 +8,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Financeiro" />
     <title>Financeiro</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260408ad" />
+    <link rel="manifest" href="./manifest.webmanifest?v=20260408ae" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260408ad" />
+    <link rel="stylesheet" href="./styles.css?v=20260408ae" />
   </head>
   <body>
     <div id="appToast" class="app-toast hidden" role="status" aria-live="polite"></div>
@@ -72,13 +72,13 @@
               <div id="multiLaunchRows" class="multi-launch-rows"></div>
 
               <div class="multi-launch-actions">
-                <button id="multiLaunchAddRowButton" class="ghost-button dark-ghost" type="button">+ Próximo lançamento</button>
+                <button id="multiLaunchAddRowButton" class="ghost-button dark-ghost" type="button">+ Outro valor</button>
                 <button id="multiLaunchFinalizeButton" class="ghost-button dark-ghost" type="button">Mesmo pagamento</button>
               </div>
 
-              <div id="multiLaunchFinalizeCard" class="multi-launch-finalize">
+              <div id="multiLaunchFinalizeCard" class="multi-launch-finalize hidden">
                 <div class="multi-launch-finalize-head">
-                  <strong>Total dos lançamentos</strong>
+                  <strong>Forma de pagamento geral</strong>
                   <span id="multiLaunchCountValue" class="multi-launch-count">1 lançamento</span>
                   <span id="multiLaunchTotalValue" class="multi-launch-total">R$ 0,00</span>
                 </div>
@@ -594,8 +594,8 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260408ad"></script>
+    <script src="./supabase-config.js?v=20260408ae"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260408ad"></script>
+    <script type="module" src="./auth.js?v=20260408ae"></script>
   </body>
 </html>

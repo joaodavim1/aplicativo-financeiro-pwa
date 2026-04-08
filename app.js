@@ -358,8 +358,7 @@ function renderMultiLaunchScreen() {
   }
 
   if (nodes.multiLaunchSaveButton) {
-    const count = multiLaunchRows.length;
-    nodes.multiLaunchSaveButton.textContent = count > 1 ? `SALVAR TODOS (${count})` : "SALVAR LANÇAMENTO";
+    nodes.multiLaunchSaveButton.textContent = "SALVAR TODOS";
   }
 
   if (nodes.multiLaunchPaymentMethodInput) {
@@ -382,6 +381,7 @@ function renderMultiLaunchScreen() {
     nodes.multiLaunchDateInput.value = todayDateInputValue();
   }
 
+  nodes.multiLaunchFinalizeCard?.classList.toggle("hidden", !multiLaunchFinalizeOpen);
   nodes.multiLaunchFinalizeCard?.classList.toggle("is-focused", multiLaunchFinalizeOpen);
 }
 
