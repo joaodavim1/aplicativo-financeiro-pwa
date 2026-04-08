@@ -184,6 +184,7 @@ window.financeiroNavigateToScreen = navigateToScreen;
 window.financeiroGetMenuState = getFinanceiroMenuState;
 window.financeiroMoveMenuAction = moveMenuAction;
 window.financeiroRunMenuAction = runMenuAction;
+window.financeiroSetThemeMode = setThemeMode;
 
 export function getFinanceiroMenuState() {
   const accounts = Array.isArray(currentState?.ui?.accounts) ? currentState.ui.accounts : [];
@@ -214,6 +215,7 @@ export function getFinanceiroMenuState() {
         id: screen,
         label: screenLabel(screen)
       })),
+    themeMode: currentState?.ui?.themeMode === "dark" ? "dark" : "light",
     menuActions: menuActionsOrder.map((actionId) => ({
       id: actionId,
       label: menuActionLabel(actionId)
@@ -1016,7 +1018,12 @@ async function handleThemeChange(nextTheme) {
   applyTheme();
   await saveState();
   renderSettings();
+  window.dispatchEvent(new CustomEvent("financeiro:menu-state", { detail: getFinanceiroMenuState() }));
   showAppToast(currentState.ui.themeMode === "dark" ? "Tema dark ativado." : "Tema claro ativado.");
+}
+
+async function setThemeMode(nextTheme) {
+  await handleThemeChange(nextTheme);
 }
 
 async function handleViewModeChange() {

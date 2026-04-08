@@ -1,8 +1,8 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260408af";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260408ag";
 
 const IOS_APP_VERSION = "Versão atual: 1.14";
 const IOS_SETTINGS_VERSION = "1.14";
-const IOS_BUILD_TOKEN = "20260408af";
+const IOS_BUILD_TOKEN = "20260408ag";
 const BUILD_STORAGE_KEY = "financeiro-pwa-build-token";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
@@ -36,6 +36,8 @@ const nodes = {
   menuScreenOrderList: document.querySelector("#menuScreenOrderList"),
   menuScreenOrderFeedback: document.querySelector("#menuScreenOrderFeedback"),
   menuUpdateButton: document.querySelector("#menuUpdateButton"),
+  menuThemeLightButton: document.querySelector("#menuThemeLightButton"),
+  menuThemeDarkButton: document.querySelector("#menuThemeDarkButton"),
   menuLoginButton: document.querySelector("#menuLoginButton"),
   menuLogoutButton: document.querySelector("#menuLogoutButton"),
   menuAppVersion: document.querySelector("#menuAppVersion"),
@@ -155,6 +157,14 @@ function bindEvents() {
   nodes.menuButton?.addEventListener("click", openMenuDialog);
   nodes.closeMenuButton?.addEventListener("click", closeMenuDialog);
   nodes.menuUpdateButton?.addEventListener("click", () => refreshAppVersion({ closeMenu: true }));
+  nodes.menuThemeLightButton?.addEventListener("click", async () => {
+    await window.financeiroSetThemeMode?.("light");
+    syncMenuState(window.financeiroGetMenuState?.());
+  });
+  nodes.menuThemeDarkButton?.addEventListener("click", async () => {
+    await window.financeiroSetThemeMode?.("dark");
+    syncMenuState(window.financeiroGetMenuState?.());
+  });
   nodes.menuLoginButton?.addEventListener("click", async () => {
     closeMenuDialog();
     await handleAccountAccess();
@@ -429,6 +439,7 @@ function syncMenuState(menuState = null) {
       { id: "EXTRATO", label: "Extrato" },
       { id: "QUADRO", label: "Futuro" }
     ],
+    themeMode: "light",
     menuActions: [
       { id: "EXPORT_CSV", label: "Exportar CSV" },
       { id: "EXPORT_EXCEL", label: "Exportar Excel" }
@@ -450,6 +461,13 @@ function syncMenuState(menuState = null) {
   if (nodes.menuScreenOrderList) {
     nodes.menuScreenOrderList.innerHTML = renderMenuScreenOrder(snapshot.screenOrderActions || []);
   }
+  const isDark = snapshot.themeMode === "dark";
+  nodes.menuThemeLightButton?.classList.toggle("primary-button", !isDark);
+  nodes.menuThemeLightButton?.classList.toggle("ghost-button", isDark);
+  nodes.menuThemeLightButton?.classList.toggle("dark-ghost", isDark);
+  nodes.menuThemeDarkButton?.classList.toggle("primary-button", isDark);
+  nodes.menuThemeDarkButton?.classList.toggle("ghost-button", !isDark);
+  nodes.menuThemeDarkButton?.classList.toggle("dark-ghost", !isDark);
 }
 
 function syncVersionBadges() {

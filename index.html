@@ -8,9 +8,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Financeiro" />
     <title>Financeiro</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260408af" />
+    <link rel="manifest" href="./manifest.webmanifest?v=20260408ag" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260408af" />
+    <link rel="stylesheet" href="./styles.css?v=20260408ag" />
   </head>
   <body>
     <div id="appToast" class="app-toast hidden" role="status" aria-live="polite"></div>
@@ -563,6 +563,14 @@
         </div>
 
         <div class="menu-section">
+          <h3>Tema</h3>
+          <div class="settings-actions">
+            <button id="menuThemeLightButton" class="ghost-button dark-ghost" type="button">Tema claro</button>
+            <button id="menuThemeDarkButton" class="ghost-button dark-ghost" type="button">Tema dark</button>
+          </div>
+        </div>
+
+        <div class="menu-section">
           <h3>Ações da conta</h3>
           <div class="settings-actions">
             <button id="menuLoginButton" class="primary-button" type="button">Entrar com Google</button>
@@ -594,8 +602,8 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260408af"></script>
+    <script src="./supabase-config.js?v=20260408ag"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260408af"></script>
+    <script type="module" src="./auth.js?v=20260408ag"></script>
   </body>
 </html>
