@@ -1399,6 +1399,7 @@ function renderFutureTransactionItem(transaction) {
       ${notes ? `<p class="muted">${escapeHtml(notes)}</p>` : ""}
       <div class="future-item-actions">
         <button class="ghost-button dark-ghost compact-icon-button ${isFlagged ? "future-flag-button active" : "future-flag-button"}" data-future-action="flag" data-id="${transaction.id}" type="button">⚑</button>
+        <button class="ghost-button dark-ghost compact-icon-button action-edit-button" data-future-action="edit" data-id="${transaction.id}" type="button">✎</button>
         <button class="ghost-button dark-ghost compact-icon-button" data-future-action="delete" data-id="${transaction.id}" type="button">🗑</button>
         <button class="ghost-button dark-ghost compact-icon-button" data-future-action="complete" data-id="${transaction.id}" type="button">✓</button>
       </div>
