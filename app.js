@@ -285,7 +285,7 @@ async function handleSubmit(event) {
   const description = String(formData.get("title") || "").trim();
   const category = String(formData.get("category") || "Casa");
   const type = String(formData.get("type") || "expense");
-  const paymentMethod = String(formData.get("paymentMethod") || derivePaymentMethodOptions()[0] || "Pix");
+  const paymentMethod = String(formData.get("paymentMethod") || preferredPaymentMethod() || "Dinheiro");
   const installments = Math.max(1, Number.parseInt(String(formData.get("installments") || "1"), 10) || 1);
   const dateValue = String(formData.get("date") || todayDateInputValue());
   const amount = Number(formData.get("amount"));
@@ -370,6 +370,8 @@ function renderMultiLaunchScreen() {
     ].join("");
     if (paymentMethods.includes(currentValue)) {
       nodes.multiLaunchPaymentMethodInput.value = currentValue;
+    } else {
+      nodes.multiLaunchPaymentMethodInput.value = preferredPaymentMethod();
     }
   }
 
@@ -832,7 +834,7 @@ function renderPaymentMethodOptions() {
     return;
   }
 
-  nodes.paymentMethodInput.value = options[0] || "";
+  nodes.paymentMethodInput.value = preferredPaymentMethod();
 }
 
 function syncLaunchFormDefaults() {
@@ -842,6 +844,10 @@ function syncLaunchFormDefaults() {
 
   if (nodes.installmentsInput && !nodes.installmentsInput.value) {
     nodes.installmentsInput.value = "1";
+  }
+
+  if (nodes.paymentMethodInput && !nodes.paymentMethodInput.value) {
+    nodes.paymentMethodInput.value = preferredPaymentMethod();
   }
 }
 
@@ -1705,7 +1711,7 @@ async function handleSaveMultiLaunch() {
   await saveState();
   multiLaunchRows = [createMultiLaunchRow()];
   multiLaunchFinalizeOpen = false;
-  if (nodes.multiLaunchPaymentMethodInput) nodes.multiLaunchPaymentMethodInput.value = "";
+  if (nodes.multiLaunchPaymentMethodInput) nodes.multiLaunchPaymentMethodInput.value = preferredPaymentMethod();
   if (nodes.multiLaunchDateInput) nodes.multiLaunchDateInput.value = todayDateInputValue();
   render();
   showAppToast("Lançamentos salvos.");
@@ -2140,6 +2146,12 @@ function derivePaymentMethodOptions() {
     ...currentState.transactions.map((transaction) => transaction.paymentMethod).filter(Boolean),
     ...defaults.catalog.paymentMethods
   ]);
+}
+
+function preferredPaymentMethod() {
+  const options = derivePaymentMethodOptions();
+  const cashOption = options.find((option) => option.localeCompare("Dinheiro", "pt-BR", { sensitivity: "base" }) === 0);
+  return cashOption || options[0] || "Dinheiro";
 }
 
 function selectDefaultTransactionType() {
