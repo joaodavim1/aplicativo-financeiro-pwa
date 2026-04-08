@@ -282,7 +282,7 @@ async function handleSubmit(event) {
   event.preventDefault();
 
   const formData = new FormData(event.currentTarget);
-  const title = String(formData.get("title") || "").trim();
+  const description = String(formData.get("title") || "").trim();
   const category = String(formData.get("category") || "Casa");
   const type = String(formData.get("type") || "expense");
   const paymentMethod = String(formData.get("paymentMethod") || derivePaymentMethodOptions()[0] || "Pix");
@@ -296,7 +296,7 @@ async function handleSubmit(event) {
 
   currentState.transactions.unshift({
     id: generateId(),
-    title: title || category || "Lançamento",
+    title: category || "Sem categoria",
     category,
     type,
     amount,
@@ -307,7 +307,7 @@ async function handleSubmit(event) {
     installmentNumber: 1,
     originalTotalAmount: amount * installments,
     cardPaymentDateMillis: null,
-    notes: ""
+    notes: description
   });
 
   updateCatalogForTransaction(category, type, paymentMethod);
@@ -1377,7 +1377,7 @@ function renderFutureTransactionItem(transaction) {
   const isSelected = selectedFutureIds.has(transaction.id);
   const isFlagged = Boolean(transaction.futureFlagged);
   const dueDateMillis = resolveFutureDateMillis(transaction);
-  const title = String(transaction.title || "").trim() || String(transaction.category || "").trim() || "Sem titulo";
+  const title = String(transaction.category || "").trim() || "Sem categoria";
   const notes = String(transaction.notes || "").trim();
   const meta = [
     transaction.paymentMethod || "Sem pagamento",
@@ -1491,7 +1491,7 @@ async function handleFutureListClick(event) {
     if (nodes.amountInput) nodes.amountInput.value = String(transaction.amount);
     if (nodes.categoryInput) nodes.categoryInput.value = transaction.category;
     if (nodes.paymentMethodInput) nodes.paymentMethodInput.value = transaction.paymentMethod;
-    if (nodes.titleInput) nodes.titleInput.value = transaction.title;
+    if (nodes.titleInput) nodes.titleInput.value = transaction.notes || "";
     if (nodes.dateInput) nodes.dateInput.value = formatDateInputValue(transaction.dateMillis);
     if (nodes.installmentsInput) nodes.installmentsInput.value = String(transaction.installments || 1);
     showAppToast("Edite e salve o lançamento.");
@@ -1564,7 +1564,7 @@ function renderTransactionItem(transaction) {
     `de ${amountLine}`,
     `Lanc: ${formatDateShort(transaction.dateMillis)}`
   ].filter(Boolean).join(" • ");
-  const title = String(transaction.title || "").trim() || String(transaction.category || "").trim() || "Sem titulo";
+  const title = String(transaction.category || "").trim() || "Sem categoria";
   const notes = String(transaction.notes || "").trim();
   const notesMarkup = notes
     ? `<div class="transaction-notes">${escapeHtml(notes)}</div>`
@@ -1634,7 +1634,7 @@ async function handleTransactionListClick(event) {
     if (nodes.amountInput) nodes.amountInput.value = String(transaction.amount);
     if (nodes.categoryInput) nodes.categoryInput.value = transaction.category;
     if (nodes.paymentMethodInput) nodes.paymentMethodInput.value = transaction.paymentMethod;
-    if (nodes.titleInput) nodes.titleInput.value = transaction.title;
+    if (nodes.titleInput) nodes.titleInput.value = transaction.notes || "";
     if (nodes.dateInput) nodes.dateInput.value = formatDateInputValue(transaction.dateMillis);
     if (nodes.installmentsInput) nodes.installmentsInput.value = String(transaction.installments || 1);
     showAppToast("Edite e salve o lançamento.");
@@ -2305,11 +2305,12 @@ function editPaymentConfig(method, existingConfig) {
 
 function sanitizeTransaction(transaction) {
   const dateMillis = Number.isFinite(Number(transaction?.dateMillis)) ? Number(transaction.dateMillis) : Date.now();
+  const category = String(transaction?.category || "Sem categoria").trim() || "Sem categoria";
 
   return {
     id: normalizeTransactionId(transaction?.id),
-    category: String(transaction?.category || "Sem categoria").trim() || "Sem categoria",
-    title: String(transaction?.title || "").trim() || String(transaction?.category || "").trim() || "Sem titulo",
+    category,
+    title: category,
     type: transaction?.type === "income" ? "income" : "expense",
     amount: Number.isFinite(Number(transaction?.amount)) ? Number(transaction.amount) : 0,
     dateMillis,
