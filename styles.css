@@ -1183,12 +1183,24 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
+}
+
+.multi-launch-count {
+  font-size: 0.92rem;
+  color: var(--muted);
+  font-weight: 700;
 }
 
 .multi-launch-total {
   font-weight: 800;
   color: var(--primary);
+}
+
+.multi-launch-finalize.is-focused {
+  border-color: rgba(107, 197, 164, 0.46);
+  box-shadow: 0 0 0 1px rgba(107, 197, 164, 0.22);
 }
 
 .multi-launch-remove-button {

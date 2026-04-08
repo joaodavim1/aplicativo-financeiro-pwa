@@ -156,6 +156,7 @@ const nodes = {
   multiLaunchAddRowButton: document.querySelector("#multiLaunchAddRowButton"),
   multiLaunchFinalizeButton: document.querySelector("#multiLaunchFinalizeButton"),
   multiLaunchFinalizeCard: document.querySelector("#multiLaunchFinalizeCard"),
+  multiLaunchCountValue: document.querySelector("#multiLaunchCountValue"),
   multiLaunchPaymentMethodInput: document.querySelector("#multiLaunchPaymentMethodInput"),
   multiLaunchDateInput: document.querySelector("#multiLaunchDateInput"),
   multiLaunchTotalValue: document.querySelector("#multiLaunchTotalValue"),
@@ -351,6 +352,11 @@ function renderMultiLaunchScreen() {
       .join("");
   }
 
+  if (nodes.multiLaunchCountValue) {
+    const count = multiLaunchRows.length;
+    nodes.multiLaunchCountValue.textContent = `${count} ${count === 1 ? "lançamento" : "lançamentos"}`;
+  }
+
   if (nodes.multiLaunchPaymentMethodInput) {
     const paymentMethods = derivePaymentMethodOptions();
     const currentValue = nodes.multiLaunchPaymentMethodInput.value;
@@ -371,15 +377,7 @@ function renderMultiLaunchScreen() {
     nodes.multiLaunchDateInput.value = todayDateInputValue();
   }
 
-  nodes.multiLaunchFinalizeCard?.classList.toggle("hidden", !multiLaunchFinalizeOpen);
-
-  if (nodes.multiLaunchPaymentMethodInput) {
-    nodes.multiLaunchPaymentMethodInput.disabled = !multiLaunchFinalizeOpen;
-  }
-
-  if (nodes.multiLaunchDateInput) {
-    nodes.multiLaunchDateInput.disabled = !multiLaunchFinalizeOpen;
-  }
+  nodes.multiLaunchFinalizeCard?.classList.toggle("is-focused", multiLaunchFinalizeOpen);
 }
 
 function computeMultiLaunchTotal() {
@@ -491,7 +489,6 @@ function handleMultiLaunchRowsClick(event) {
 
 function handleAddMultiLaunchRow() {
   multiLaunchRows.push(createMultiLaunchRow());
-  multiLaunchFinalizeOpen = false;
   renderMultiLaunchScreen();
   const lastCard = nodes.multiLaunchRows?.lastElementChild;
   if (lastCard && typeof lastCard.scrollIntoView === "function") {
@@ -505,6 +502,9 @@ function handleToggleMultiLaunchFinalize() {
   const finalizeCard = nodes.multiLaunchFinalizeCard;
   if (finalizeCard && typeof finalizeCard.scrollIntoView === "function") {
     finalizeCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  if (nodes.multiLaunchPaymentMethodInput && typeof nodes.multiLaunchPaymentMethodInput.focus === "function") {
+    nodes.multiLaunchPaymentMethodInput.focus();
   }
 }
 
@@ -1658,11 +1658,6 @@ async function handleSaveMultiLaunch() {
   const invalidRow = validRows.find((row) => !Number.isFinite(row.amountNumber) || row.amountNumber <= 0 || !row.categoryValue);
   if (invalidRow) {
     window.alert("Revise os campos de valor, quantidade e categoria dos múltiplos lançamentos.");
-    return;
-  }
-
-  if (!multiLaunchFinalizeOpen) {
-    window.alert("Toque em Mesmo pagamento para escolher a forma de pagamento final.");
     return;
   }
 
