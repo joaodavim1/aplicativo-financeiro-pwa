@@ -2134,6 +2134,9 @@ function showAppToast(message) {
 async function saveState() {
   try {
     await currentPersistence.saveState(stripRuntimeFields(currentState));
+    if (currentPersistence?.loadState) {
+      currentState = sanitizeState(await currentPersistence.loadState());
+    }
     return true;
   } catch (error) {
     console.error("Falha ao salvar dados do app:", error);
