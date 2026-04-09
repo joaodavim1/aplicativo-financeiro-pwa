@@ -1176,6 +1176,14 @@ select {
   padding: 16px;
   border-radius: 18px;
   background: var(--surface-alt);
+  transition: box-shadow 180ms ease, border-color 180ms ease, transform 180ms ease;
+  border: 1px solid transparent;
+}
+
+.multi-launch-entry-card.is-new {
+  border-color: rgba(107, 197, 164, 0.42);
+  box-shadow: 0 0 0 1px rgba(107, 197, 164, 0.24);
+  transform: translateY(-1px);
 }
 
 .multi-launch-entry-title {

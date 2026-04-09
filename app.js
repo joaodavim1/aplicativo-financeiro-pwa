@@ -503,8 +503,18 @@ function handleAddMultiLaunchRow() {
   renderMultiLaunchScreen();
   showAppToast("Novo lançamento adicionado.");
   const lastCard = nodes.multiLaunchRows?.lastElementChild;
+  const lastAmountInput = lastCard?.querySelector('[data-multi-field="amount"]');
   if (lastCard && typeof lastCard.scrollIntoView === "function") {
     lastCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  if (lastCard) {
+    lastCard.classList.add("is-new");
+    window.setTimeout(() => {
+      lastCard.classList.remove("is-new");
+    }, 1400);
+  }
+  if (lastAmountInput && typeof lastAmountInput.focus === "function") {
+    window.setTimeout(() => lastAmountInput.focus(), 120);
   }
 }
 
