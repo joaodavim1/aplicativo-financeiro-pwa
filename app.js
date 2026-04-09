@@ -65,7 +65,7 @@ let currentFutureFilters = {
 let selectedFutureIds = new Set();
 let multiLaunchType = "expense";
 let multiLaunchRows = [createMultiLaunchRow()];
-let multiLaunchFinalizeOpen = false;
+let multiLaunchFinalizeOpen = true;
 let editingTransactionId = null;
 
 const nodes = {
@@ -364,9 +364,9 @@ function renderMultiLaunchScreen() {
       });
   }
 
-  if (nodes.multiLaunchFinalizeButton) {
-    nodes.multiLaunchFinalizeButton.classList.toggle("active", multiLaunchFinalizeOpen);
-  }
+    if (nodes.multiLaunchFinalizeButton) {
+      nodes.multiLaunchFinalizeButton.classList.add("active");
+    }
 
   if (nodes.multiLaunchRows) {
     const categoryOptions = deriveMultiLaunchCategoryOptions();
@@ -401,8 +401,8 @@ function renderMultiLaunchScreen() {
     nodes.multiLaunchDateInput.value = todayDateInputValue();
   }
 
-  nodes.multiLaunchFinalizeCard?.classList.toggle("hidden", !multiLaunchFinalizeOpen);
-  nodes.multiLaunchFinalizeCard?.classList.toggle("is-focused", multiLaunchFinalizeOpen);
+    nodes.multiLaunchFinalizeCard?.classList.remove("hidden");
+    nodes.multiLaunchFinalizeCard?.classList.toggle("is-focused", multiLaunchFinalizeOpen);
 }
 
 function computeMultiLaunchTotal() {
@@ -482,7 +482,7 @@ function handleMultiLaunchTypeToggleClick(event) {
   const button = event.target.closest("[data-multi-type]");
   if (!button) return;
   multiLaunchType = button.dataset.multiType === "income" ? "income" : "expense";
-  multiLaunchFinalizeOpen = false;
+  multiLaunchFinalizeOpen = true;
   renderMultiLaunchScreen();
 }
 
@@ -516,7 +516,7 @@ function handleMultiLaunchRowsClick(event) {
 
 function handleAddMultiLaunchRow() {
   multiLaunchRows.push(createMultiLaunchRow());
-  multiLaunchFinalizeOpen = false;
+  multiLaunchFinalizeOpen = true;
   renderMultiLaunchScreen();
   showAppToast("Novo lançamento adicionado.");
   const lastCard = nodes.multiLaunchRows?.lastElementChild;
@@ -1762,7 +1762,7 @@ async function handleSaveMultiLaunch() {
     return;
   }
   multiLaunchRows = [createMultiLaunchRow()];
-  multiLaunchFinalizeOpen = false;
+  multiLaunchFinalizeOpen = true;
   if (nodes.multiLaunchPaymentMethodInput) nodes.multiLaunchPaymentMethodInput.value = preferredPaymentMethod();
   if (nodes.multiLaunchDateInput) nodes.multiLaunchDateInput.value = todayDateInputValue();
   render();
