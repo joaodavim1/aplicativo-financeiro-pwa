@@ -358,11 +358,6 @@ function renderMultiLaunchScreen() {
       .join("");
   }
 
-  if (nodes.multiLaunchCountValue) {
-    const count = multiLaunchRows.length;
-    nodes.multiLaunchCountValue.textContent = `${count} ${count === 1 ? "lançamento" : "lançamentos"}`;
-  }
-
   if (nodes.multiLaunchSaveButton) {
     nodes.multiLaunchSaveButton.textContent = "SALVAR TODOS";
   }
@@ -412,24 +407,25 @@ function renderMultiLaunchRow(row, index, categoryOptions) {
 
   return `
     <article class="multi-launch-entry-card">
-      <div class="card-heading compact">
-        <h3>Lançamento ${index + 1}</h3>
-      </div>
-      <label>
-        <span>Valor</span>
-        <input
-          data-multi-row-id="${row.id}"
-          data-multi-field="amount"
-          type="number"
-          inputmode="decimal"
-          min="0.01"
-          step="0.01"
-          placeholder="0,00"
-          value="${escapeAttribute(row.amount)}"
-        />
+      <h3 class="multi-launch-entry-title">Lançamento ${index + 1}</h3>
+      <label class="multi-launch-field multi-launch-money-field">
+        <span class="multi-launch-field-legend">&nbsp;</span>
+        <div class="multi-launch-field-shell">
+          <span class="multi-launch-currency-symbol">$</span>
+          <input
+            data-multi-row-id="${row.id}"
+            data-multi-field="amount"
+            type="number"
+            inputmode="decimal"
+            min="0.01"
+            step="0.01"
+            placeholder="Valor"
+            value="${escapeAttribute(row.amount)}"
+          />
+        </div>
       </label>
-      <label>
-        <span>Quantidade</span>
+      <label class="multi-launch-field">
+        <span class="multi-launch-field-legend">Quantidade</span>
         <input
           data-multi-row-id="${row.id}"
           data-multi-field="quantity"
@@ -440,8 +436,8 @@ function renderMultiLaunchRow(row, index, categoryOptions) {
           value="${escapeAttribute(row.quantity || "1")}"
         />
       </label>
-      <label>
-        <span>Categoria</span>
+      <label class="multi-launch-field">
+        <span class="multi-launch-field-legend">Categoria</span>
         <select data-multi-row-id="${row.id}" data-multi-field="category">
           ${options}
         </select>
@@ -469,6 +465,7 @@ function handleMultiLaunchTypeToggleClick(event) {
   const button = event.target.closest("[data-multi-type]");
   if (!button) return;
   multiLaunchType = button.dataset.multiType === "income" ? "income" : "expense";
+  multiLaunchFinalizeOpen = false;
   renderMultiLaunchScreen();
 }
 
@@ -502,6 +499,7 @@ function handleMultiLaunchRowsClick(event) {
 
 function handleAddMultiLaunchRow() {
   multiLaunchRows.push(createMultiLaunchRow());
+  multiLaunchFinalizeOpen = false;
   renderMultiLaunchScreen();
   showAppToast("Novo lançamento adicionado.");
   const lastCard = nodes.multiLaunchRows?.lastElementChild;

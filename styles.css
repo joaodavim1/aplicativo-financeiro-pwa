@@ -1178,13 +1178,63 @@ select {
   background: var(--surface-alt);
 }
 
-.card-heading.compact {
-  margin-bottom: 0;
-}
-
-.card-heading.compact h3 {
+.multi-launch-entry-title {
   margin: 0;
   font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.multi-launch-field {
+  position: relative;
+  display: grid;
+  gap: 0;
+}
+
+.multi-launch-field-legend {
+  position: absolute;
+  top: -8px;
+  left: 14px;
+  z-index: 1;
+  padding: 0 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--surface-alt);
+}
+
+.multi-launch-field input,
+.multi-launch-field select {
+  width: 100%;
+  padding: 14px 15px;
+  border: 1px solid var(--field-border);
+  border-radius: 16px;
+  background: var(--field-bg);
+  color: var(--ink);
+  text-align: left;
+  text-align-last: left;
+}
+
+.multi-launch-money-field .multi-launch-field-legend {
+  display: none;
+}
+
+.multi-launch-field-shell {
+  position: relative;
+}
+
+.multi-launch-currency-symbol {
+  position: absolute;
+  top: 50%;
+  left: 15px;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.multi-launch-money-field input {
+  padding-left: 40px;
 }
 
 .multi-launch-actions {
@@ -1202,23 +1252,36 @@ select {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.multi-launch-finalize-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
+.multi-launch-finalize-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  gap: 10px;
 }
 
-.multi-launch-count {
-  font-size: 0.92rem;
-  color: var(--muted);
-  font-weight: 700;
+.multi-launch-finalize-field {
+  display: grid;
+  gap: 8px;
 }
 
 .multi-launch-total {
   font-weight: 800;
   color: var(--primary);
+}
+
+.multi-launch-total-card {
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--field-border);
+  background: var(--field-bg);
+}
+
+.multi-launch-total-card span {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
 }
 
 .multi-launch-finalize.is-focused {
@@ -1234,6 +1297,12 @@ select {
 
 .multi-launch-remove-button {
   width: 100%;
+}
+
+@media (max-width: 520px) {
+  .multi-launch-finalize-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .status-badge {
