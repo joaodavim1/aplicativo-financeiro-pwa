@@ -318,6 +318,59 @@ select {
   color: var(--ink);
 }
 
+body:not([data-theme="dark"]) [data-screen="MULTIPLOS"] .multi-launch-card,
+body:not([data-theme="dark"]) [data-screen="MULTIPLOS"] .multi-launch-entry-card,
+body:not([data-theme="dark"]) [data-screen="MULTIPLOS"] .multi-launch-finalize,
+body:not([data-theme="dark"]) #menuDialog .dialog-content,
+body:not([data-theme="dark"]) #menuDialog .menu-account-card,
+body:not([data-theme="dark"]) #menuDialog .menu-list-card,
+body:not([data-theme="dark"]) #menuDialog .menu-detail-row {
+  background: #1a2431;
+  color: #f3f8f6;
+  border-color: rgba(181, 201, 220, 0.2);
+}
+
+body:not([data-theme="dark"]) [data-screen="MULTIPLOS"] .card-heading h2,
+body:not([data-theme="dark"]) [data-screen="MULTIPLOS"] .multi-launch-entry-title,
+body:not([data-theme="dark"]) #menuDialog h2,
+body:not([data-theme="dark"]) #menuDialog h3,
+body:not([data-theme="dark"]) #menuDialog strong,
+body:not([data-theme="dark"]) #menuDialog .menu-version-line,
+body:not([data-theme="dark"]) #menuDialog .menu-list-card-title {
+  color: #f3f8f6;
+}
+
+body:not([data-theme="dark"]) [data-screen="MULTIPLOS"] .muted,
+body:not([data-theme="dark"]) [data-screen="MULTIPLOS"] .multi-launch-field-legend,
+body:not([data-theme="dark"]) #menuDialog .muted,
+body:not([data-theme="dark"]) #menuDialog .eyebrow {
+  color: #c0d0d8;
+}
+
+body:not([data-theme="dark"]) [data-screen="MULTIPLOS"] .multi-launch-field-legend {
+  background: #1f2c3c;
+}
+
+body:not([data-theme="dark"]) [data-screen="MULTIPLOS"] .multi-launch-field input,
+body:not([data-theme="dark"]) [data-screen="MULTIPLOS"] .multi-launch-field select,
+body:not([data-theme="dark"]) [data-screen="MULTIPLOS"] .multi-launch-total-card,
+body:not([data-theme="dark"]) #menuDialog .ghost-button,
+body:not([data-theme="dark"]) #menuDialog .menu-dark {
+  background: #223044;
+  color: #f3f8f6;
+  border-color: rgba(181, 201, 220, 0.24);
+}
+
+body:not([data-theme="dark"]) [data-screen="MULTIPLOS"] .multi-launch-currency-symbol,
+body:not([data-theme="dark"]) [data-screen="MULTIPLOS"] .multi-launch-total-card span,
+body:not([data-theme="dark"]) #menuDialog .menu-inline-badge {
+  color: #c0d0d8;
+}
+
+body:not([data-theme="dark"]) #menuDialog .menu-inline-badge {
+  background: rgba(107, 197, 164, 0.16);
+}
+
 .summary-grid,
 .panel-grid,
 .transactions-section {
