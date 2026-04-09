@@ -779,7 +779,7 @@ function renderTransactions() {
   const filtered = currentState.transactions.filter((transaction) => {
     if (currentFilter === "all") return true;
     return transaction.type === currentFilter;
-  });
+  }).sort(compareTransactionsNewestFirst);
 
   if (filtered.length === 0) {
     nodes.transactionsList.innerHTML = emptyStateHtml("Nenhuma transacao encontrada para este filtro.");
@@ -1391,7 +1391,7 @@ function getFutureTransactions() {
       if (futureDateMillis > endMillis) return false;
     }
     return true;
-  });
+  }).sort(compareTransactionsNewestFirst);
 }
 
 function renderFutureList() {
@@ -1429,7 +1429,7 @@ function renderFutureList() {
 
   nodes.futureLaunchesList.innerHTML = Object.entries(grouped)
     .map(([paymentMethod, items]) => {
-      const sortedItems = [...items].sort((left, right) => resolveFutureDateMillis(left) - resolveFutureDateMillis(right));
+      const sortedItems = [...items].sort(compareTransactionsNewestFirst);
       return `
         <section class="future-group">
           <article class="future-group-card">
@@ -1598,7 +1598,7 @@ function getHistoryFilteredTransactions() {
       }
     }
     return true;
-  });
+  }).sort(compareTransactionsNewestFirst);
 }
 
 function deriveHistoryCategoryOptions(type) {
@@ -2071,6 +2071,28 @@ function resolveFutureDateMillis(transaction) {
   return Number.isFinite(Number(transaction.cardPaymentDateMillis))
     ? Number(transaction.cardPaymentDateMillis)
     : Number(transaction.dateMillis || Date.now());
+}
+
+function compareTransactionsNewestFirst(left, right) {
+  const leftEffectiveDate = resolveFutureDateMillis(left);
+  const rightEffectiveDate = resolveFutureDateMillis(right);
+  if (rightEffectiveDate !== leftEffectiveDate) {
+    return rightEffectiveDate - leftEffectiveDate;
+  }
+
+  const leftAmount = Number(left?.amount || 0);
+  const rightAmount = Number(right?.amount || 0);
+  if (rightAmount !== leftAmount) {
+    return rightAmount - leftAmount;
+  }
+
+  const leftCreatedDate = Number(left?.dateMillis || 0);
+  const rightCreatedDate = Number(right?.dateMillis || 0);
+  if (rightCreatedDate !== leftCreatedDate) {
+    return rightCreatedDate - leftCreatedDate;
+  }
+
+  return Number(right?.id || 0) - Number(left?.id || 0);
 }
 
 function resolveTransactionStatus(transaction) {
