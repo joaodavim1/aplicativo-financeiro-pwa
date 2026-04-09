@@ -65,7 +65,7 @@ let currentFutureFilters = {
 let selectedFutureIds = new Set();
 let multiLaunchType = "expense";
 let multiLaunchRows = [createMultiLaunchRow()];
-let multiLaunchFinalizeOpen = true;
+let multiLaunchFinalizeOpen = false;
 let editingTransactionId = null;
 
 const nodes = {
@@ -364,9 +364,9 @@ function renderMultiLaunchScreen() {
       });
   }
 
-    if (nodes.multiLaunchFinalizeButton) {
-      nodes.multiLaunchFinalizeButton.classList.add("active");
-    }
+  if (nodes.multiLaunchFinalizeButton) {
+    nodes.multiLaunchFinalizeButton.classList.toggle("active", multiLaunchFinalizeOpen);
+  }
 
   if (nodes.multiLaunchRows) {
     const categoryOptions = deriveMultiLaunchCategoryOptions();
@@ -401,8 +401,13 @@ function renderMultiLaunchScreen() {
     nodes.multiLaunchDateInput.value = todayDateInputValue();
   }
 
+  if (multiLaunchFinalizeOpen) {
     nodes.multiLaunchFinalizeCard?.classList.remove("hidden");
-    nodes.multiLaunchFinalizeCard?.classList.toggle("is-focused", multiLaunchFinalizeOpen);
+    nodes.multiLaunchFinalizeCard?.classList.add("is-focused");
+  } else {
+    nodes.multiLaunchFinalizeCard?.classList.add("hidden");
+    nodes.multiLaunchFinalizeCard?.classList.remove("is-focused");
+  }
 }
 
 function computeMultiLaunchTotal() {
@@ -482,7 +487,7 @@ function handleMultiLaunchTypeToggleClick(event) {
   const button = event.target.closest("[data-multi-type]");
   if (!button) return;
   multiLaunchType = button.dataset.multiType === "income" ? "income" : "expense";
-  multiLaunchFinalizeOpen = true;
+  multiLaunchFinalizeOpen = false;
   renderMultiLaunchScreen();
 }
 
@@ -516,7 +521,7 @@ function handleMultiLaunchRowsClick(event) {
 
 function handleAddMultiLaunchRow() {
   multiLaunchRows.push(createMultiLaunchRow());
-  multiLaunchFinalizeOpen = true;
+  multiLaunchFinalizeOpen = false;
   renderMultiLaunchScreen();
   showAppToast("Novo lançamento adicionado.");
   const lastCard = nodes.multiLaunchRows?.lastElementChild;
@@ -1718,13 +1723,8 @@ async function handleSaveMultiLaunch() {
     return;
   }
 
-  const paymentMethod = String(nodes.multiLaunchPaymentMethodInput?.value || "").trim();
+  const paymentMethod = String(nodes.multiLaunchPaymentMethodInput?.value || preferredPaymentMethod() || "Dinheiro").trim();
   const dateValue = String(nodes.multiLaunchDateInput?.value || todayDateInputValue());
-
-  if (!paymentMethod) {
-    window.alert("Escolha a forma de pagamento antes de salvar.");
-    return;
-  }
 
   const dateMillis = toStartOfDayMillis(dateValue);
   const createdTransactions = [];
@@ -1761,7 +1761,7 @@ async function handleSaveMultiLaunch() {
     return;
   }
   multiLaunchRows = [createMultiLaunchRow()];
-  multiLaunchFinalizeOpen = true;
+  multiLaunchFinalizeOpen = false;
   if (nodes.multiLaunchPaymentMethodInput) nodes.multiLaunchPaymentMethodInput.value = preferredPaymentMethod();
   if (nodes.multiLaunchDateInput) nodes.multiLaunchDateInput.value = todayDateInputValue();
   render();
@@ -2742,8 +2742,9 @@ function screenLabel(screen) {
 }
 
 function screenTabLabel(screen) {
-  if (typeof window !== "undefined" && window.innerWidth <= 540 && screen === "LANCAMENTOS") {
-    return "Lanç.";
+  if (typeof window !== "undefined" && window.innerWidth <= 680) {
+    if (screen === "MULTIPLOS") return "Múlt.";
+    if (screen === "LANCAMENTOS") return "Lanç.";
   }
   return screenLabel(screen);
 }

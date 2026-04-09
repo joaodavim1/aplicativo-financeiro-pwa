@@ -1550,9 +1550,9 @@ body[data-theme="dark"] .progress-fill {
   }
 
   .screen-tab {
-    min-height: 44px;
-    padding: 8px 4px;
-    font-size: 0.78rem;
+    min-height: 42px;
+    padding: 8px 2px;
+    font-size: 0.74rem;
     line-height: 1.05;
     letter-spacing: -0.01em;
     white-space: normal;
