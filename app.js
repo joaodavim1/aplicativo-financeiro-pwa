@@ -926,7 +926,7 @@ function renderScreenTabs() {
     .map(
       (screen) => `
         <button class="screen-tab ${screen === activeScreen ? "active" : ""}" data-screen="${screen}" type="button">
-          ${escapeHtml(screenLabel(screen))}
+          ${escapeHtml(screenTabLabel(screen))}
         </button>
       `
     )
@@ -1562,13 +1562,15 @@ async function handleFutureListClick(event) {
   }
 
   if (action === "complete") {
-    const transaction = currentState.transactions.find((item) => item.id === id);
-    if (!transaction?.futureFlagged) {
-      showAppToast("Marque a flag antes de concluir.");
-      return;
+    if (selectedFutureIds.has(id)) {
+      selectedFutureIds.delete(id);
+      renderFutureList();
+      showAppToast("Lançamento desmarcado.");
+    } else {
+      selectedFutureIds.add(id);
+      renderFutureList();
+      showAppToast("Lançamento marcado.");
     }
-    selectedFutureIds = new Set([id]);
-    await handleCompleteSelectedFuture();
     return;
   }
 
@@ -2761,4 +2763,11 @@ function screenLabel(screen) {
   if (screen === "QUADRO") return "Futuro";
   if (screen === "CONFIG") return "Configurações";
   return "Extrato";
+}
+
+function screenTabLabel(screen) {
+  if (typeof window !== "undefined" && window.innerWidth <= 540 && screen === "LANCAMENTOS") {
+    return "Lanç.";
+  }
+  return screenLabel(screen);
 }
