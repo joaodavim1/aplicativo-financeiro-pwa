@@ -691,6 +691,11 @@ function renderHistoryFilterOptions() {
   }
 }
 
+function getExtratoTransactionsBase() {
+  const todayEnd = toEndOfDayMillis(todayDateInputValue());
+  return currentState.transactions.filter((transaction) => resolveFutureDateMillis(transaction) <= todayEnd);
+}
+
 function renderExtratoList() {
   const filtered = getHistoryFilteredTransactions();
   const total = filtered.reduce(
@@ -1569,7 +1574,8 @@ function syncHistoryFilterInputs() {
 }
 
 function getHistoryFilteredTransactions() {
-  return currentState.transactions.filter((transaction) => {
+  return getExtratoTransactionsBase().filter((transaction) => {
+    const effectiveDateMillis = resolveFutureDateMillis(transaction);
     if (currentHistoryFilters.type !== "all" && transaction.type !== currentHistoryFilters.type) {
       return false;
     }
@@ -1581,13 +1587,13 @@ function getHistoryFilteredTransactions() {
     }
     if (currentHistoryFilters.startDate) {
       const startMillis = toStartOfDayMillis(currentHistoryFilters.startDate);
-      if (transaction.dateMillis < startMillis) {
+      if (effectiveDateMillis < startMillis) {
         return false;
       }
     }
     if (currentHistoryFilters.endDate) {
       const endMillis = toEndOfDayMillis(currentHistoryFilters.endDate);
-      if (transaction.dateMillis > endMillis) {
+      if (effectiveDateMillis > endMillis) {
         return false;
       }
     }
@@ -1598,7 +1604,7 @@ function getHistoryFilteredTransactions() {
 function deriveHistoryCategoryOptions(type) {
   const filteredType = type === "all" ? null : type;
   return uniqueCaseInsensitive(
-    currentState.transactions
+    getExtratoTransactionsBase()
       .filter((transaction) => !filteredType || transaction.type === filteredType)
       .map((transaction) => transaction.category)
   );
@@ -1606,7 +1612,7 @@ function deriveHistoryCategoryOptions(type) {
 
 function deriveHistoryPaymentOptions() {
   return uniqueCaseInsensitive(
-    [...currentState.catalog.paymentMethods, ...currentState.transactions.map((transaction) => transaction.paymentMethod).filter(Boolean)]
+    [...currentState.catalog.paymentMethods, ...getExtratoTransactionsBase().map((transaction) => transaction.paymentMethod).filter(Boolean)]
   );
 }
 
