@@ -1249,6 +1249,7 @@ select {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  align-items: stretch;
 }
 
 .multi-launch-finalize {
@@ -1301,6 +1302,25 @@ select {
   background: var(--surface-soft);
   color: var(--ink);
   border: 1px solid rgba(107, 197, 164, 0.35);
+}
+
+.multi-launch-actions .ghost-button {
+  min-height: 52px;
+  justify-content: center;
+  text-align: center;
+  border-radius: 14px;
+  font-weight: 700;
+}
+
+.multi-launch-save-area {
+  margin-top: -2px;
+}
+
+.multi-launch-save-area .primary-button {
+  min-height: 56px;
+  border-radius: 16px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 .multi-launch-remove-button {
