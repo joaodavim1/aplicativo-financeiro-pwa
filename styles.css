@@ -1555,7 +1555,7 @@ body[data-theme="dark"] .progress-fill {
     padding: 4px;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
+    gap: 6px;
     background: var(--surface);
     border: 1px solid var(--field-border);
     border-radius: 18px;
@@ -1564,9 +1564,15 @@ body[data-theme="dark"] .progress-fill {
   }
 
   .screen-tab {
-    min-height: 48px;
-    padding: 10px 8px;
-    font-size: 0.92rem;
+    min-height: 44px;
+    padding: 8px 4px;
+    font-size: 0.78rem;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    text-align: center;
     border: 1px solid var(--field-border);
     background: var(--surface-strong);
     color: var(--ink);
