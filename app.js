@@ -779,7 +779,7 @@ function renderTransactions() {
   const filtered = currentState.transactions.filter((transaction) => {
     if (currentFilter === "all") return true;
     return transaction.type === currentFilter;
-  }).sort(compareTransactionsNewestFirst);
+  }).sort(compareLaunchDateNewestFirst);
 
   if (filtered.length === 0) {
     nodes.transactionsList.innerHTML = emptyStateHtml("Nenhuma transacao encontrada para este filtro.");
@@ -2102,10 +2102,14 @@ function compareExtratoTransactionsNewestFirst(left, right) {
     return rightLaunchDate - leftLaunchDate;
   }
 
-  const leftAmount = Number(left?.amount || 0);
-  const rightAmount = Number(right?.amount || 0);
-  if (rightAmount !== leftAmount) {
-    return rightAmount - leftAmount;
+  return Number(right?.id || 0) - Number(left?.id || 0);
+}
+
+function compareLaunchDateNewestFirst(left, right) {
+  const leftLaunchDate = Number(left?.dateMillis || 0);
+  const rightLaunchDate = Number(right?.dateMillis || 0);
+  if (rightLaunchDate !== leftLaunchDate) {
+    return rightLaunchDate - leftLaunchDate;
   }
 
   return Number(right?.id || 0) - Number(left?.id || 0);
