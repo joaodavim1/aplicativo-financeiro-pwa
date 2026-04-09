@@ -309,7 +309,7 @@ async function handleSubmit(event) {
     installments,
     installmentNumber: 1,
     originalTotalAmount: amount * installments,
-    cardPaymentDateMillis: null,
+    cardPaymentDateMillis: resolveCardPaymentDateMillis(paymentMethod, dateMillis),
     notes: description
   };
 
@@ -1745,7 +1745,7 @@ async function handleSaveMultiLaunch() {
         installments: 1,
         installmentNumber: 1,
         originalTotalAmount: partialAmount,
-        cardPaymentDateMillis: null,
+        cardPaymentDateMillis: resolveCardPaymentDateMillis(paymentMethod, dateMillis),
         notes: ""
       });
     }
@@ -1779,6 +1779,38 @@ function splitAmountEvenly(totalAmount, quantity) {
     const cents = baseCents + (index < remainder ? 1 : 0);
     return cents / 100;
   });
+}
+
+function clampDayOfMonth(date, day) {
+  const safeDay = Math.max(1, Math.min(Number(day) || 1, getDaysInMonth(date.getFullYear(), date.getMonth())));
+  return new Date(date.getFullYear(), date.getMonth(), safeDay);
+}
+
+function getDaysInMonth(year, monthIndex) {
+  return new Date(year, monthIndex + 1, 0).getDate();
+}
+
+function computeCardPaymentDateMillis(dateMillis, closingDay, paymentDay) {
+  const launchDate = new Date(dateMillis);
+  const closeDate = clampDayOfMonth(launchDate, closingDay);
+  const currentMonthPaymentDate = clampDayOfMonth(launchDate, paymentDay);
+
+  let dueDate;
+  if (launchDate.getTime() <= closeDate.getTime()) {
+    dueDate = currentMonthPaymentDate.getTime() >= launchDate.getTime()
+      ? currentMonthPaymentDate
+      : clampDayOfMonth(new Date(launchDate.getFullYear(), launchDate.getMonth() + 1, 1), paymentDay);
+  } else {
+    dueDate = clampDayOfMonth(new Date(launchDate.getFullYear(), launchDate.getMonth() + 1, 1), paymentDay);
+  }
+
+  return toStartOfDayMillis(formatDateInputValue(dueDate.getTime()));
+}
+
+function resolveCardPaymentDateMillis(paymentMethod, dateMillis) {
+  const config = currentState.catalog.paymentMethodConfigs?.[String(paymentMethod || "").trim()];
+  if (!config) return null;
+  return computeCardPaymentDateMillis(dateMillis, config.closingDay || 25, config.paymentDay || 5);
 }
 
 function exportTransactionsCsv() {
