@@ -1,8 +1,8 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260409aa";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260409ab";
 
 const IOS_APP_VERSION = "Versão atual: 1.14";
 const IOS_SETTINGS_VERSION = "1.14";
-const IOS_BUILD_TOKEN = "20260409aa";
+const IOS_BUILD_TOKEN = "20260409ab";
 const BUILD_STORAGE_KEY = "financeiro-pwa-build-token";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
@@ -626,7 +626,9 @@ function createSupabasePersistence(ensureSessionFn) {
     activeAccount: null,
     activeAccountId: null,
     activeSettings: null,
-    defaultPaymentMethod: "Pix"
+    activeAppSettings: null,
+    defaultPaymentMethod: "Pix",
+    remoteTransactionIds: []
   };
 
   return {
@@ -665,6 +667,9 @@ function createSupabasePersistence(ensureSessionFn) {
       context.activeSettings = activeSettings;
       context.activeAppSettings = Array.isArray(appSettings) ? appSettings[0] || null : null;
       context.defaultPaymentMethod = decodeStringList(activeSettings?.payment_methods || "")[0] || "Pix";
+      context.remoteTransactionIds = filteredTransactions
+        .map((item) => Number(item.id))
+        .filter((value) => Number.isFinite(value));
 
       const remoteState = buildStateFromRemote({
         people,
@@ -694,6 +699,11 @@ function createSupabasePersistence(ensureSessionFn) {
           defaultPaymentMethod: context.defaultPaymentMethod
         })
       );
+      const localTransactionIds = payload
+        .map((transaction) => Number(transaction.id))
+        .filter((value) => Number.isFinite(value));
+      const deletedTransactionIds = (Array.isArray(context.remoteTransactionIds) ? context.remoteTransactionIds : [])
+        .filter((id) => Number.isFinite(Number(id)) && !localTransactionIds.includes(Number(id)));
 
       const settingsPayload = toSupabaseAccountSettings(state, {
         accountId: targetAccountId,
@@ -705,7 +715,7 @@ function createSupabasePersistence(ensureSessionFn) {
         activeAppSettings: context.activeAppSettings
       });
 
-      await Promise.all([
+      const requests = [
         requestSupabase({
           method: "POST",
           path: "/rest/v1/transactions",
@@ -730,7 +740,24 @@ function createSupabasePersistence(ensureSessionFn) {
           bearerToken: session.accessToken,
           prefer: "resolution=merge-duplicates,return=minimal"
         })
-      ]);
+      ];
+
+      if (deletedTransactionIds.length > 0) {
+        requests.push(
+          requestSupabase({
+            method: "DELETE",
+            path: "/rest/v1/transactions",
+            query: {
+              owner_id: `eq.${session.user.uid}`,
+              account_id: `eq.${targetAccountId}`,
+              id: `in.(${deletedTransactionIds.join(",")})`
+            },
+            bearerToken: session.accessToken
+          })
+        );
+      }
+
+      await Promise.all(requests);
 
       context.activeSettings = {
         ...(context.activeSettings || {}),
@@ -751,6 +778,7 @@ function createSupabasePersistence(ensureSessionFn) {
       };
       context.defaultPaymentMethod = decodeStringList(settingsPayload.payment_methods)[0] || "Pix";
       context.activeAccountId = targetAccountId;
+      context.remoteTransactionIds = localTransactionIds;
       writeStoredUiPreferences(session.user.uid, state.ui);
     }
   };

@@ -66,6 +66,7 @@ let selectedFutureIds = new Set();
 let multiLaunchType = "expense";
 let multiLaunchRows = [createMultiLaunchRow()];
 let multiLaunchFinalizeOpen = false;
+let editingTransactionId = null;
 
 const nodes = {
   themeColorMeta: document.querySelector('meta[name="theme-color"]'),
@@ -296,8 +297,8 @@ async function handleSubmit(event) {
 
   const dateMillis = toStartOfDayMillis(dateValue);
 
-  const newTransaction = {
-    id: generateId(),
+  const transactionToSave = {
+    id: editingTransactionId || generateId(),
     title: category || "Sem categoria",
     category,
     type,
@@ -312,12 +313,21 @@ async function handleSubmit(event) {
     notes: description
   };
 
-  currentState.transactions.unshift(newTransaction);
+  const wasEditing = Number.isFinite(Number(editingTransactionId)) && editingTransactionId !== null;
+  const previousTransactions = [...currentState.transactions];
+
+  if (wasEditing) {
+    currentState.transactions = currentState.transactions.map((transaction) =>
+      transaction.id === editingTransactionId ? transactionToSave : transaction
+    );
+  } else {
+    currentState.transactions.unshift(transactionToSave);
+  }
 
   updateCatalogForTransaction(category, type, paymentMethod);
   const saved = await saveState();
   if (!saved) {
-    currentState.transactions = currentState.transactions.filter((item) => item.id !== newTransaction.id);
+    currentState.transactions = previousTransactions;
     render();
     return;
   }
@@ -328,7 +338,7 @@ async function handleSubmit(event) {
   syncManagerSections();
   syncLaunchFormDefaults();
   render();
-  showAppToast("Lançamento salvo.");
+  showAppToast(wasEditing ? "Lançamento atualizado." : "Lançamento salvo.");
   navigateToScreen("EXTRATO");
 }
 
@@ -875,12 +885,29 @@ function syncLaunchFormDefaults() {
 
 function clearTransactionForm() {
   nodes.transactionForm?.reset();
+  editingTransactionId = null;
   if (nodes.titleInput) nodes.titleInput.value = "";
   if (nodes.amountInput) nodes.amountInput.value = "";
   if (nodes.dateInput) nodes.dateInput.value = todayDateInputValue();
   if (nodes.installmentsInput) nodes.installmentsInput.value = "1";
   isCategoryManagerOpen = false;
   isPaymentManagerOpen = false;
+}
+
+function startEditingTransaction(transaction) {
+  if (!transaction) return;
+  editingTransactionId = Number(transaction.id);
+  navigateToScreen("LANCAMENTOS");
+  syncTypeToggle(transaction.type);
+  renderCategoryOptions();
+  renderPaymentMethodOptions();
+  if (nodes.amountInput) nodes.amountInput.value = String(transaction.amount);
+  if (nodes.categoryInput) nodes.categoryInput.value = transaction.category;
+  if (nodes.paymentMethodInput) nodes.paymentMethodInput.value = transaction.paymentMethod;
+  if (nodes.titleInput) nodes.titleInput.value = transaction.notes || "";
+  if (nodes.dateInput) nodes.dateInput.value = formatDateInputValue(transaction.dateMillis);
+  if (nodes.installmentsInput) nodes.installmentsInput.value = String(transaction.installments || 1);
+  showAppToast("Edite e salve o lançamento.");
 }
 
 function renderScreenTabs() {
@@ -1493,9 +1520,15 @@ async function handleFutureListClick(event) {
   if (!id || !action) return;
 
   if (action === "delete") {
+    const previousTransactions = [...currentState.transactions];
     currentState.transactions = currentState.transactions.filter((transaction) => transaction.id !== id);
     selectedFutureIds.delete(id);
-    await saveState();
+    const saved = await saveState();
+    if (!saved) {
+      currentState.transactions = previousTransactions;
+      render();
+      return;
+    }
     render();
     showAppToast("Lançamento excluído.");
     return;
@@ -1522,17 +1555,7 @@ async function handleFutureListClick(event) {
   if (action === "edit") {
     const transaction = currentState.transactions.find((item) => item.id === id);
     if (!transaction) return;
-    navigateToScreen("LANCAMENTOS");
-    syncTypeToggle(transaction.type);
-    renderCategoryOptions();
-    renderPaymentMethodOptions();
-    if (nodes.amountInput) nodes.amountInput.value = String(transaction.amount);
-    if (nodes.categoryInput) nodes.categoryInput.value = transaction.category;
-    if (nodes.paymentMethodInput) nodes.paymentMethodInput.value = transaction.paymentMethod;
-    if (nodes.titleInput) nodes.titleInput.value = transaction.notes || "";
-    if (nodes.dateInput) nodes.dateInput.value = formatDateInputValue(transaction.dateMillis);
-    if (nodes.installmentsInput) nodes.installmentsInput.value = String(transaction.installments || 1);
-    showAppToast("Edite e salve o lançamento.");
+    startEditingTransaction(transaction);
   }
 }
 
@@ -1654,9 +1677,15 @@ async function handleTransactionListClick(event) {
   if (action === "delete") {
     const confirmed = window.confirm("Deseja excluir este lançamento?");
     if (!confirmed) return;
+    const previousTransactions = [...currentState.transactions];
     currentState.transactions = currentState.transactions.filter((transaction) => transaction.id !== id);
     selectedFutureIds.delete(id);
-    await saveState();
+    const saved = await saveState();
+    if (!saved) {
+      currentState.transactions = previousTransactions;
+      render();
+      return;
+    }
     render();
     showAppToast("Lançamento excluído.");
     return;
@@ -1665,17 +1694,7 @@ async function handleTransactionListClick(event) {
   if (action === "edit") {
     const transaction = currentState.transactions.find((item) => item.id === id);
     if (!transaction) return;
-    navigateToScreen("LANCAMENTOS");
-    syncTypeToggle(transaction.type);
-    renderCategoryOptions();
-    renderPaymentMethodOptions();
-    if (nodes.amountInput) nodes.amountInput.value = String(transaction.amount);
-    if (nodes.categoryInput) nodes.categoryInput.value = transaction.category;
-    if (nodes.paymentMethodInput) nodes.paymentMethodInput.value = transaction.paymentMethod;
-    if (nodes.titleInput) nodes.titleInput.value = transaction.notes || "";
-    if (nodes.dateInput) nodes.dateInput.value = formatDateInputValue(transaction.dateMillis);
-    if (nodes.installmentsInput) nodes.installmentsInput.value = String(transaction.installments || 1);
-    showAppToast("Edite e salve o lançamento.");
+    startEditingTransaction(transaction);
   }
 }
 
