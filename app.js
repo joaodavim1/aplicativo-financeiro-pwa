@@ -1445,7 +1445,6 @@ function renderFutureList() {
 
 function renderFutureTransactionItem(transaction) {
   const isSelected = selectedFutureIds.has(transaction.id);
-  const isFlagged = Boolean(transaction.futureFlagged);
   const dueDateMillis = resolveFutureDateMillis(transaction);
   const title = String(transaction.category || "").trim() || "Sem categoria";
   const notes = String(transaction.notes || "").trim();
@@ -1457,7 +1456,7 @@ function renderFutureTransactionItem(transaction) {
   ].filter(Boolean).join(" • ");
 
   return `
-    <article class="future-transaction-card ${isSelected ? "selected" : ""} ${isFlagged ? "flagged" : ""}">
+    <article class="future-transaction-card ${isSelected ? "selected" : ""}">
       <div class="future-transaction-row">
         <label class="future-checkbox-row">
           <input data-future-check="${transaction.id}" type="checkbox" ${isSelected ? "checked" : ""} />
@@ -1468,7 +1467,6 @@ function renderFutureTransactionItem(transaction) {
       <p class="transaction-meta">${escapeHtml(meta)}</p>
       ${notes ? `<p class="muted">${escapeHtml(notes)}</p>` : ""}
       <div class="future-item-actions">
-        <button class="ghost-button dark-ghost compact-icon-button ${isFlagged ? "future-flag-button active" : "future-flag-button"}" data-future-action="flag" data-id="${transaction.id}" type="button">⚑</button>
         <button class="ghost-button dark-ghost compact-icon-button action-edit-button" data-future-action="edit" data-id="${transaction.id}" type="button">✎</button>
         <button class="ghost-button dark-ghost compact-icon-button" data-future-action="delete" data-id="${transaction.id}" type="button">🗑</button>
         <button class="ghost-button dark-ghost compact-icon-button" data-future-action="complete" data-id="${transaction.id}" type="button">✓</button>
@@ -1489,24 +1487,14 @@ function handleClearFutureSelection() {
 
 async function handleCompleteSelectedFuture() {
   if (selectedFutureIds.size === 0) return;
-  const eligibleIds = new Set(
-    currentState.transactions
-      .filter((transaction) => selectedFutureIds.has(transaction.id) && transaction.futureFlagged)
-      .map((transaction) => transaction.id)
-  );
-  if (eligibleIds.size === 0) {
-    showAppToast("Marque a flag antes de concluir.");
-    return;
-  }
   const todayMillis = toStartOfDayMillis(todayDateInputValue());
   currentState.transactions = currentState.transactions.map((transaction) => {
-    if (!eligibleIds.has(transaction.id)) return transaction;
+    if (!selectedFutureIds.has(transaction.id)) return transaction;
     return {
       ...transaction,
       dateMillis: todayMillis,
       dateLabel: formatRelativeDate(todayMillis),
-      cardPaymentDateMillis: null,
-      futureFlagged: false
+      cardPaymentDateMillis: null
     };
   });
   selectedFutureIds = new Set();
@@ -1546,18 +1534,6 @@ async function handleFutureListClick(event) {
     }
     render();
     showAppToast("Lançamento excluído.");
-    return;
-  }
-
-  if (action === "flag") {
-    currentState.transactions = currentState.transactions.map((transaction) =>
-      transaction.id === id
-        ? { ...transaction, futureFlagged: !transaction.futureFlagged }
-        : transaction
-    );
-    await saveState();
-    renderFutureList();
-    showAppToast("Flag do lançamento atualizada.");
     return;
   }
 
