@@ -504,6 +504,20 @@ select {
   font-weight: 700;
 }
 
+.theme-choice-button {
+  min-width: 140px;
+}
+
+.theme-choice-button.ghost-button {
+  background: var(--surface-soft);
+  color: var(--ink);
+  border: 1px solid var(--field-border);
+}
+
+.theme-choice-button.primary-button {
+  border: 0;
+}
+
 .bars,
 .stack,
 .transactions-list {
