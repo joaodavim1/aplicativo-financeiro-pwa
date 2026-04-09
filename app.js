@@ -155,6 +155,7 @@ const nodes = {
   multiLaunchRows: document.querySelector("#multiLaunchRows"),
   multiLaunchAddRowButton: document.querySelector("#multiLaunchAddRowButton"),
   multiLaunchFinalizeButton: document.querySelector("#multiLaunchFinalizeButton"),
+  multiLaunchInlineSummary: document.querySelector("#multiLaunchInlineSummary"),
   multiLaunchFinalizeCard: document.querySelector("#multiLaunchFinalizeCard"),
   multiLaunchCountValue: document.querySelector("#multiLaunchCountValue"),
   multiLaunchPaymentMethodInput: document.querySelector("#multiLaunchPaymentMethodInput"),
@@ -359,6 +360,15 @@ function renderMultiLaunchScreen() {
     nodes.multiLaunchCountValue.textContent = `${count} ${count === 1 ? "lançamento" : "lançamentos"}`;
   }
 
+  if (nodes.multiLaunchInlineSummary) {
+    const count = multiLaunchRows.length;
+    const total = currency.format(computeMultiLaunchTotal());
+    nodes.multiLaunchInlineSummary.textContent =
+      count > 1
+        ? `${count} lançamentos montados · Total ${total}`
+        : `1 lançamento montado · Total ${total}`;
+  }
+
   if (nodes.multiLaunchSaveButton) {
     nodes.multiLaunchSaveButton.textContent = "SALVAR TODOS";
   }
@@ -499,6 +509,7 @@ function handleMultiLaunchRowsClick(event) {
 function handleAddMultiLaunchRow() {
   multiLaunchRows.push(createMultiLaunchRow());
   renderMultiLaunchScreen();
+  showAppToast("Novo lançamento adicionado.");
   const lastCard = nodes.multiLaunchRows?.lastElementChild;
   if (lastCard && typeof lastCard.scrollIntoView === "function") {
     lastCard.scrollIntoView({ behavior: "smooth", block: "nearest" });

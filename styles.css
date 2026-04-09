@@ -1193,6 +1193,11 @@ select {
   gap: 10px;
 }
 
+.multi-launch-inline-summary {
+  margin: -4px 0 0;
+  font-weight: 700;
+}
+
 .multi-launch-finalize {
   display: grid;
   gap: 12px;
