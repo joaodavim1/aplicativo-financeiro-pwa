@@ -1,8 +1,8 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260408aq";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260409aa";
 
 const IOS_APP_VERSION = "Versão atual: 1.14";
 const IOS_SETTINGS_VERSION = "1.14";
-const IOS_BUILD_TOKEN = "20260408aq";
+const IOS_BUILD_TOKEN = "20260409aa";
 const BUILD_STORAGE_KEY = "financeiro-pwa-build-token";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
@@ -636,6 +636,8 @@ function createSupabasePersistence(ensureSessionFn) {
         throw new Error("Faca login novamente para carregar os dados.");
       }
 
+      const storedUiPreferences = readStoredUiPreferences(session.user.uid);
+
       const [people, transactions, accountSettings, appSettings] = await Promise.all([
         fetchPeople(session.accessToken),
         fetchTransactions(session.accessToken),
@@ -643,7 +645,11 @@ function createSupabasePersistence(ensureSessionFn) {
         fetchAppSettings(session.accessToken)
       ]);
 
-      const activeAccount = selectActiveAccount(people, transactions);
+      const activeAccount = selectActiveAccount(
+        people,
+        transactions,
+        Number(storedUiPreferences?.activeAccountId) || null
+      );
       const activeAccountId = activeAccount?.id ?? (transactions[0]?.account_id ? Number(transactions[0].account_id) : null);
       const activeSettings =
         (activeAccountId == null
@@ -676,20 +682,21 @@ function createSupabasePersistence(ensureSessionFn) {
       if (!session?.accessToken) {
         throw new Error("Faca login novamente para salvar os dados.");
       }
-      if (!context.activeAccountId) {
+      const targetAccountId = Number(state?.ui?.activeAccountId) || Number(context.activeAccountId) || null;
+      if (!targetAccountId) {
         throw new Error("Nao encontrei uma conta ativa para salvar a transacao.");
       }
 
       const payload = state.transactions.map((transaction) =>
         toSupabaseTransaction(transaction, {
-          accountId: context.activeAccountId,
+          accountId: targetAccountId,
           ownerId: session.user.uid,
           defaultPaymentMethod: context.defaultPaymentMethod
         })
       );
 
       const settingsPayload = toSupabaseAccountSettings(state, {
-        accountId: context.activeAccountId,
+        accountId: targetAccountId,
         ownerId: session.user.uid,
         activeSettings: context.activeSettings
       });
@@ -727,6 +734,7 @@ function createSupabasePersistence(ensureSessionFn) {
 
       context.activeSettings = {
         ...(context.activeSettings || {}),
+        account_id: targetAccountId,
         expense_categories: settingsPayload.expense_categories,
         income_categories: settingsPayload.income_categories,
         payment_methods: settingsPayload.payment_methods,
@@ -742,6 +750,7 @@ function createSupabasePersistence(ensureSessionFn) {
         updated_at: appSettingsPayload.updated_at
       };
       context.defaultPaymentMethod = decodeStringList(settingsPayload.payment_methods)[0] || "Pix";
+      context.activeAccountId = targetAccountId;
       writeStoredUiPreferences(session.user.uid, state.ui);
     }
   };
@@ -1000,7 +1009,18 @@ function getUiPrefsStorageKey(userId) {
   return `${UI_PREFS_STORAGE_KEY_PREFIX}${userId}`;
 }
 
-function selectActiveAccount(people, transactions) {
+function selectActiveAccount(people, transactions, preferredAccountId = null) {
+  if (preferredAccountId) {
+    const preferredPerson = people.find((person) => Number(person.id) === Number(preferredAccountId));
+    if (preferredPerson) return preferredPerson;
+    const preferredTransaction = transactions.find((item) => Number(item.account_id) === Number(preferredAccountId));
+    if (preferredTransaction) {
+      return {
+        id: Number(preferredTransaction.account_id),
+        name: `Conta ${preferredTransaction.account_id}`
+      };
+    }
+  }
   const active = people.find((person) => person.is_active);
   if (active) return active;
   if (people.length > 0) return people[0];

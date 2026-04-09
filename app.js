@@ -296,7 +296,7 @@ async function handleSubmit(event) {
 
   const dateMillis = toStartOfDayMillis(dateValue);
 
-  currentState.transactions.unshift({
+  const newTransaction = {
     id: generateId(),
     title: category || "Sem categoria",
     category,
@@ -310,10 +310,17 @@ async function handleSubmit(event) {
     originalTotalAmount: amount * installments,
     cardPaymentDateMillis: null,
     notes: description
-  });
+  };
+
+  currentState.transactions.unshift(newTransaction);
 
   updateCatalogForTransaction(category, type, paymentMethod);
-  await saveState();
+  const saved = await saveState();
+  if (!saved) {
+    currentState.transactions = currentState.transactions.filter((item) => item.id !== newTransaction.id);
+    render();
+    return;
+  }
   clearTransactionForm();
   syncTypeToggle(selectDefaultTransactionType());
   renderCategoryOptions();
@@ -1726,9 +1733,15 @@ async function handleSaveMultiLaunch() {
     updateCatalogForTransaction(row.categoryValue, multiLaunchType, paymentMethod);
   }
 
+  const previousTransactions = [...currentState.transactions];
   currentState.transactions = [...createdTransactions, ...currentState.transactions]
     .sort((left, right) => right.dateMillis - left.dateMillis);
-  await saveState();
+  const saved = await saveState();
+  if (!saved) {
+    currentState.transactions = previousTransactions;
+    render();
+    return;
+  }
   multiLaunchRows = [createMultiLaunchRow()];
   multiLaunchFinalizeOpen = false;
   if (nodes.multiLaunchPaymentMethodInput) nodes.multiLaunchPaymentMethodInput.value = preferredPaymentMethod();
@@ -2026,8 +2039,12 @@ function showAppToast(message) {
 async function saveState() {
   try {
     await currentPersistence.saveState(stripRuntimeFields(currentState));
+    return true;
   } catch (error) {
     console.error("Falha ao salvar dados do app:", error);
+    const message = String(error?.message || "").trim() || "Falha ao salvar no banco de dados.";
+    showAppToast(message);
+    return false;
   }
 }
 
