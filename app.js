@@ -1489,14 +1489,24 @@ function handleClearFutureSelection() {
 
 async function handleCompleteSelectedFuture() {
   if (selectedFutureIds.size === 0) return;
+  const eligibleIds = new Set(
+    currentState.transactions
+      .filter((transaction) => selectedFutureIds.has(transaction.id) && transaction.futureFlagged)
+      .map((transaction) => transaction.id)
+  );
+  if (eligibleIds.size === 0) {
+    showAppToast("Marque a flag antes de concluir.");
+    return;
+  }
   const todayMillis = toStartOfDayMillis(todayDateInputValue());
   currentState.transactions = currentState.transactions.map((transaction) => {
-    if (!selectedFutureIds.has(transaction.id)) return transaction;
+    if (!eligibleIds.has(transaction.id)) return transaction;
     return {
       ...transaction,
       dateMillis: todayMillis,
       dateLabel: formatRelativeDate(todayMillis),
-      cardPaymentDateMillis: null
+      cardPaymentDateMillis: null,
+      futureFlagged: false
     };
   });
   selectedFutureIds = new Set();
@@ -1552,6 +1562,11 @@ async function handleFutureListClick(event) {
   }
 
   if (action === "complete") {
+    const transaction = currentState.transactions.find((item) => item.id === id);
+    if (!transaction?.futureFlagged) {
+      showAppToast("Marque a flag antes de concluir.");
+      return;
+    }
     selectedFutureIds = new Set([id]);
     await handleCompleteSelectedFuture();
     return;
