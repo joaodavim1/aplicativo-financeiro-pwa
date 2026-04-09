@@ -1598,7 +1598,7 @@ function getHistoryFilteredTransactions() {
       }
     }
     return true;
-  }).sort(compareTransactionsNewestFirst);
+  }).sort(compareExtratoTransactionsNewestFirst);
 }
 
 function deriveHistoryCategoryOptions(type) {
@@ -2090,6 +2090,22 @@ function compareTransactionsNewestFirst(left, right) {
   const rightCreatedDate = Number(right?.dateMillis || 0);
   if (rightCreatedDate !== leftCreatedDate) {
     return rightCreatedDate - leftCreatedDate;
+  }
+
+  return Number(right?.id || 0) - Number(left?.id || 0);
+}
+
+function compareExtratoTransactionsNewestFirst(left, right) {
+  const leftLaunchDate = Number(left?.dateMillis || 0);
+  const rightLaunchDate = Number(right?.dateMillis || 0);
+  if (rightLaunchDate !== leftLaunchDate) {
+    return rightLaunchDate - leftLaunchDate;
+  }
+
+  const leftAmount = Number(left?.amount || 0);
+  const rightAmount = Number(right?.amount || 0);
+  if (rightAmount !== leftAmount) {
+    return rightAmount - leftAmount;
   }
 
   return Number(right?.id || 0) - Number(left?.id || 0);
