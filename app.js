@@ -155,7 +155,6 @@ const nodes = {
   multiLaunchRows: document.querySelector("#multiLaunchRows"),
   multiLaunchAddRowButton: document.querySelector("#multiLaunchAddRowButton"),
   multiLaunchFinalizeButton: document.querySelector("#multiLaunchFinalizeButton"),
-  multiLaunchInlineSummary: document.querySelector("#multiLaunchInlineSummary"),
   multiLaunchFinalizeCard: document.querySelector("#multiLaunchFinalizeCard"),
   multiLaunchCountValue: document.querySelector("#multiLaunchCountValue"),
   multiLaunchPaymentMethodInput: document.querySelector("#multiLaunchPaymentMethodInput"),
@@ -348,6 +347,10 @@ function renderMultiLaunchScreen() {
       });
   }
 
+  if (nodes.multiLaunchFinalizeButton) {
+    nodes.multiLaunchFinalizeButton.classList.toggle("active", multiLaunchFinalizeOpen);
+  }
+
   if (nodes.multiLaunchRows) {
     const categoryOptions = deriveMultiLaunchCategoryOptions();
     nodes.multiLaunchRows.innerHTML = multiLaunchRows
@@ -360,15 +363,6 @@ function renderMultiLaunchScreen() {
     nodes.multiLaunchCountValue.textContent = `${count} ${count === 1 ? "lançamento" : "lançamentos"}`;
   }
 
-  if (nodes.multiLaunchInlineSummary) {
-    const count = multiLaunchRows.length;
-    const total = currency.format(computeMultiLaunchTotal());
-    nodes.multiLaunchInlineSummary.textContent =
-      count > 1
-        ? `${count} lançamentos montados · Total ${total}`
-        : `1 lançamento montado · Total ${total}`;
-  }
-
   if (nodes.multiLaunchSaveButton) {
     nodes.multiLaunchSaveButton.textContent = "SALVAR TODOS";
   }
@@ -377,7 +371,7 @@ function renderMultiLaunchScreen() {
     const paymentMethods = derivePaymentMethodOptions();
     const currentValue = nodes.multiLaunchPaymentMethodInput.value;
     nodes.multiLaunchPaymentMethodInput.innerHTML = [
-      `<option value="">Selecione</option>`,
+      `<option value="">Pagamento único</option>`,
       ...paymentMethods.map((method) => `<option value="${escapeAttribute(method)}">${escapeHtml(method)}</option>`)
     ].join("");
     if (paymentMethods.includes(currentValue)) {

@@ -1193,11 +1193,6 @@ select {
   gap: 10px;
 }
 
-.multi-launch-inline-summary {
-  margin: -4px 0 0;
-  font-weight: 700;
-}
-
 .multi-launch-finalize {
   display: grid;
   gap: 12px;
@@ -1229,6 +1224,12 @@ select {
 .multi-launch-finalize.is-focused {
   border-color: rgba(107, 197, 164, 0.46);
   box-shadow: 0 0 0 1px rgba(107, 197, 164, 0.22);
+}
+
+.multi-launch-actions .ghost-button.active {
+  background: var(--surface-soft);
+  color: var(--ink);
+  border: 1px solid rgba(107, 197, 164, 0.35);
 }
 
 .multi-launch-remove-button {
