@@ -1,8 +1,8 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260409ap";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260409aq";
 
 const IOS_APP_VERSION = "Versão atual: 1.14";
 const IOS_SETTINGS_VERSION = "1.14";
-const IOS_BUILD_TOKEN = "20260409ap";
+const IOS_BUILD_TOKEN = "20260409aq";
 const BUILD_STORAGE_KEY = "financeiro-pwa-build-token";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
@@ -1081,6 +1081,8 @@ function buildStateFromRemote({ people, activeAccount, activeAccountId, transact
     ...sortedTransactions.map((transaction) => transaction.payment_method || "")
   ]);
   const paymentMethodConfigs = decodeCardPaymentConfigMap(settings?.payment_method_card_configs || "");
+  const multiLaunchExpenseCategoryAmounts = decodeDoubleMap(settings?.multi_launch_expense_category_amounts || "");
+  const multiLaunchIncomeCategoryAmounts = decodeDoubleMap(settings?.multi_launch_income_category_amounts || "");
   const allowedScreens = ["MULTIPLOS", "EXTRATO", "LANCAMENTOS", "QUADRO"];
   const rawScreenOrder = decodeStringList(appSettings?.screen_order || "MULTIPLOS|||LANCAMENTOS|||EXTRATO|||QUADRO")
     .filter((screen) => allowedScreens.includes(screen));
@@ -1120,7 +1122,9 @@ function buildStateFromRemote({ people, activeAccount, activeAccountId, transact
       expenseCategories,
       incomeCategories,
       paymentMethods,
-      paymentMethodConfigs
+      paymentMethodConfigs,
+      multiLaunchExpenseCategoryAmounts,
+      multiLaunchIncomeCategoryAmounts
     },
     ui: {
       screenOrder,

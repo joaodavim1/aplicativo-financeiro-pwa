@@ -25,7 +25,9 @@ const defaults = {
     expenseCategories: ["Casa", "Mercado", "Transporte", "Lazer", "Investimentos"],
     incomeCategories: ["Trabalho", "Pix", "Venda", "Servico", "Bonus"],
     paymentMethods: ["Pix", "Debito", "Credito", "Cartao", "Transferencia"],
-    paymentMethodConfigs: {}
+    paymentMethodConfigs: {},
+    multiLaunchExpenseCategoryAmounts: {},
+    multiLaunchIncomeCategoryAmounts: {}
   }
 };
 
@@ -347,7 +349,9 @@ function createMultiLaunchRow() {
     id: generateId(),
     amount: "",
     quantity: "1",
-    category: ""
+    category: "",
+    autoAmountFromCategory: false,
+    categoryUnitAmount: null
   };
 }
 
@@ -497,13 +501,32 @@ function handleMultiLaunchRowsInput(event) {
   const rowId = Number(field.dataset.multiRowId);
   const row = multiLaunchRows.find((item) => item.id === rowId);
   if (!row) return;
+  let shouldRerender = false;
 
   if (field.dataset.multiField === "amount") {
     row.amount = field.value;
+    row.autoAmountFromCategory = false;
   } else if (field.dataset.multiField === "quantity") {
     row.quantity = field.value;
+    const quantity = Math.max(1, Number.parseInt(String(field.value || "1"), 10) || 1);
+    if (row.autoAmountFromCategory && Number.isFinite(Number(row.categoryUnitAmount))) {
+      row.amount = String(formatMultiLaunchAmount(Number(row.categoryUnitAmount) * quantity));
+      shouldRerender = true;
+    }
   } else if (field.dataset.multiField === "category") {
     row.category = field.value;
+    const defaultAmount = getMultiLaunchCategoryDefaultAmount(field.value);
+    const quantity = Math.max(1, Number.parseInt(String(row.quantity || "1"), 10) || 1);
+    if ((String(row.amount || "").trim() === "" || row.autoAmountFromCategory) && Number.isFinite(Number(defaultAmount))) {
+      row.amount = String(formatMultiLaunchAmount(Number(defaultAmount) * quantity));
+    }
+    row.autoAmountFromCategory = Number.isFinite(Number(defaultAmount));
+    row.categoryUnitAmount = Number.isFinite(Number(defaultAmount)) ? Number(defaultAmount) : null;
+    shouldRerender = true;
+  }
+
+  if (shouldRerender) {
+    renderMultiLaunchScreen();
   }
 }
 
@@ -1780,6 +1803,20 @@ function splitAmountEvenly(totalAmount, quantity) {
   });
 }
 
+function getMultiLaunchCategoryDefaultAmount(category) {
+  const cleanCategory = String(category || "").trim();
+  if (!cleanCategory) return null;
+  const map = multiLaunchType === "income"
+    ? currentState.catalog.multiLaunchIncomeCategoryAmounts
+    : currentState.catalog.multiLaunchExpenseCategoryAmounts;
+  const value = map?.[cleanCategory];
+  return Number.isFinite(Number(value)) ? Number(value) : null;
+}
+
+function formatMultiLaunchAmount(value) {
+  return Number(value || 0).toFixed(2);
+}
+
 function clampDayOfMonth(date, day) {
   const safeDay = Math.max(1, Math.min(Number(day) || 1, getDaysInMonth(date.getFullYear(), date.getMonth())));
   return new Date(date.getFullYear(), date.getMonth(), safeDay);
@@ -2515,7 +2552,9 @@ function sanitizeCatalog(catalog) {
     paymentMethods: uniqueCaseInsensitive(
       Array.isArray(catalog?.paymentMethods) ? catalog.paymentMethods : defaults.catalog.paymentMethods
     ),
-    paymentMethodConfigs: sanitizePaymentMethodConfigs(catalog?.paymentMethodConfigs)
+    paymentMethodConfigs: sanitizePaymentMethodConfigs(catalog?.paymentMethodConfigs),
+    multiLaunchExpenseCategoryAmounts: sanitizeCategoryAmountConfigs(catalog?.multiLaunchExpenseCategoryAmounts),
+    multiLaunchIncomeCategoryAmounts: sanitizeCategoryAmountConfigs(catalog?.multiLaunchIncomeCategoryAmounts)
   };
 }
 
@@ -2531,6 +2570,20 @@ function sanitizePaymentMethodConfigs(configs) {
     if (!cleanMethod) return accumulator;
     if (closingDay < 1 || closingDay > 31 || paymentDay < 1 || paymentDay > 31) return accumulator;
     accumulator[cleanMethod] = { closingDay, paymentDay };
+    return accumulator;
+  }, {});
+}
+
+function sanitizeCategoryAmountConfigs(configs) {
+  if (!configs || typeof configs !== "object" || Array.isArray(configs)) {
+    return {};
+  }
+
+  return Object.entries(configs).reduce((accumulator, [category, value]) => {
+    const cleanCategory = String(category || "").trim();
+    const amount = Number(value);
+    if (!cleanCategory || !Number.isFinite(amount) || amount <= 0) return accumulator;
+    accumulator[cleanCategory] = amount;
     return accumulator;
   }, {});
 }
