@@ -301,7 +301,7 @@ async function handleSubmit(event) {
 
   const transactionToSave = {
     id: editingTransactionId || generateId(),
-    title: category || "Sem categoria",
+    title: description,
     category,
     type,
     amount,
@@ -312,7 +312,7 @@ async function handleSubmit(event) {
     installmentNumber: 1,
     originalTotalAmount: amount * installments,
     cardPaymentDateMillis: resolveCardPaymentDateMillis(paymentMethod, dateMillis),
-    notes: description
+    notes: ""
   };
 
   const wasEditing = Number.isFinite(Number(editingTransactionId)) && editingTransactionId !== null;
@@ -937,7 +937,7 @@ function startEditingTransaction(transaction) {
   if (nodes.amountInput) nodes.amountInput.value = String(transaction.amount);
   if (nodes.categoryInput) nodes.categoryInput.value = transaction.category;
   if (nodes.paymentMethodInput) nodes.paymentMethodInput.value = transaction.paymentMethod;
-  if (nodes.titleInput) nodes.titleInput.value = transaction.notes || "";
+  if (nodes.titleInput) nodes.titleInput.value = transaction.title || transaction.notes || "";
   if (nodes.dateInput) nodes.dateInput.value = formatDateInputValue(transaction.dateMillis);
   if (nodes.installmentsInput) nodes.installmentsInput.value = String(transaction.installments || 1);
   showAppToast("Edite e salve o lançamento.");
@@ -1474,7 +1474,7 @@ function renderFutureList() {
 function renderFutureTransactionItem(transaction) {
   const isSelected = selectedFutureIds.has(transaction.id);
   const dueDateMillis = resolveFutureDateMillis(transaction);
-  const title = String(transaction.category || "").trim() || "Sem categoria";
+  const title = String(transaction.title || "").trim() || String(transaction.category || "").trim() || "Sem categoria";
   const notes = String(transaction.notes || "").trim();
   const paymentLine = [
     transaction.paymentMethod || "Sem pagamento",
@@ -1653,7 +1653,7 @@ function renderTransactionItem(transaction) {
     `de ${amountLine}`,
     `Lanc: ${formatDateShort(transaction.dateMillis)}`
   ].filter(Boolean).join(" • ");
-  const title = String(transaction.category || "").trim() || "Sem categoria";
+  const title = String(transaction.title || "").trim() || String(transaction.category || "").trim() || "Sem categoria";
   const notes = String(transaction.notes || "").trim();
   const notesMarkup = notes
     ? `<div class="transaction-notes">${escapeHtml(notes)}</div>`
@@ -2493,11 +2493,12 @@ function editPaymentConfig(method, existingConfig) {
 function sanitizeTransaction(transaction) {
   const dateMillis = Number.isFinite(Number(transaction?.dateMillis)) ? Number(transaction.dateMillis) : Date.now();
   const category = String(transaction?.category || "Sem categoria").trim() || "Sem categoria";
+  const title = String(transaction?.title || "").trim();
 
   return {
     id: normalizeTransactionId(transaction?.id),
     category,
-    title: category,
+    title,
     type: transaction?.type === "income" ? "income" : "expense",
     amount: Number.isFinite(Number(transaction?.amount)) ? Number(transaction.amount) : 0,
     dateMillis,

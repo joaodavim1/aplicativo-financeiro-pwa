@@ -1,8 +1,8 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260410aa";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260410ab";
 
 const IOS_APP_VERSION = "Versão atual: 1.14";
 const IOS_SETTINGS_VERSION = "1.14";
-const IOS_BUILD_TOKEN = "20260410aa";
+const IOS_BUILD_TOKEN = "20260410ab";
 const BUILD_STORAGE_KEY = "financeiro-pwa-build-token";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
@@ -1102,7 +1102,7 @@ function buildStateFromRemote({ people, activeAccount, activeAccountId, transact
     transactions: sortedTransactions.map((transaction) => ({
       id: Number(transaction.id),
       category: transaction.category || "Sem categoria",
-      title: String(transaction.title || "").trim() || String(transaction.category || "").trim() || "Sem titulo",
+      title: String(transaction.title || "").trim(),
       type: transaction.type === "RECEITA" ? "income" : "expense",
       amount: Number(transaction.amount || 0),
       dateMillis: Number(transaction.date_millis || Date.now()),
@@ -1249,7 +1249,7 @@ function toSupabaseTransaction(transaction, context) {
     owner_id: context.ownerId,
     account_id: context.accountId,
     category: String(transaction.category || "Sem categoria").trim() || "Sem categoria",
-    title: String(transaction.title || "").trim() || String(transaction.category || "").trim() || "Sem titulo",
+    title: String(transaction.title || "").trim(),
     amount,
     type: transaction.type === "income" ? "RECEITA" : "DESPESA",
     payment_method: String(transaction.paymentMethod || context.defaultPaymentMethod || "Pix").trim() || "Pix",
