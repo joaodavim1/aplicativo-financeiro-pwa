@@ -1476,12 +1476,12 @@ function renderFutureTransactionItem(transaction) {
   const dueDateMillis = resolveFutureDateMillis(transaction);
   const title = String(transaction.category || "").trim() || "Sem categoria";
   const notes = String(transaction.notes || "").trim();
-  const meta = [
+  const paymentLine = [
     transaction.paymentMethod || "Sem pagamento",
-    transaction.installments > 1 ? `Parcela ${transaction.installmentNumber}/${transaction.installments}` : null,
-    `Lanç: ${formatDateShort(transaction.dateMillis)}`,
-    `Venc: ${formatDateShort(dueDateMillis)}`
+    transaction.installments > 1 ? `Parcela ${transaction.installmentNumber}/${transaction.installments}` : null
   ].filter(Boolean).join(" • ");
+  const launchLine = `Lanç: ${formatDateShort(transaction.dateMillis)}`;
+  const dueLine = `Vencimento: ${formatDateShort(dueDateMillis)}`;
 
   return `
     <article class="future-transaction-card ${isSelected ? "selected" : ""}">
@@ -1492,7 +1492,8 @@ function renderFutureTransactionItem(transaction) {
         </label>
         <strong class="transaction-amount ${transaction.type}">${transaction.type === "income" ? "+" : "-"}${currency.format(transaction.amount)}</strong>
       </div>
-      <p class="transaction-meta">${escapeHtml(meta)}</p>
+      <p class="transaction-meta">${escapeHtml(paymentLine)}</p>
+      <p class="transaction-meta">${escapeHtml(`${launchLine} • ${dueLine}`)}</p>
       ${notes ? `<p class="muted">${escapeHtml(notes)}</p>` : ""}
       <div class="future-item-actions">
         <button class="ghost-button dark-ghost compact-icon-button action-edit-button" data-future-action="edit" data-id="${transaction.id}" type="button">✎</button>
