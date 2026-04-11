@@ -417,9 +417,8 @@ function renderMultiLaunchScreen() {
 function computeMultiLaunchTotal() {
   return multiLaunchRows.reduce((total, row) => {
     const amount = Number.parseFloat(String(row.amount || "").replace(",", "."));
-    const quantity = Math.max(1, Number.parseInt(String(row.quantity || "1"), 10) || 1);
     if (!Number.isFinite(amount) || amount <= 0) return total;
-    return total + (amount * quantity);
+    return total + amount;
   }, 0);
 }
 
@@ -508,17 +507,11 @@ function handleMultiLaunchRowsInput(event) {
     row.autoAmountFromCategory = false;
   } else if (field.dataset.multiField === "quantity") {
     row.quantity = field.value;
-    const quantity = Math.max(1, Number.parseInt(String(field.value || "1"), 10) || 1);
-    if (row.autoAmountFromCategory && Number.isFinite(Number(row.categoryUnitAmount))) {
-      row.amount = String(formatMultiLaunchAmount(Number(row.categoryUnitAmount) * quantity));
-      shouldRerender = true;
-    }
   } else if (field.dataset.multiField === "category") {
     row.category = field.value;
     const defaultAmount = getMultiLaunchCategoryDefaultAmount(field.value);
-    const quantity = Math.max(1, Number.parseInt(String(row.quantity || "1"), 10) || 1);
     if ((String(row.amount || "").trim() === "" || row.autoAmountFromCategory) && Number.isFinite(Number(defaultAmount))) {
-      row.amount = String(formatMultiLaunchAmount(Number(defaultAmount) * quantity));
+      row.amount = String(formatMultiLaunchAmount(Number(defaultAmount)));
     }
     row.autoAmountFromCategory = Number.isFinite(Number(defaultAmount));
     row.categoryUnitAmount = Number.isFinite(Number(defaultAmount)) ? Number(defaultAmount) : null;
@@ -1754,20 +1747,19 @@ async function handleSaveMultiLaunch() {
   const createdTransactions = [];
 
   for (const row of validRows) {
-    const parts = splitAmountEvenly(row.amountNumber, row.quantityNumber);
-    for (const partialAmount of parts) {
+    for (let index = 0; index < row.quantityNumber; index += 1) {
       createdTransactions.push({
         id: generateId(),
         title: row.categoryValue,
         category: row.categoryValue,
         type: multiLaunchType,
-        amount: partialAmount,
+        amount: row.amountNumber,
         dateMillis,
         dateLabel: formatRelativeDate(dateMillis),
         paymentMethod,
         installments: 1,
         installmentNumber: 1,
-        originalTotalAmount: partialAmount,
+        originalTotalAmount: row.amountNumber,
         cardPaymentDateMillis: resolveCardPaymentDateMillis(paymentMethod, dateMillis),
         notes: ""
       });
