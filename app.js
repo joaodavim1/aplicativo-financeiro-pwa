@@ -2588,7 +2588,7 @@ function sanitizeTransaction(transaction) {
     id: normalizeTransactionId(transaction?.id),
     category,
     title,
-    type: transaction?.type === "income" ? "income" : "expense",
+    type: normalizeTransactionType(transaction?.type),
     amount: Number.isFinite(Number(transaction?.amount)) ? Number(transaction.amount) : 0,
     dateMillis,
     dateLabel: typeof transaction?.dateLabel === "string" && transaction.dateLabel.trim()
@@ -2610,6 +2610,20 @@ function sanitizeTransaction(transaction) {
     futureFlagged: Boolean(transaction?.futureFlagged ?? transaction?.future_flagged),
     notes: String(transaction?.notes || "").trim()
   };
+}
+
+function normalizeTransactionType(rawType) {
+  const normalized = String(rawType || "").trim().toLowerCase();
+
+  if (["income", "receita", "receitas", "entrada", "entradas"].includes(normalized)) {
+    return "income";
+  }
+
+  if (["expense", "despesa", "despesas", "saida", "saída", "saidas", "saídas"].includes(normalized)) {
+    return "expense";
+  }
+
+  return "expense";
 }
 
 function sanitizeGoal(goal) {
