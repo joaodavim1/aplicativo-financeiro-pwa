@@ -2335,15 +2335,45 @@ function printTransactionsReceipt(transactions) {
   if (!printableTransactions.length) return;
 
   const receiptHtml = buildReceiptHtml(printableTransactions);
-  const printWindow = window.open("", "_blank", "noopener,noreferrer,width=420,height=720");
-  if (!printWindow) {
+  const frame = document.createElement("iframe");
+  frame.setAttribute("aria-hidden", "true");
+  frame.style.position = "fixed";
+  frame.style.right = "0";
+  frame.style.bottom = "0";
+  frame.style.width = "0";
+  frame.style.height = "0";
+  frame.style.border = "0";
+  frame.style.opacity = "0";
+  document.body.appendChild(frame);
+
+  const frameWindow = frame.contentWindow;
+  if (!frameWindow) {
+    frame.remove();
     showAppToast("Não foi possível abrir a impressão.");
     return;
   }
 
-  printWindow.document.open();
-  printWindow.document.write(receiptHtml);
-  printWindow.document.close();
+  frameWindow.document.open();
+  frameWindow.document.write(receiptHtml);
+  frameWindow.document.close();
+
+  const cleanup = () => {
+    window.setTimeout(() => {
+      frame.remove();
+    }, 800);
+  };
+
+  frameWindow.addEventListener("afterprint", cleanup, { once: true });
+  window.setTimeout(() => {
+    try {
+      frameWindow.focus();
+      frameWindow.print();
+    } catch (error) {
+      cleanup();
+      console.error("Falha ao imprimir:", error);
+      showAppToast("Não foi possível enviar para impressão.");
+    }
+  }, 250);
 }
 
 function buildReceiptHtml(transactions) {
@@ -2370,12 +2400,8 @@ function buildReceiptHtml(transactions) {
     <pre class="receipt">${escapeHtml(receiptLines.join("\n"))}</pre>
     <script>
       window.addEventListener("load", () => {
-        setTimeout(() => {
-          window.focus();
-          window.print();
-        }, 180);
+        window.__receiptReady = true;
       });
-      window.addEventListener("afterprint", () => window.close());
     </script>
   </body>
 </html>`;
