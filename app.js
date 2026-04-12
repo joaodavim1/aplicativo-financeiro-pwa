@@ -432,12 +432,10 @@ function computeMultiLaunchTotal() {
 }
 
 function renderMultiLaunchRow(row, index, categoryOptions) {
-  const options = [
-    `<option value="">Categoria</option>`,
-    ...categoryOptions.map((option) => `
-      <option value="${escapeAttribute(option)}" ${option === row.category ? "selected" : ""}>${escapeHtml(option)}</option>
-    `)
-  ].join("");
+  const datalistId = `multi-launch-category-list-${row.id}`;
+  const options = categoryOptions
+    .map((option) => `<option value="${escapeAttribute(option)}"></option>`)
+    .join("");
 
   return `
     <article class="multi-launch-entry-card">
@@ -472,9 +470,21 @@ function renderMultiLaunchRow(row, index, categoryOptions) {
       </label>
       <label class="multi-launch-field">
         <span class="multi-launch-field-legend">Categoria</span>
-        <select data-multi-row-id="${row.id}" data-multi-field="category">
+        <input
+          data-multi-row-id="${row.id}"
+          data-multi-field="category"
+          type="text"
+          inputmode="text"
+          placeholder="Categoria"
+          autocomplete="off"
+          autocapitalize="words"
+          enterkeyhint="done"
+          list="${datalistId}"
+          value="${escapeAttribute(row.category || "")}"
+        />
+        <datalist id="${datalistId}">
           ${options}
-        </select>
+        </datalist>
       </label>
       ${multiLaunchRows.length > 1 ? `
         <button
@@ -2644,8 +2654,6 @@ function startRemotePrintWatch() {
   }
 
   remotePrintWatchTimer = window.setInterval(async () => {
-    if (document.hidden) return;
-    if (activeScreen === "LANCAMENTOS" || activeScreen === "MULTIPLOS") return;
     if (editingTransactionId !== null) return;
 
     try {
