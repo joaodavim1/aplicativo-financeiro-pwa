@@ -719,11 +719,12 @@ function renderHistoryFilterOptions() {
 
 function getExtratoTransactionsBase() {
   const todayEnd = toEndOfDayMillis(todayDateInputValue());
-  const startMillis = currentHistoryFilters.startDate
-    ? toStartOfDayMillis(currentHistoryFilters.startDate)
+  const activeFilters = getCurrentHistoryUiFilters();
+  const startMillis = activeFilters.startDate
+    ? toStartOfDayMillis(activeFilters.startDate)
     : null;
-  const endMillis = currentHistoryFilters.endDate
-    ? toEndOfDayMillis(currentHistoryFilters.endDate)
+  const endMillis = activeFilters.endDate
+    ? toEndOfDayMillis(activeFilters.endDate)
     : null;
   const includesFutureRange =
     (Number.isFinite(startMillis) && startMillis > todayEnd) ||
@@ -1273,6 +1274,22 @@ function getActiveHistoryType() {
   return "all";
 }
 
+function getCurrentHistoryUiFilters() {
+  const type = getActiveHistoryType();
+  const startDate = nodes.historyStartDate?.value || currentHistoryFilters.startDate || "";
+  const endDate = nodes.historyEndDate?.value || currentHistoryFilters.endDate || "";
+  const category = type === "all" ? "" : (nodes.historyCategoryFilter?.value || currentHistoryFilters.category || "");
+  const payment = type === "all" ? "" : (nodes.historyPaymentFilter?.value || currentHistoryFilters.payment || "");
+
+  return {
+    startDate,
+    endDate,
+    type,
+    category,
+    payment
+  };
+}
+
 function sumByType(type) {
   return currentState.transactions
     .filter((transaction) => transaction.type === type)
@@ -1642,27 +1659,26 @@ function syncHistoryFilterInputs() {
 }
 
 function getHistoryFilteredTransactions() {
-  const startDate = nodes.historyStartDate?.value || currentHistoryFilters.startDate;
-  const endDate = nodes.historyEndDate?.value || currentHistoryFilters.endDate;
+  const activeFilters = getCurrentHistoryUiFilters();
   return getExtratoTransactionsBase().filter((transaction) => {
     const effectiveDateMillis = resolveFutureDateMillis(transaction);
-    if (currentHistoryFilters.type !== "all" && transaction.type !== currentHistoryFilters.type) {
+    if (activeFilters.type !== "all" && transaction.type !== activeFilters.type) {
       return false;
     }
-    if (currentHistoryFilters.category && transaction.category !== currentHistoryFilters.category) {
+    if (activeFilters.category && transaction.category !== activeFilters.category) {
       return false;
     }
-    if (currentHistoryFilters.payment && transaction.paymentMethod !== currentHistoryFilters.payment) {
+    if (activeFilters.payment && transaction.paymentMethod !== activeFilters.payment) {
       return false;
     }
-    if (startDate) {
-      const startMillis = toStartOfDayMillis(startDate);
+    if (activeFilters.startDate) {
+      const startMillis = toStartOfDayMillis(activeFilters.startDate);
       if (effectiveDateMillis < startMillis) {
         return false;
       }
     }
-    if (endDate) {
-      const endMillis = toEndOfDayMillis(endDate);
+    if (activeFilters.endDate) {
+      const endMillis = toEndOfDayMillis(activeFilters.endDate);
       if (effectiveDateMillis > endMillis) {
         return false;
       }
@@ -1672,18 +1688,17 @@ function getHistoryFilteredTransactions() {
 }
 
 function getHistoryDateRangeTransactions() {
-  const startDate = nodes.historyStartDate?.value || currentHistoryFilters.startDate;
-  const endDate = nodes.historyEndDate?.value || currentHistoryFilters.endDate;
+  const activeFilters = getCurrentHistoryUiFilters();
   return getExtratoTransactionsBase().filter((transaction) => {
     const effectiveDateMillis = resolveFutureDateMillis(transaction);
-    if (startDate) {
-      const startMillis = toStartOfDayMillis(startDate);
+    if (activeFilters.startDate) {
+      const startMillis = toStartOfDayMillis(activeFilters.startDate);
       if (effectiveDateMillis < startMillis) {
         return false;
       }
     }
-    if (endDate) {
-      const endMillis = toEndOfDayMillis(endDate);
+    if (activeFilters.endDate) {
+      const endMillis = toEndOfDayMillis(activeFilters.endDate);
       if (effectiveDateMillis > endMillis) {
         return false;
       }

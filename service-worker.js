@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "financeiro-pwa-main-cache-";
-const CACHE_NAME = `${CACHE_PREFIX}v110`;
+const CACHE_NAME = `${CACHE_PREFIX}v111`;
 const APP_SHELL = [
   "./",
   "./index.html",
