@@ -757,7 +757,7 @@ function renderExtratoList() {
 }
 
 function renderExtratoSummary() {
-  const filtered = getHistoryFilteredTransactions();
+  const filtered = getHistoryDateRangeTransactions();
   const income = filtered
     .filter((transaction) => transaction.type === "income")
     .reduce((accumulator, transaction) => accumulator + transaction.amount, 0);
@@ -1653,6 +1653,25 @@ function getHistoryFilteredTransactions() {
     if (currentHistoryFilters.payment && transaction.paymentMethod !== currentHistoryFilters.payment) {
       return false;
     }
+    if (currentHistoryFilters.startDate) {
+      const startMillis = toStartOfDayMillis(currentHistoryFilters.startDate);
+      if (effectiveDateMillis < startMillis) {
+        return false;
+      }
+    }
+    if (currentHistoryFilters.endDate) {
+      const endMillis = toEndOfDayMillis(currentHistoryFilters.endDate);
+      if (effectiveDateMillis > endMillis) {
+        return false;
+      }
+    }
+    return true;
+  }).sort(compareExtratoTransactionsNewestFirst);
+}
+
+function getHistoryDateRangeTransactions() {
+  return getExtratoTransactionsBase().filter((transaction) => {
+    const effectiveDateMillis = resolveFutureDateMillis(transaction);
     if (currentHistoryFilters.startDate) {
       const startMillis = toStartOfDayMillis(currentHistoryFilters.startDate);
       if (effectiveDateMillis < startMillis) {
