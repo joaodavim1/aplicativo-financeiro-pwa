@@ -915,6 +915,12 @@ function renderPaymentMethodOptions() {
 }
 
 function syncLaunchFormDefaults() {
+  if (!editingTransactionId) {
+    syncTypeToggle(selectDefaultTransactionType());
+    renderCategoryOptions();
+    syncManagerSections();
+  }
+
   if (nodes.dateInput && !nodes.dateInput.value) {
     nodes.dateInput.value = todayDateInputValue();
   }
@@ -937,6 +943,10 @@ function clearTransactionForm() {
   if (nodes.installmentsInput) nodes.installmentsInput.value = "1";
   isCategoryManagerOpen = false;
   isPaymentManagerOpen = false;
+  syncTypeToggle(selectDefaultTransactionType());
+  renderCategoryOptions();
+  renderPaymentMethodOptions();
+  syncManagerSections();
 }
 
 function startEditingTransaction(transaction) {
@@ -989,6 +999,9 @@ function navigateToScreen(screen) {
   activeScreen = screen;
   renderScreenTabs();
   renderScreenPanels();
+  if (screen === "LANCAMENTOS" && !editingTransactionId) {
+    syncLaunchFormDefaults();
+  }
 }
 
 async function moveMenuAction(actionId, direction) {
