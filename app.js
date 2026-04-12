@@ -51,6 +51,8 @@ let isCategoryManagerOpen = false;
 let isPaymentManagerOpen = false;
 let appToastTimer = null;
 let appToastActionCleanup = null;
+let remotePrintWatchTimer = null;
+let knownPrintedTransactionIds = new Set();
 let currentHistoryFilters = {
   startDate: "",
   endDate: "",
@@ -181,6 +183,8 @@ export async function bootFinanceiroApp({ mode = "demo", user = null, persistenc
     eventsBound = true;
   }
 
+  initializePrintTracking();
+  startRemotePrintWatch();
   render();
 }
 
@@ -2321,6 +2325,7 @@ function promptPrintTransactions(transactions, message) {
     return;
   }
 
+  markTransactionsAsPrinted(printableTransactions);
   showActionToast({
     message,
     primaryLabel: "Imprimir",
@@ -2574,6 +2579,104 @@ function updateUserBadge() {
 
   nodes.userBadge.textContent = "Conta local";
   nodes.userBadge.classList.remove("hidden");
+}
+
+function getPrintTrackingStorageKey() {
+  const accountId = Number(currentState?.ui?.activeAccountId || 0);
+  const userId = currentIdentity?.user?.uid;
+  if (userId && accountId) {
+    return `financeiro-pwa-printed-transactions-${userId}-${accountId}`;
+  }
+  return null;
+}
+
+function initializePrintTracking() {
+  const storageKey = getPrintTrackingStorageKey();
+  const currentIds = new Set(
+    (Array.isArray(currentState?.transactions) ? currentState.transactions : [])
+      .map((transaction) => Number(transaction.id))
+      .filter((id) => Number.isFinite(id))
+  );
+
+  if (!storageKey) {
+    knownPrintedTransactionIds = currentIds;
+    return;
+  }
+
+  try {
+    const raw = localStorage.getItem(storageKey);
+    const storedIds = raw ? JSON.parse(raw) : [];
+    knownPrintedTransactionIds = new Set(
+      [...storedIds, ...currentIds]
+        .map((id) => Number(id))
+        .filter((id) => Number.isFinite(id))
+    );
+    localStorage.setItem(storageKey, JSON.stringify([...knownPrintedTransactionIds]));
+  } catch {
+    knownPrintedTransactionIds = currentIds;
+  }
+}
+
+function markTransactionsAsPrinted(transactions) {
+  const ids = (Array.isArray(transactions) ? transactions : [])
+    .map((transaction) => Number(transaction?.id))
+    .filter((id) => Number.isFinite(id));
+  if (!ids.length) return;
+
+  ids.forEach((id) => knownPrintedTransactionIds.add(id));
+
+  const storageKey = getPrintTrackingStorageKey();
+  if (!storageKey) return;
+
+  try {
+    localStorage.setItem(storageKey, JSON.stringify([...knownPrintedTransactionIds]));
+  } catch {}
+}
+
+function startRemotePrintWatch() {
+  if (remotePrintWatchTimer) {
+    window.clearInterval(remotePrintWatchTimer);
+    remotePrintWatchTimer = null;
+  }
+
+  if (currentIdentity?.mode !== "google" || !currentPersistence?.loadState) {
+    return;
+  }
+
+  remotePrintWatchTimer = window.setInterval(async () => {
+    if (document.hidden) return;
+    if (activeScreen === "LANCAMENTOS" || activeScreen === "MULTIPLOS") return;
+    if (editingTransactionId !== null) return;
+
+    try {
+      const remoteState = sanitizeState(await currentPersistence.loadState());
+      const remoteTransactions = Array.isArray(remoteState?.transactions) ? remoteState.transactions : [];
+      const unseenTransactions = remoteTransactions.filter((transaction) => {
+        const id = Number(transaction?.id);
+        return Number.isFinite(id) && !knownPrintedTransactionIds.has(id);
+      });
+
+      currentState = remoteState;
+      applyTheme();
+      render();
+
+      if (unseenTransactions.length > 0) {
+        markTransactionsAsPrinted(unseenTransactions);
+        showActionToast({
+          message:
+            unseenTransactions.length === 1
+              ? "Novo lançamento recebido. Deseja imprimir?"
+              : `${unseenTransactions.length} novos lançamentos recebidos. Deseja imprimir?`,
+          primaryLabel: "Imprimir",
+          secondaryLabel: "Agora não",
+          onPrimary: () => printTransactionsReceipt(unseenTransactions),
+          onSecondary: () => {}
+        });
+      }
+    } catch (error) {
+      console.warn("Falha ao verificar novos lançamentos para impressão:", error);
+    }
+  }, 7000);
 }
 
 function applyTheme() {
