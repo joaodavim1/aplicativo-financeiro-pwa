@@ -685,7 +685,7 @@ function renderCategoryBarsByType({ node, type, emptyMessage, fallbackColor }) {
 function renderHistoryFilterOptions() {
   syncHistoryFilterInputs();
 
-  const type = currentHistoryFilters.type || nodes.historyTypeFilter?.value || "all";
+  const type = getActiveHistoryType();
   const categoryOptions = deriveHistoryCategoryOptions(type);
   const paymentOptions = deriveHistoryPaymentOptions();
   const previousCategory = currentHistoryFilters.category;
@@ -1253,6 +1253,26 @@ function countsByCategoryForFilters(type) {
     }, {});
 }
 
+function getActiveHistoryType() {
+  const activeButton = nodes.historyTypeButtons.find((button) => button.classList.contains("active"));
+  const buttonType = activeButton?.dataset.historyType;
+  if (buttonType === "income" || buttonType === "expense" || buttonType === "all") {
+    return buttonType;
+  }
+
+  const currentType = currentHistoryFilters.type;
+  if (currentType === "income" || currentType === "expense" || currentType === "all") {
+    return currentType;
+  }
+
+  const hiddenType = nodes.historyTypeFilter?.value;
+  if (hiddenType === "income" || hiddenType === "expense" || hiddenType === "all") {
+    return hiddenType;
+  }
+
+  return "all";
+}
+
 function sumByType(type) {
   return currentState.transactions
     .filter((transaction) => transaction.type === type)
@@ -1260,7 +1280,7 @@ function sumByType(type) {
 }
 
 function handleHistoryFilterChange() {
-  const nextType = currentHistoryFilters.type || nodes.historyTypeFilter?.value || "all";
+  const nextType = getActiveHistoryType();
   currentHistoryFilters = {
     startDate: nodes.historyStartDate?.value || "",
     endDate: nodes.historyEndDate?.value || "",
