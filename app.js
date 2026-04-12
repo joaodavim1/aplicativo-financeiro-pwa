@@ -714,6 +714,20 @@ function renderHistoryFilterOptions() {
 
 function getExtratoTransactionsBase() {
   const todayEnd = toEndOfDayMillis(todayDateInputValue());
+  const startMillis = currentHistoryFilters.startDate
+    ? toStartOfDayMillis(currentHistoryFilters.startDate)
+    : null;
+  const endMillis = currentHistoryFilters.endDate
+    ? toEndOfDayMillis(currentHistoryFilters.endDate)
+    : null;
+  const includesFutureRange =
+    (Number.isFinite(startMillis) && startMillis > todayEnd) ||
+    (Number.isFinite(endMillis) && endMillis > todayEnd);
+
+  if (includesFutureRange) {
+    return currentState.transactions;
+  }
+
   return currentState.transactions.filter((transaction) => resolveFutureDateMillis(transaction) <= todayEnd);
 }
 
@@ -1635,16 +1649,22 @@ function renderTransactionItem(transaction) {
   const sign = transaction.type === "income" ? "+" : "-";
   const transactionStatus = resolveTransactionStatus(transaction);
   const amountText = `${sign} ${currency.format(transaction.amount)}`;
+  const effectiveDateMillis = resolveFutureDateMillis(transaction);
   const installmentText =
     transaction.installments > 1
       ? `Parcela ${transaction.installmentNumber}/${transaction.installments}`
       : "";
   const amountLine = transaction.originalTotalAmount ? currency.format(transaction.originalTotalAmount) : currency.format(transaction.amount);
+  const dueText =
+    effectiveDateMillis !== transaction.dateMillis
+      ? `Venc: ${formatDateShort(effectiveDateMillis)}`
+      : null;
   const details = [
     transaction.paymentMethod || null,
     installmentText || null,
     `de ${amountLine}`,
-    `Lanc: ${formatDateShort(transaction.dateMillis)}`
+    `Lanc: ${formatDateShort(transaction.dateMillis)}`,
+    dueText
   ].filter(Boolean).join(" • ");
   const title = String(transaction.title || "").trim() || String(transaction.category || "").trim() || "Sem categoria";
   const notes = String(transaction.notes || "").trim();
