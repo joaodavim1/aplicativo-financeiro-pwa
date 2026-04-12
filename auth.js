@@ -1,8 +1,8 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260411ap";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260411aq";
 
 const IOS_APP_VERSION = "Versão atual: 1.14";
 const IOS_SETTINGS_VERSION = "1.14";
-const IOS_BUILD_TOKEN = "20260411ap";
+const IOS_BUILD_TOKEN = "20260411aq";
 const BUILD_STORAGE_KEY = "financeiro-pwa-build-token";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
@@ -1125,9 +1125,10 @@ function buildStateFromRemote({ people, activeAccount, activeAccountId, transact
       installments: Math.max(1, Number.parseInt(String(transaction.installments || "1"), 10) || 1),
       installmentNumber: Math.max(1, Number.parseInt(String(transaction.installment_number || "1"), 10) || 1),
       originalTotalAmount: Number(transaction.original_total_amount || transaction.amount || 0),
-      cardPaymentDateMillis: Number.isFinite(Number(transaction.card_payment_date_millis))
-        ? Number(transaction.card_payment_date_millis)
-        : null,
+      cardPaymentDateMillis:
+        Number.isFinite(Number(transaction.card_payment_date_millis)) && Number(transaction.card_payment_date_millis) > 0
+          ? Number(transaction.card_payment_date_millis)
+          : null,
       notes: transaction.notes || ""
     })),
     goals: [],

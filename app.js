@@ -2189,8 +2189,9 @@ function triggerDownload(content, mimeType, fileName) {
 }
 
 function resolveFutureDateMillis(transaction) {
-  return Number.isFinite(Number(transaction.cardPaymentDateMillis))
-    ? Number(transaction.cardPaymentDateMillis)
+  const parsedCardDate = Number(transaction.cardPaymentDateMillis);
+  return Number.isFinite(parsedCardDate) && parsedCardDate > 0
+    ? parsedCardDate
     : Number(transaction.dateMillis || Date.now());
 }
 
@@ -2584,6 +2585,7 @@ function sanitizeTransaction(transaction) {
   const dateMillis = Number.isFinite(Number(transaction?.dateMillis)) ? Number(transaction.dateMillis) : Date.now();
   const category = String(transaction?.category || "Sem categoria").trim() || "Sem categoria";
   const title = String(transaction?.title || "").trim();
+  const parsedCardPaymentDateMillis = Number(transaction?.cardPaymentDateMillis ?? transaction?.card_payment_date_millis);
 
   return {
     id: normalizeTransactionId(transaction?.id),
@@ -2603,10 +2605,9 @@ function sanitizeTransaction(transaction) {
       : Number.isFinite(Number(transaction?.original_total_amount))
         ? Number(transaction.original_total_amount)
         : Number(transaction?.amount || 0),
-    cardPaymentDateMillis: Number.isFinite(Number(transaction?.cardPaymentDateMillis))
-      ? Number(transaction.cardPaymentDateMillis)
-      : Number.isFinite(Number(transaction?.card_payment_date_millis))
-        ? Number(transaction.card_payment_date_millis)
+    cardPaymentDateMillis:
+      Number.isFinite(parsedCardPaymentDateMillis) && parsedCardPaymentDateMillis > 0
+        ? parsedCardPaymentDateMillis
         : null,
     futureFlagged: Boolean(transaction?.futureFlagged ?? transaction?.future_flagged),
     notes: String(transaction?.notes || "").trim()
