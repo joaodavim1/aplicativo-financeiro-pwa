@@ -1061,19 +1061,33 @@ function selectActiveAccount(people, transactions, preferredAccountId = null) {
   return null;
 }
 
+function normalizeRemoteTransactionType(rawType) {
+  const normalized = String(rawType || "").trim().toLowerCase();
+
+  if (["receita", "income", "entrada", "entradas", "receitas"].includes(normalized)) {
+    return "income";
+  }
+
+  if (["despesa", "expense", "saida", "saída", "saidas", "saídas", "despesas"].includes(normalized)) {
+    return "expense";
+  }
+
+  return "expense";
+}
+
 function buildStateFromRemote({ people, activeAccount, activeAccountId, transactions, settings, appSettings }) {
   const sortedTransactions = [...transactions].sort((left, right) => Number(right.date_millis || 0) - Number(left.date_millis || 0));
   const budgets = buildBudgets(settings?.expense_category_limits || "");
   const expenseCategories = uniqueCaseInsensitive([
     ...decodeStringList(settings?.expense_categories || ""),
     ...sortedTransactions
-      .filter((transaction) => transaction.type !== "RECEITA")
+      .filter((transaction) => normalizeRemoteTransactionType(transaction.type) === "expense")
       .map((transaction) => transaction.category || "")
   ]);
   const incomeCategories = uniqueCaseInsensitive([
     ...decodeStringList(settings?.income_categories || ""),
     ...sortedTransactions
-      .filter((transaction) => transaction.type === "RECEITA")
+      .filter((transaction) => normalizeRemoteTransactionType(transaction.type) === "income")
       .map((transaction) => transaction.category || "")
   ]);
   const paymentMethods = uniqueCaseInsensitive([
@@ -1103,7 +1117,7 @@ function buildStateFromRemote({ people, activeAccount, activeAccountId, transact
       id: Number(transaction.id),
       category: transaction.category || "Sem categoria",
       title: String(transaction.title || "").trim(),
-      type: transaction.type === "RECEITA" ? "income" : "expense",
+      type: normalizeRemoteTransactionType(transaction.type),
       amount: Number(transaction.amount || 0),
       dateMillis: Number(transaction.date_millis || Date.now()),
       dateLabel: formatRelativeDate(Number(transaction.date_millis || Date.now())),
