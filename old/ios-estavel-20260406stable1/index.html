@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#145c4c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Financeiro" />
+    <title>Financeiro</title>
+    <link rel="manifest" href="./manifest.webmanifest?v=20260406stable1" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <link rel="stylesheet" href="./styles.css?v=20260406stable1" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <section id="authGate" class="auth-gate hidden">
+        <article class="auth-card">
+          <p class="eyebrow">Acesso</p>
+          <h2>Entrar com Google</h2>
+          <p id="authDescription" class="auth-description">
+            Entre com a mesma conta usada no Android.
+          </p>
+          <div class="auth-actions">
+            <div id="googleLoginMount" class="google-login-mount"></div>
+            <button id="continueDemoButton" class="ghost-button dark-ghost" type="button">Abrir versão local</button>
+          </div>
+          <p id="authStatusMessage" class="auth-status"></p>
+        </article>
+      </section>
+
+      <header class="hero app-header">
+        <button id="menuButton" class="menu-icon-button" type="button" aria-label="Menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div class="app-header-copy">
+          <h1>Finanças</h1>
+          <div id="userBadge" class="user-badge hidden"></div>
+        </div>
+        <button id="logoutButton" class="ghost-button hidden" type="button">Sair</button>
+        <button id="installHelpButton" class="ghost-button hidden" type="button">Atualizar versão</button>
+      </header>
+
+      <main id="protectedApp" class="layout">
+        <nav id="screenTabs" class="screen-tabs" aria-label="Telas do app"></nav>
+
+        <section data-screen="EXTRATO" class="screen-panel">
+          <section class="summary-grid single-column">
+            <article class="balance-card">
+              <div class="balance-topline">
+                <span>Saldo disponivel</span>
+                <span id="currentMonthLabel"></span>
+              </div>
+              <strong id="balanceValue" class="balance-value"></strong>
+
+              <div class="pill-grid">
+                <div class="pill-card">
+                  <span>Entradas</span>
+                  <strong id="incomeValue"></strong>
+                </div>
+                <div class="pill-card">
+                  <span>Saidas</span>
+                  <strong id="expenseValue"></strong>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="panel-grid">
+            <article class="card chart-card">
+              <div class="card-heading">
+                <h2>RECEITAS DO PERIODO POR CATEGORIA</h2>
+              </div>
+              <div id="incomeCategoryBars" class="bars"></div>
+            </article>
+
+            <article class="card">
+              <div class="card-heading">
+                <h2>DESPESAS DO PERIODO POR CATEGORIA</h2>
+              </div>
+              <div id="expenseCategoryBars" class="bars"></div>
+            </article>
+          </section>
+
+          <section class="transactions-section single-column">
+            <article class="card filter-card">
+              <div class="card-heading">
+                <h2>Filtrar período</h2>
+              </div>
+              <div class="filter-grid">
+                <label>
+                  <span>Data inicial</span>
+                  <input id="historyStartDate" type="date" />
+                </label>
+                <label>
+                  <span>Data final</span>
+                  <input id="historyEndDate" type="date" />
+                </label>
+                <label>
+                  <span>Movimento</span>
+                  <input id="historyTypeFilter" type="hidden" value="all" />
+                  <div id="historyTypeToggle" class="type-toggle history-type-toggle" role="group" aria-label="Movimento">
+                    <button class="type-toggle-button history-type-button active" data-history-type="all" type="button">
+                      Todos
+                    </button>
+                    <button class="type-toggle-button history-type-button income" data-history-type="income" type="button">
+                      Receitas
+                    </button>
+                    <button class="type-toggle-button history-type-button expense" data-history-type="expense" type="button">
+                      Despesas
+                    </button>
+                  </div>
+                </label>
+                <label id="historyCategoryGroup">
+                  <span>Categoria</span>
+                  <select id="historyCategoryFilter">
+                    <option value="">Todas</option>
+                  </select>
+                </label>
+                <label id="historyPaymentGroup">
+                  <span>Pagamento</span>
+                  <select id="historyPaymentFilter">
+                    <option value="">Todos</option>
+                  </select>
+                </label>
+              </div>
+            </article>
+          </section>
+
+          <section class="transactions-section single-column">
+            <article class="card ledger-card">
+              <div class="ledger-toolbar extrato-header-row">
+                <div class="extrato-title-row">
+                  <h2>Extrato</h2>
+                  <button id="clearHistoryFiltersButton" class="ghost-button dark-ghost history-clear-button inline" type="button">
+                    Limpar filtros
+                  </button>
+                </div>
+                <div class="stack-inline">
+                  <span class="muted">Total</span>
+                  <strong id="filteredTotalValue"></strong>
+                </div>
+              </div>
+              <div id="extratoList" class="transactions-list"></div>
+            </article>
+          </section>
+        </section>
+
+        <section data-screen="LANCAMENTOS" class="screen-panel">
+          <section class="transactions-section">
+            <article class="card composer-card">
+              <div class="card-heading">
+                <p class="eyebrow">Novo movimento</p>
+                <h2>Registrar transacao</h2>
+              </div>
+
+              <form id="transactionForm" class="transaction-form">
+                <label>
+                  <span>Descrição</span>
+                  <input id="titleInput" name="title" type="text" placeholder="Ex: Mercado do mês" required />
+                </label>
+
+                <label>
+                  <span>Categoria</span>
+                  <select id="categoryInput" name="category">
+                    <option value="Casa">Casa</option>
+                    <option value="Mercado">Mercado</option>
+                    <option value="Transporte">Transporte</option>
+                    <option value="Lazer">Lazer</option>
+                    <option value="Investimentos">Investimentos</option>
+                    <option value="Trabalho">Trabalho</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Entrada ou saída</span>
+                  <input id="typeInput" name="type" type="hidden" value="expense" />
+                  <div id="typeToggle" class="type-toggle" role="group" aria-label="Entrada ou saída">
+                    <button
+                      id="expenseTypeButton"
+                      class="type-toggle-button active expense"
+                      data-type="expense"
+                      type="button"
+                    >
+                      Despesa
+                    </button>
+                    <button
+                      id="incomeTypeButton"
+                      class="type-toggle-button income"
+                      data-type="income"
+                      type="button"
+                    >
+                      Receita
+                    </button>
+                  </div>
+                </label>
+
+                <label>
+                  <span>Forma de pagamento</span>
+                  <select id="paymentMethodInput" name="paymentMethod">
+                    <option value="Pix">Pix</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Data de vencimento</span>
+                  <input id="dateInput" name="date" type="date" required />
+                </label>
+
+                <label>
+                  <span>Nr Parcelas</span>
+                  <input
+                    id="installmentsInput"
+                    name="installments"
+                    type="number"
+                    inputmode="numeric"
+                    min="1"
+                    step="1"
+                    value="1"
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span>Valor</span>
+                  <input
+                    id="amountInput"
+                    name="amount"
+                    type="number"
+                    inputmode="decimal"
+                    min="0.01"
+                    step="0.01"
+                    placeholder="0,00"
+                    required
+                  />
+                </label>
+
+                <button class="primary-button" type="submit">SALVAR</button>
+              </form>
+            </article>
+
+            <article class="card ledger-card">
+              <div class="ledger-toolbar">
+                <div class="card-heading">
+                  <p class="eyebrow">Movimentos</p>
+                  <h2>Ultimas transacoes</h2>
+                </div>
+
+                <div class="filter-tabs" role="tablist" aria-label="Filtro de transacoes">
+                  <button class="filter-tab active" data-filter="all" type="button">Tudo</button>
+                  <button class="filter-tab" data-filter="income" type="button">Entradas</button>
+                  <button class="filter-tab" data-filter="expense" type="button">Saidas</button>
+                </div>
+              </div>
+
+              <div id="transactionsList" class="transactions-list"></div>
+            </article>
+          </section>
+        </section>
+
+        <section data-screen="QUADRO" class="screen-panel">
+          <section class="panel-grid">
+            <article class="card">
+              <div class="card-heading">
+                <p class="eyebrow">Leituras rapidas</p>
+                <h2>Insights do mes</h2>
+              </div>
+              <div id="insightsList" class="stack"></div>
+            </article>
+
+            <article class="card">
+              <div class="card-heading">
+                <p class="eyebrow">Metas</p>
+                <h2>Reservas em andamento</h2>
+              </div>
+              <div id="goalsList" class="stack"></div>
+            </article>
+          </section>
+        </section>
+
+        <section data-screen="CONFIG" class="screen-panel">
+          <section class="panel-grid">
+            <article class="card">
+              <div class="card-heading">
+                <p class="eyebrow">Conta</p>
+                <h2>Acesso</h2>
+              </div>
+              <div class="stack">
+                <div class="insight-item">
+                  <strong>Conta em uso</strong>
+                  <p id="settingsAccountName" class="muted">Conta local</p>
+                </div>
+                <div class="insight-item">
+                  <strong>Acesso</strong>
+                  <p id="settingsDataSource" class="muted">Conta local</p>
+                </div>
+                <div class="insight-item">
+                  <strong>Telas</strong>
+                  <p id="settingsScreenOrder" class="muted">Extrato, Lançamentos, Futuro</p>
+                </div>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="card-heading">
+                <p class="eyebrow">Ações</p>
+                <h2>Conta e aparelho</h2>
+              </div>
+              <div class="settings-actions">
+                <button id="settingsLoginButton" class="primary-button" type="button">Entrar com Google</button>
+                <button id="settingsInstallButton" class="primary-button" type="button">Atualizar versão</button>
+                <button id="settingsLogoutButton" class="ghost-button dark-ghost" type="button">Sair da conta</button>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="card-heading">
+                <p class="eyebrow">Categorias</p>
+                <h2>Despesas</h2>
+              </div>
+              <div class="catalog-add-row">
+                <input id="addExpenseCategoryInput" type="text" placeholder="Nova categoria de despesa" />
+                <button id="addExpenseCategoryButton" class="primary-button" type="button">Incluir</button>
+              </div>
+              <div id="settingsExpenseCategoriesList" class="stack"></div>
+            </article>
+
+            <article class="card">
+              <div class="card-heading">
+                <p class="eyebrow">Categorias</p>
+                <h2>Receitas</h2>
+              </div>
+              <div class="catalog-add-row">
+                <input id="addIncomeCategoryInput" type="text" placeholder="Nova categoria de receita" />
+                <button id="addIncomeCategoryButton" class="primary-button" type="button">Incluir</button>
+              </div>
+              <div id="settingsIncomeCategoriesList" class="stack"></div>
+            </article>
+
+            <article class="card">
+              <div class="card-heading">
+                <p class="eyebrow">Lançamentos</p>
+                <h2>Formas de pagamento</h2>
+              </div>
+              <div class="catalog-add-row">
+                <input id="addPaymentMethodInput" type="text" placeholder="Nova forma de pagamento" />
+                <input id="addPaymentClosingDayInput" type="number" inputmode="numeric" min="1" max="31" placeholder="Fech." />
+                <input id="addPaymentDueDayInput" type="number" inputmode="numeric" min="1" max="31" placeholder="Pag." />
+                <button id="addPaymentMethodButton" class="primary-button" type="button">Incluir</button>
+              </div>
+              <div id="settingsPaymentMethodsList" class="stack"></div>
+            </article>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="menuDialog" class="install-dialog">
+      <div class="dialog-content">
+        <p class="eyebrow">Menu</p>
+        <h2>Finanças</h2>
+        <div class="settings-actions">
+          <button id="menuOpenExtratoButton" class="primary-button" type="button">Extrato</button>
+          <button id="menuOpenLancamentosButton" class="ghost-button dark-ghost menu-dark" type="button">Lançamentos</button>
+          <button id="menuOpenQuadroButton" class="ghost-button dark-ghost menu-dark" type="button">Futuro</button>
+          <button id="menuOpenSettingsButton" class="primary-button" type="button">Configurações</button>
+          <button id="menuLoginButton" class="primary-button" type="button">Entrar com Google</button>
+          <button id="menuInstallButton" class="ghost-button dark-ghost menu-dark" type="button">Atualizar versão</button>
+          <button id="menuLogoutButton" class="ghost-button dark-ghost menu-dark" type="button">Sair</button>
+        </div>
+        <button id="closeMenuButton" class="primary-button" type="button">Fechar</button>
+      </div>
+    </dialog>
+
+    <dialog id="installDialog" class="install-dialog">
+      <div class="dialog-content">
+        <p class="eyebrow">Instalação</p>
+        <h2>Adicionar à tela inicial</h2>
+        <ol>
+          <li>Abra este endereço no Safari.</li>
+          <li>Toque em Compartilhar.</li>
+          <li>Escolha Adicionar à Tela de Início.</li>
+          <li>Confirme a adição.</li>
+        </ol>
+        <button id="closeInstallModalButton" class="primary-button" type="button">Fechar</button>
+      </div>
+    </dialog>
+
+    <script src="./supabase-config.js?v=20260406stable1"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script type="module" src="./auth.js?v=20260406stable1"></script>
+  </body>
+</html>

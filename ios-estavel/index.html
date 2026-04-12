@@ -8,11 +8,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Financeiro" />
     <title>Financeiro</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20260406stable1" />
+    <link rel="manifest" href="./manifest.webmanifest?v=20260412stable1" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260406stable1" />
+    <link rel="stylesheet" href="./styles.css?v=20260412stable1" />
   </head>
   <body>
+    <div id="appToast" class="app-toast hidden" role="status" aria-live="polite"></div>
     <div class="app-shell">
       <section id="authGate" class="auth-gate hidden">
         <article class="auth-card">
@@ -45,6 +46,61 @@
 
       <main id="protectedApp" class="layout">
         <nav id="screenTabs" class="screen-tabs" aria-label="Telas do app"></nav>
+
+        <section data-screen="MULTIPLOS" class="screen-panel">
+          <section class="transactions-section single-column">
+            <article class="card composer-card multi-launch-card">
+              <div class="card-heading">
+                <h2>Múltiplos lançamentos</h2>
+              </div>
+              <p class="muted">
+                Monte vários valores com categorias diferentes e escolha uma única forma de pagamento no final.
+              </p>
+
+              <label class="multi-launch-type-field">
+                <input id="multiLaunchTypeInput" type="hidden" value="expense" />
+                <div id="multiLaunchTypeToggle" class="type-toggle" role="group" aria-label="Despesa ou receita">
+                  <button class="type-toggle-button active expense" data-multi-type="expense" type="button">
+                    Despesas
+                  </button>
+                  <button class="type-toggle-button income" data-multi-type="income" type="button">
+                    Receitas
+                  </button>
+                </div>
+              </label>
+
+              <div id="multiLaunchRows" class="multi-launch-rows"></div>
+
+              <div class="multi-launch-actions">
+                <button id="multiLaunchAddRowButton" class="ghost-button dark-ghost" type="button">+ Outro valor</button>
+                <button id="multiLaunchFinalizeButton" class="ghost-button dark-ghost" type="button">Mesmo pagamento</button>
+              </div>
+
+              <div id="multiLaunchFinalizeCard" class="multi-launch-finalize hidden">
+                <div class="multi-launch-finalize-grid">
+                  <label class="multi-launch-finalize-field">
+                    <span>Forma de pagamento geral</span>
+                    <select id="multiLaunchPaymentMethodInput">
+                      <option value="">Pagamento único</option>
+                    </select>
+                  </label>
+                  <div class="multi-launch-total-card">
+                    <span>Total</span>
+                    <strong id="multiLaunchTotalValue" class="multi-launch-total">R$ 0,00</strong>
+                  </div>
+                </div>
+                <label class="multi-launch-finalize-field">
+                  <span>Data de vencimento</span>
+                  <input id="multiLaunchDateInput" type="date" />
+                </label>
+              </div>
+
+              <div class="settings-actions multi-launch-save-area">
+                <button id="multiLaunchSaveButton" class="primary-button" type="button">SALVAR TODOS</button>
+              </div>
+            </article>
+          </section>
+        </section>
 
         <section data-screen="EXTRATO" class="screen-panel">
           <section class="summary-grid single-column">
@@ -158,23 +214,6 @@
 
               <form id="transactionForm" class="transaction-form">
                 <label>
-                  <span>Descrição</span>
-                  <input id="titleInput" name="title" type="text" placeholder="Ex: Mercado do mês" required />
-                </label>
-
-                <label>
-                  <span>Categoria</span>
-                  <select id="categoryInput" name="category">
-                    <option value="Casa">Casa</option>
-                    <option value="Mercado">Mercado</option>
-                    <option value="Transporte">Transporte</option>
-                    <option value="Lazer">Lazer</option>
-                    <option value="Investimentos">Investimentos</option>
-                    <option value="Trabalho">Trabalho</option>
-                  </select>
-                </label>
-
-                <label>
                   <span>Entrada ou saída</span>
                   <input id="typeInput" name="type" type="hidden" value="expense" />
                   <div id="typeToggle" class="type-toggle" role="group" aria-label="Entrada ou saída">
@@ -198,10 +237,81 @@
                 </label>
 
                 <label>
-                  <span>Forma de pagamento</span>
+                  <span>Valor</span>
+                  <input
+                    id="amountInput"
+                    name="amount"
+                    type="number"
+                    inputmode="decimal"
+                    min="0.01"
+                    step="0.01"
+                    placeholder="0,00"
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span>Categoria</span>
+                  <select id="categoryInput" name="category">
+                    <option value="Casa">Casa</option>
+                    <option value="Mercado">Mercado</option>
+                    <option value="Transporte">Transporte</option>
+                    <option value="Lazer">Lazer</option>
+                    <option value="Investimentos">Investimentos</option>
+                    <option value="Trabalho">Trabalho</option>
+                  </select>
+                  <button id="manageCategoryToggleButton" class="field-link-button" type="button">Gerenciar categorias de despesa</button>
+                </label>
+
+                <article id="manageExpenseCategoryCard" class="card inline-manager-card hidden">
+                  <div class="card-heading">
+                    <p class="eyebrow">Categorias</p>
+                    <h2>Despesas</h2>
+                  </div>
+                  <div class="catalog-add-row single-input-row">
+                    <input id="addExpenseCategoryInput" type="text" placeholder="Nova categoria de despesa" />
+                    <button id="addExpenseCategoryButton" class="primary-button" type="button">Incluir</button>
+                  </div>
+                  <div id="settingsExpenseCategoriesList" class="stack"></div>
+                </article>
+
+                <article id="manageIncomeCategoryCard" class="card inline-manager-card hidden">
+                  <div class="card-heading">
+                    <p class="eyebrow">Categorias</p>
+                    <h2>Receitas</h2>
+                  </div>
+                  <div class="catalog-add-row single-input-row">
+                    <input id="addIncomeCategoryInput" type="text" placeholder="Nova categoria de receita" />
+                    <button id="addIncomeCategoryButton" class="primary-button" type="button">Incluir</button>
+                  </div>
+                  <div id="settingsIncomeCategoriesList" class="stack"></div>
+                </article>
+
+                <label>
+                  <span>Pagamento</span>
                   <select id="paymentMethodInput" name="paymentMethod">
                     <option value="Pix">Pix</option>
                   </select>
+                  <button id="managePaymentToggleButton" class="field-link-button" type="button">Gerenciar formas de pagamento</button>
+                </label>
+
+                <article id="managePaymentCard" class="card inline-manager-card hidden">
+                  <div class="card-heading">
+                    <p class="eyebrow">Lançamentos</p>
+                    <h2>Formas de pagamento</h2>
+                  </div>
+                  <div class="catalog-add-row">
+                    <input id="addPaymentMethodInput" type="text" placeholder="Nova forma de pagamento" />
+                    <input id="addPaymentClosingDayInput" type="number" inputmode="numeric" min="1" max="31" placeholder="Fech." />
+                    <input id="addPaymentDueDayInput" type="number" inputmode="numeric" min="1" max="31" placeholder="Pag." />
+                    <button id="addPaymentMethodButton" class="primary-button" type="button">Incluir</button>
+                  </div>
+                  <div id="settingsPaymentMethodsList" class="stack"></div>
+                </article>
+
+                <label>
+                  <span>Descrição</span>
+                  <input id="titleInput" name="title" type="text" placeholder="Ex: Mercado do mês" />
                 </label>
 
                 <label>
@@ -219,20 +329,6 @@
                     min="1"
                     step="1"
                     value="1"
-                    required
-                  />
-                </label>
-
-                <label>
-                  <span>Valor</span>
-                  <input
-                    id="amountInput"
-                    name="amount"
-                    type="number"
-                    inputmode="decimal"
-                    min="0.01"
-                    step="0.01"
-                    placeholder="0,00"
                     required
                   />
                 </label>
@@ -261,21 +357,71 @@
         </section>
 
         <section data-screen="QUADRO" class="screen-panel">
-          <section class="panel-grid">
-            <article class="card">
-              <div class="card-heading">
-                <p class="eyebrow">Leituras rapidas</p>
-                <h2>Insights do mes</h2>
+          <section class="transactions-section single-column">
+            <article class="card future-summary-card">
+              <div class="card-heading future-heading">
+                <div>
+                  <p class="eyebrow">Resumo: Todo o histórico</p>
+                  <h2>Saldo <span id="futureBalanceValue" class="future-summary-balance"></span></h2>
+                </div>
               </div>
-              <div id="insightsList" class="stack"></div>
+              <div class="future-summary-grid">
+                <div>
+                  <span class="muted">Receitas</span>
+                  <strong id="futureIncomeValue" class="future-income-value"></strong>
+                </div>
+                <div>
+                  <span class="muted">Despesas</span>
+                  <strong id="futureExpenseValue" class="future-expense-value"></strong>
+                </div>
+              </div>
             </article>
 
-            <article class="card">
+            <article class="card future-filter-card">
               <div class="card-heading">
-                <p class="eyebrow">Metas</p>
-                <h2>Reservas em andamento</h2>
+                <h2>FILTRAR POR PERIODO</h2>
               </div>
-              <div id="goalsList" class="stack"></div>
+              <div class="future-filter-stack">
+                <div id="futureTypeToggle" class="future-type-toggle" role="group" aria-label="Filtro do futuro">
+                  <button class="future-filter-button active" data-future-type="all" type="button">Todos</button>
+                  <button class="future-filter-button" data-future-type="income" type="button">Receitas</button>
+                  <button class="future-filter-button" data-future-type="expense" type="button">Despesas</button>
+                </div>
+                <label>
+                  <span>Data Inicio</span>
+                  <input id="futureStartDate" type="date" />
+                </label>
+                <label>
+                  <span>Data Fim</span>
+                  <input id="futureEndDate" type="date" />
+                </label>
+                <label id="futureCategoryGroup" class="hidden">
+                  <span>Categoria</span>
+                  <select id="futureCategoryFilter"></select>
+                </label>
+                <label id="futurePaymentGroup" class="hidden">
+                  <span>Pagamento</span>
+                  <select id="futurePaymentFilter"></select>
+                </label>
+                <button id="clearFutureFiltersButton" class="ghost-button dark-ghost future-clear-button" type="button">Limpar periodo</button>
+              </div>
+            </article>
+
+            <div class="future-total-row">
+              <strong>Total filtrado</strong>
+              <strong id="futureFilteredTotalValue"></strong>
+            </div>
+
+            <article class="card future-list-card">
+              <div class="card-heading">
+                <h2>LANCAMENTOS FUTUROS</h2>
+              </div>
+              <div class="future-bulk-actions">
+                <button id="selectAllFutureButton" class="ghost-button dark-ghost future-bulk-button" type="button">Selecionar todos</button>
+                <button id="clearFutureSelectionButton" class="ghost-button dark-ghost future-bulk-button" type="button">Limpar</button>
+                <button id="completeSelectedFutureButton" class="primary-button future-complete-button" type="button">Concluir selecionados (0)</button>
+              </div>
+              <div id="futureLaunchesList" class="stack"></div>
             </article>
           </section>
         </section>
@@ -300,6 +446,14 @@
                   <strong>Telas</strong>
                   <p id="settingsScreenOrder" class="muted">Extrato, Lançamentos, Futuro</p>
                 </div>
+                <div class="insight-item">
+                  <strong>Tema</strong>
+                  <p id="settingsThemeStatus" class="muted">Claro</p>
+                </div>
+                <div class="insight-item">
+                  <strong>Versão iOS</strong>
+                  <p id="settingsAppVersion" class="muted">1.14</p>
+                </div>
               </div>
             </article>
 
@@ -309,6 +463,8 @@
                 <h2>Conta e aparelho</h2>
               </div>
               <div class="settings-actions">
+                <button id="settingsThemeLightButton" class="ghost-button dark-ghost theme-choice-button" type="button">Usar tema claro</button>
+                <button id="settingsThemeDarkButton" class="primary-button theme-choice-button" type="button">Usar tema dark</button>
                 <button id="settingsLoginButton" class="primary-button" type="button">Entrar com Google</button>
                 <button id="settingsInstallButton" class="primary-button" type="button">Atualizar versão</button>
                 <button id="settingsLogoutButton" class="ghost-button dark-ghost" type="button">Sair da conta</button>
@@ -317,41 +473,37 @@
 
             <article class="card">
               <div class="card-heading">
-                <p class="eyebrow">Categorias</p>
-                <h2>Despesas</h2>
+                <p class="eyebrow">Aplicativo</p>
+                <h2>Preferências</h2>
               </div>
-              <div class="catalog-add-row">
-                <input id="addExpenseCategoryInput" type="text" placeholder="Nova categoria de despesa" />
-                <button id="addExpenseCategoryButton" class="primary-button" type="button">Incluir</button>
+              <div class="stack">
+                <label>
+                  <span>Visualização</span>
+                  <select id="settingsViewMode">
+                    <option value="UMA_TELA">Uma tela</option>
+                    <option value="DUAS_TELAS">Duas telas</option>
+                  </select>
+                </label>
+                <label class="toggle-row">
+                  <span>Escuta por voz automática</span>
+                  <input id="settingsVoiceAutoListen" type="checkbox" />
+                </label>
+                <label>
+                  <span>Palavra de ativação</span>
+                  <input id="settingsVoiceWakeWord" type="text" placeholder="financeiro" />
+                </label>
+                <button id="settingsVoiceWakeWordSave" class="primary-button" type="button">Salvar palavra de ativação</button>
+                <label class="toggle-row">
+                  <span>Notificações</span>
+                  <input id="settingsNotificationsEnabled" type="checkbox" />
+                </label>
+                <label>
+                  <span>Hora da notificação</span>
+                  <input id="settingsNotificationTime" type="time" />
+                </label>
               </div>
-              <div id="settingsExpenseCategoriesList" class="stack"></div>
             </article>
 
-            <article class="card">
-              <div class="card-heading">
-                <p class="eyebrow">Categorias</p>
-                <h2>Receitas</h2>
-              </div>
-              <div class="catalog-add-row">
-                <input id="addIncomeCategoryInput" type="text" placeholder="Nova categoria de receita" />
-                <button id="addIncomeCategoryButton" class="primary-button" type="button">Incluir</button>
-              </div>
-              <div id="settingsIncomeCategoriesList" class="stack"></div>
-            </article>
-
-            <article class="card">
-              <div class="card-heading">
-                <p class="eyebrow">Lançamentos</p>
-                <h2>Formas de pagamento</h2>
-              </div>
-              <div class="catalog-add-row">
-                <input id="addPaymentMethodInput" type="text" placeholder="Nova forma de pagamento" />
-                <input id="addPaymentClosingDayInput" type="number" inputmode="numeric" min="1" max="31" placeholder="Fech." />
-                <input id="addPaymentDueDayInput" type="number" inputmode="numeric" min="1" max="31" placeholder="Pag." />
-                <button id="addPaymentMethodButton" class="primary-button" type="button">Incluir</button>
-              </div>
-              <div id="settingsPaymentMethodsList" class="stack"></div>
-            </article>
           </section>
         </section>
       </main>
@@ -359,17 +511,80 @@
 
     <dialog id="menuDialog" class="install-dialog">
       <div class="dialog-content">
-        <p class="eyebrow">Menu</p>
-        <h2>Finanças</h2>
-        <div class="settings-actions">
-          <button id="menuOpenExtratoButton" class="primary-button" type="button">Extrato</button>
-          <button id="menuOpenLancamentosButton" class="ghost-button dark-ghost menu-dark" type="button">Lançamentos</button>
-          <button id="menuOpenQuadroButton" class="ghost-button dark-ghost menu-dark" type="button">Futuro</button>
-          <button id="menuOpenSettingsButton" class="primary-button" type="button">Configurações</button>
-          <button id="menuLoginButton" class="primary-button" type="button">Entrar com Google</button>
-          <button id="menuInstallButton" class="ghost-button dark-ghost menu-dark" type="button">Atualizar versão</button>
-          <button id="menuLogoutButton" class="ghost-button dark-ghost menu-dark" type="button">Sair</button>
+        <p class="eyebrow">Contas</p>
+        <div class="menu-title-row">
+          <h2>Menu</h2>
         </div>
+        <p id="menuAppVersion" class="menu-version-line">Versão atual: 1.14</p>
+
+        <div class="menu-account-card">
+          <strong>Conta em uso</strong>
+          <p id="menuCurrentAccountName" class="muted">Sem conta</p>
+        </div>
+
+        <div class="menu-section">
+          <h3>Contas</h3>
+          <div id="menuAccountsList" class="menu-list-block">
+            <div class="empty-state">Nenhuma conta encontrada.</div>
+          </div>
+        </div>
+
+        <div class="menu-section">
+          <h3>Dados da conta</h3>
+          <div id="menuAccountDetails" class="menu-list-block">
+            <div class="menu-detail-row">
+              <strong>Acesso</strong>
+              <p id="menuCurrentAccess" class="muted">Conta local</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-section">
+          <div id="menuActionButtons" class="menu-list-block">
+            <button class="primary-button" type="button">Extrato</button>
+          </div>
+        </div>
+
+        <div class="menu-section">
+          <h3>Ordem das telas</h3>
+          <div id="menuScreenOrderList" class="menu-list-block">
+            <div class="menu-detail-row">
+              <strong>1.</strong>
+              <p id="menuScreenOrder" class="muted">Extrato, Lançamentos, Futuro</p>
+            </div>
+          </div>
+          <p id="menuScreenOrderFeedback" class="menu-feedback muted"></p>
+        </div>
+
+        <div class="menu-section">
+          <h3>Atualizar aplicativo</h3>
+          <div class="settings-actions">
+            <button id="menuUpdateButton" class="primary-button" type="button">Atualizar aplicativo</button>
+          </div>
+        </div>
+
+        <div class="menu-section">
+          <h3>Tema</h3>
+          <div class="settings-actions">
+            <button id="menuThemeLightButton" class="ghost-button dark-ghost theme-choice-button" type="button">Tema claro</button>
+            <button id="menuThemeDarkButton" class="ghost-button dark-ghost theme-choice-button" type="button">Tema dark</button>
+          </div>
+        </div>
+
+        <div class="menu-section">
+          <h3>Ações da conta</h3>
+          <div class="settings-actions">
+            <button id="menuLoginButton" class="primary-button" type="button">Entrar com Google</button>
+          </div>
+        </div>
+
+        <div class="menu-section">
+          <h3>Sessão</h3>
+          <div class="settings-actions">
+            <button id="menuLogoutButton" class="ghost-button dark-ghost menu-dark" type="button">Sair da conta</button>
+          </div>
+        </div>
+
         <button id="closeMenuButton" class="primary-button" type="button">Fechar</button>
       </div>
     </dialog>
@@ -388,8 +603,8 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260406stable1"></script>
+    <script src="./supabase-config.js?v=20260411aa"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script type="module" src="./auth.js?v=20260406stable1"></script>
+    <script type="module" src="./auth.js?v=20260411aa"></script>
   </body>
 </html>

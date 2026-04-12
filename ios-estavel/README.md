@@ -44,11 +44,13 @@ Versao web instalavel do app financeiro, criada em pasta separada para rodar no 
 ## Versao estavel para iPhone
 
 - A trilha estavel do iPhone fica na pasta `ios-estavel/`.
+- As versoes estaveis anteriores ficam arquivadas em `old/`.
 - Para gerar uma nova versao estavel depois dos testes, rode:
   - `.\scripts\publish_ios_stable.ps1`
 - O fluxo recomendado fica assim:
   - testar primeiro na raiz do projeto
   - quando aprovar, gerar a nova copia em `ios-estavel/`
+  - a copia anterior sera movida automaticamente para `old/`
   - publicar e reinstalar/atualizar no iPhone usando o link estavel
 
 ## Observacoes
