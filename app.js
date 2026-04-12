@@ -50,6 +50,7 @@ let activeScreen = "EXTRATO";
 let isCategoryManagerOpen = false;
 let isPaymentManagerOpen = false;
 let appToastTimer = null;
+let appToastActionCleanup = null;
 let currentHistoryFilters = {
   startDate: "",
   endDate: "",
@@ -340,7 +341,11 @@ async function handleSubmit(event) {
   syncManagerSections();
   syncLaunchFormDefaults();
   render();
-  showAppToast(wasEditing ? "Lançamento atualizado." : "Lançamento salvo.");
+  if (wasEditing) {
+    showAppToast("Lançamento atualizado.");
+  } else {
+    promptPrintTransactions([transactionToSave], "Lançamento salvo. Deseja imprimir?");
+  }
   navigateToScreen("EXTRATO");
 }
 
@@ -1879,7 +1884,7 @@ async function handleSaveMultiLaunch() {
   if (nodes.multiLaunchPaymentMethodInput) nodes.multiLaunchPaymentMethodInput.value = preferredPaymentMethod();
   if (nodes.multiLaunchDateInput) nodes.multiLaunchDateInput.value = todayDateInputValue();
   render();
-  showAppToast("Lançamentos salvos.");
+  promptPrintTransactions(createdTransactions, "Lançamentos salvos. Deseja imprimir?");
   navigateToScreen("EXTRATO");
 }
 
@@ -2242,19 +2247,215 @@ function resolveTransactionStatus(transaction) {
   return resolveFutureDateMillis(transaction) <= todayEnd ? "Concluido" : "Pendente";
 }
 
+function clearAppToastState() {
+  if (appToastTimer) {
+    window.clearTimeout(appToastTimer);
+    appToastTimer = null;
+  }
+
+  if (typeof appToastActionCleanup === "function") {
+    appToastActionCleanup();
+    appToastActionCleanup = null;
+  }
+}
+
+function hideAppToast() {
+  if (!nodes.appToast) return;
+
+  clearAppToastState();
+  nodes.appToast.classList.add("hidden");
+  nodes.appToast.innerHTML = "";
+}
+
 function showAppToast(message) {
   if (!nodes.appToast) return;
 
+  clearAppToastState();
   nodes.appToast.textContent = message;
   nodes.appToast.classList.remove("hidden");
 
-  if (appToastTimer) {
-    window.clearTimeout(appToastTimer);
+  appToastTimer = window.setTimeout(() => {
+    hideAppToast();
+  }, 2200);
+}
+
+function showActionToast({ message, primaryLabel, secondaryLabel, onPrimary, onSecondary }) {
+  if (!nodes.appToast) return;
+
+  clearAppToastState();
+  nodes.appToast.innerHTML = `
+    <div class="app-toast__message">${escapeHtml(message)}</div>
+    <div class="app-toast__actions">
+      <button type="button" class="app-toast__button app-toast__button--secondary">${escapeHtml(secondaryLabel)}</button>
+      <button type="button" class="app-toast__button app-toast__button--primary">${escapeHtml(primaryLabel)}</button>
+    </div>
+  `;
+  nodes.appToast.classList.remove("hidden");
+
+  const secondaryButton = nodes.appToast.querySelector(".app-toast__button--secondary");
+  const primaryButton = nodes.appToast.querySelector(".app-toast__button--primary");
+
+  const handleSecondary = () => {
+    hideAppToast();
+    onSecondary?.();
+  };
+
+  const handlePrimary = () => {
+    hideAppToast();
+    onPrimary?.();
+  };
+
+  secondaryButton?.addEventListener("click", handleSecondary);
+  primaryButton?.addEventListener("click", handlePrimary);
+
+  appToastActionCleanup = () => {
+    secondaryButton?.removeEventListener("click", handleSecondary);
+    primaryButton?.removeEventListener("click", handlePrimary);
+  };
+}
+
+function promptPrintTransactions(transactions, message) {
+  const printableTransactions = Array.isArray(transactions) ? transactions.filter(Boolean) : [];
+  if (!printableTransactions.length) {
+    showAppToast(message);
+    return;
   }
 
-  appToastTimer = window.setTimeout(() => {
-    nodes.appToast?.classList.add("hidden");
-  }, 2200);
+  showActionToast({
+    message,
+    primaryLabel: "Imprimir",
+    secondaryLabel: "Agora não",
+    onPrimary: () => printTransactionsReceipt(printableTransactions),
+    onSecondary: () => {}
+  });
+}
+
+function printTransactionsReceipt(transactions) {
+  const printableTransactions = Array.isArray(transactions) ? transactions.filter(Boolean) : [];
+  if (!printableTransactions.length) return;
+
+  const receiptHtml = buildReceiptHtml(printableTransactions);
+  const printWindow = window.open("", "_blank", "noopener,noreferrer,width=420,height=720");
+  if (!printWindow) {
+    showAppToast("Não foi possível abrir a impressão.");
+    return;
+  }
+
+  printWindow.document.open();
+  printWindow.document.write(receiptHtml);
+  printWindow.document.close();
+}
+
+function buildReceiptHtml(transactions) {
+  const account = resolveActiveAccountRecord(
+    Array.isArray(currentState?.ui?.accounts) ? currentState.ui.accounts : [],
+    currentState?.ui?.activeAccountId ?? null
+  );
+  const printedAt = new Date();
+  const receiptLines = buildReceiptLines(transactions, account?.name || "Sem conta", printedAt);
+
+  return `<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Impressão Financeiro</title>
+    <style>
+      @page { size: 80mm auto; margin: 4mm; }
+      html, body { margin: 0; padding: 0; background: #fff; color: #000; }
+      body { font-family: "Courier New", Courier, monospace; }
+      .receipt { width: 72mm; margin: 0 auto; padding: 0; white-space: pre-wrap; font-size: 11px; line-height: 1.35; }
+    </style>
+  </head>
+  <body>
+    <pre class="receipt">${escapeHtml(receiptLines.join("\n"))}</pre>
+    <script>
+      window.addEventListener("load", () => {
+        setTimeout(() => {
+          window.focus();
+          window.print();
+        }, 180);
+      });
+      window.addEventListener("afterprint", () => window.close());
+    </script>
+  </body>
+</html>`;
+}
+
+function buildReceiptLines(transactions, accountName, printedAt) {
+  const width = 40;
+  const lines = [
+    centerReceiptText("FINANCEIRO", width),
+    centerReceiptText("COMPROVANTE", width),
+    "-".repeat(width),
+    ...wrapReceiptText(`Conta: ${accountName}`, width),
+    ...wrapReceiptText(`Impresso: ${formatPrintDateTime(printedAt)}`, width),
+    "-".repeat(width)
+  ];
+
+  transactions.forEach((transaction, index) => {
+    const title = String(transaction.title || transaction.category || "Sem título").trim();
+    const typeLabel = transaction.type === "income" ? "Receita" : "Despesa";
+    const launchDate = formatDateInputValue(transaction.dateMillis || Date.now());
+    const dueDate =
+      Number.isFinite(Number(transaction.cardPaymentDateMillis)) && Number(transaction.cardPaymentDateMillis) > 0
+        ? formatDateInputValue(Number(transaction.cardPaymentDateMillis))
+        : "";
+
+    lines.push(...wrapReceiptText(`${index + 1}. ${title}`, width));
+    lines.push(...wrapReceiptText(`Categoria: ${transaction.category || "Sem categoria"}`, width));
+    lines.push(...wrapReceiptText(`Tipo: ${typeLabel}`, width));
+    lines.push(...wrapReceiptText(`Pagamento: ${transaction.paymentMethod || "Dinheiro"}`, width));
+    lines.push(...wrapReceiptText(`Lançamento: ${launchDate}`, width));
+    if (dueDate) {
+      lines.push(...wrapReceiptText(`Vencimento: ${dueDate}`, width));
+    }
+    lines.push(...wrapReceiptText(`Valor: ${currency.format(Number(transaction.amount || 0))}`, width));
+    lines.push("-".repeat(width));
+  });
+
+  const total = transactions.reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0);
+  lines.push(...wrapReceiptText(`Qtd. lançamentos: ${transactions.length}`, width));
+  lines.push(...wrapReceiptText(`Total: ${currency.format(total)}`, width));
+  lines.push("-".repeat(width));
+  lines.push(centerReceiptText("Desejamos boas vendas", width));
+
+  return lines;
+}
+
+function centerReceiptText(text, width = 40) {
+  const value = String(text || "").trim();
+  if (value.length >= width) return value;
+  const padding = Math.floor((width - value.length) / 2);
+  return `${" ".repeat(padding)}${value}`;
+}
+
+function wrapReceiptText(text, width = 40) {
+  const normalized = String(text || "").replace(/\s+/g, " ").trim();
+  if (!normalized) return [""];
+
+  const words = normalized.split(" ");
+  const lines = [];
+  let currentLine = "";
+
+  words.forEach((word) => {
+    const nextLine = currentLine ? `${currentLine} ${word}` : word;
+    if (nextLine.length > width && currentLine) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = nextLine;
+    }
+  });
+
+  if (currentLine) lines.push(currentLine);
+  return lines;
+}
+
+function formatPrintDateTime(date) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short"
+  }).format(date);
 }
 
 async function saveState() {

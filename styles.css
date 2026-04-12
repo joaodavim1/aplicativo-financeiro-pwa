@@ -468,6 +468,37 @@ textarea::placeholder {
   box-shadow: 0 18px 40px rgba(17, 39, 32, 0.24);
 }
 
+.app-toast__message {
+  line-height: 1.4;
+}
+
+.app-toast__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.app-toast__button {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 800;
+  cursor: pointer;
+  min-width: 110px;
+}
+
+.app-toast__button--primary {
+  background: #ffffff;
+  color: var(--primary);
+}
+
+.app-toast__button--secondary {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+}
+
 .card {
   padding: 22px;
 }
