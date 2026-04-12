@@ -740,7 +740,7 @@ function getExtratoTransactionsBase() {
 function renderExtratoList() {
   const filtered = getHistoryFilteredTransactions();
   const total = filtered.reduce(
-    (accumulator, transaction) => accumulator + (transaction.type === "income" ? transaction.amount : -transaction.amount),
+    (accumulator, transaction) => accumulator + (resolveTransactionType(transaction) === "income" ? transaction.amount : -transaction.amount),
     0
   );
 
@@ -760,10 +760,10 @@ function renderExtratoList() {
 function renderExtratoSummary() {
   const filtered = getHistoryDateRangeTransactions();
   const income = filtered
-    .filter((transaction) => transaction.type === "income")
+    .filter((transaction) => resolveTransactionType(transaction) === "income")
     .reduce((accumulator, transaction) => accumulator + transaction.amount, 0);
   const expense = filtered
-    .filter((transaction) => transaction.type === "expense")
+    .filter((transaction) => resolveTransactionType(transaction) === "expense")
     .reduce((accumulator, transaction) => accumulator + transaction.amount, 0);
   const balance = income - expense;
 
@@ -819,7 +819,7 @@ function renderBudgets() {
 function renderTransactions() {
   const filtered = currentState.transactions.filter((transaction) => {
     if (currentFilter === "all") return true;
-    return transaction.type === currentFilter;
+    return resolveTransactionType(transaction) === currentFilter;
   }).sort(compareLaunchDateNewestFirst);
 
   if (filtered.length === 0) {
@@ -1238,7 +1238,7 @@ function renderPaymentConfigText(method) {
 
 function totalsByCategoryForFilters(type) {
   return getHistoryFilteredTransactions()
-    .filter((item) => item.type === type)
+    .filter((item) => resolveTransactionType(item) === type)
     .reduce((accumulator, transaction) => {
       accumulator[transaction.category] = (accumulator[transaction.category] || 0) + transaction.amount;
       return accumulator;
@@ -1247,7 +1247,7 @@ function totalsByCategoryForFilters(type) {
 
 function countsByCategoryForFilters(type) {
   return getHistoryFilteredTransactions()
-    .filter((item) => item.type === type)
+    .filter((item) => resolveTransactionType(item) === type)
     .reduce((accumulator, transaction) => {
       accumulator[transaction.category] = (accumulator[transaction.category] || 0) + 1;
       return accumulator;
@@ -1292,7 +1292,7 @@ function getCurrentHistoryUiFilters() {
 
 function sumByType(type) {
   return currentState.transactions
-    .filter((transaction) => transaction.type === type)
+    .filter((transaction) => resolveTransactionType(transaction) === type)
     .reduce((total, transaction) => total + transaction.amount, 0);
 }
 
@@ -1662,7 +1662,7 @@ function getHistoryFilteredTransactions() {
   const activeFilters = getCurrentHistoryUiFilters();
   return getExtratoTransactionsBase().filter((transaction) => {
     const effectiveDateMillis = resolveFutureDateMillis(transaction);
-    if (activeFilters.type !== "all" && transaction.type !== activeFilters.type) {
+    if (activeFilters.type !== "all" && resolveTransactionType(transaction) !== activeFilters.type) {
       return false;
     }
     if (activeFilters.category && transaction.category !== activeFilters.category) {
@@ -1711,7 +1711,7 @@ function deriveHistoryCategoryOptions(type) {
   const filteredType = type === "all" ? null : type;
   return uniqueCaseInsensitive(
     getExtratoTransactionsBase()
-      .filter((transaction) => !filteredType || transaction.type === filteredType)
+      .filter((transaction) => !filteredType || resolveTransactionType(transaction) === filteredType)
       .map((transaction) => transaction.category)
   );
 }
@@ -1723,7 +1723,8 @@ function deriveHistoryPaymentOptions() {
 }
 
 function renderTransactionItem(transaction) {
-  const sign = transaction.type === "income" ? "+" : "-";
+  const resolvedType = resolveTransactionType(transaction);
+  const sign = resolvedType === "income" ? "+" : "-";
   const transactionStatus = resolveTransactionStatus(transaction);
   const amountText = `${sign} ${currency.format(transaction.amount)}`;
   const effectiveDateMillis = resolveFutureDateMillis(transaction);
@@ -1758,7 +1759,7 @@ function renderTransactionItem(transaction) {
         <div class="transaction-status">Status: ${escapeHtml(transactionStatus)}</div>
       </div>
       <div class="transaction-side">
-        <div class="transaction-amount ${transaction.type}">
+        <div class="transaction-amount ${resolvedType}">
           ${amountText}
         </div>
         <div class="transaction-item-actions">
@@ -2624,6 +2625,28 @@ function normalizeTransactionType(rawType) {
   }
 
   return "expense";
+}
+
+function resolveTransactionType(transaction) {
+  const normalizedType = normalizeTransactionType(transaction?.type);
+  const category = String(transaction?.category || "").trim().toLowerCase();
+
+  if (!category) return normalizedType;
+
+  const incomeCategories = (currentState?.catalog?.incomeCategories || []).map((item) =>
+    String(item || "").trim().toLowerCase()
+  );
+  const expenseCategories = (currentState?.catalog?.expenseCategories || []).map((item) =>
+    String(item || "").trim().toLowerCase()
+  );
+
+  const isIncomeCategory = incomeCategories.includes(category);
+  const isExpenseCategory = expenseCategories.includes(category);
+
+  if (isIncomeCategory && !isExpenseCategory) return "income";
+  if (isExpenseCategory && !isIncomeCategory) return "expense";
+
+  return normalizedType;
 }
 
 function sanitizeGoal(goal) {
