@@ -1642,6 +1642,8 @@ function syncHistoryFilterInputs() {
 }
 
 function getHistoryFilteredTransactions() {
+  const startDate = nodes.historyStartDate?.value || currentHistoryFilters.startDate;
+  const endDate = nodes.historyEndDate?.value || currentHistoryFilters.endDate;
   return getExtratoTransactionsBase().filter((transaction) => {
     const effectiveDateMillis = resolveFutureDateMillis(transaction);
     if (currentHistoryFilters.type !== "all" && transaction.type !== currentHistoryFilters.type) {
@@ -1653,14 +1655,14 @@ function getHistoryFilteredTransactions() {
     if (currentHistoryFilters.payment && transaction.paymentMethod !== currentHistoryFilters.payment) {
       return false;
     }
-    if (currentHistoryFilters.startDate) {
-      const startMillis = toStartOfDayMillis(currentHistoryFilters.startDate);
+    if (startDate) {
+      const startMillis = toStartOfDayMillis(startDate);
       if (effectiveDateMillis < startMillis) {
         return false;
       }
     }
-    if (currentHistoryFilters.endDate) {
-      const endMillis = toEndOfDayMillis(currentHistoryFilters.endDate);
+    if (endDate) {
+      const endMillis = toEndOfDayMillis(endDate);
       if (effectiveDateMillis > endMillis) {
         return false;
       }
@@ -1670,16 +1672,18 @@ function getHistoryFilteredTransactions() {
 }
 
 function getHistoryDateRangeTransactions() {
+  const startDate = nodes.historyStartDate?.value || currentHistoryFilters.startDate;
+  const endDate = nodes.historyEndDate?.value || currentHistoryFilters.endDate;
   return getExtratoTransactionsBase().filter((transaction) => {
     const effectiveDateMillis = resolveFutureDateMillis(transaction);
-    if (currentHistoryFilters.startDate) {
-      const startMillis = toStartOfDayMillis(currentHistoryFilters.startDate);
+    if (startDate) {
+      const startMillis = toStartOfDayMillis(startDate);
       if (effectiveDateMillis < startMillis) {
         return false;
       }
     }
-    if (currentHistoryFilters.endDate) {
-      const endMillis = toEndOfDayMillis(currentHistoryFilters.endDate);
+    if (endDate) {
+      const endMillis = toEndOfDayMillis(endDate);
       if (effectiveDateMillis > endMillis) {
         return false;
       }
