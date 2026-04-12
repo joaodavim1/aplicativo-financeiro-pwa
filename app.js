@@ -53,6 +53,7 @@ let appToastTimer = null;
 let appToastActionCleanup = null;
 let remotePrintWatchTimer = null;
 let knownPrintedTransactionIds = new Set();
+let pendingMultiLaunchCategoryFocus = null;
 let currentHistoryFilters = {
   startDate: "",
   endDate: "",
@@ -432,10 +433,8 @@ function computeMultiLaunchTotal() {
 }
 
 function renderMultiLaunchRow(row, index, categoryOptions) {
-  const datalistId = `multi-launch-category-list-${row.id}`;
-  const options = categoryOptions
-    .map((option) => `<option value="${escapeAttribute(option)}"></option>`)
-    .join("");
+  const suggestions = getMultiLaunchCategorySuggestions(row.category, categoryOptions);
+  const hasSuggestions = String(row.category || "").trim() && suggestions.length > 0;
 
   return `
     <article class="multi-launch-entry-card">
@@ -473,18 +472,31 @@ function renderMultiLaunchRow(row, index, categoryOptions) {
         <input
           data-multi-row-id="${row.id}"
           data-multi-field="category"
+          data-multi-category-search="true"
           type="text"
           inputmode="text"
           placeholder="Categoria"
           autocomplete="off"
           autocapitalize="words"
           enterkeyhint="done"
-          list="${datalistId}"
           value="${escapeAttribute(row.category || "")}"
         />
-        <datalist id="${datalistId}">
-          ${options}
-        </datalist>
+        ${hasSuggestions ? `
+          <div class="multi-launch-category-suggestions" role="listbox" aria-label="Categorias encontradas">
+            ${suggestions
+              .map((option) => `
+                <button
+                  class="multi-launch-category-option"
+                  data-multi-category-option="${escapeAttribute(option)}"
+                  data-multi-row-id="${row.id}"
+                  type="button"
+                >
+                  ${escapeHtml(option)}
+                </button>
+              `)
+              .join("")}
+          </div>
+        ` : ""}
       </label>
       ${multiLaunchRows.length > 1 ? `
         <button
@@ -503,6 +515,58 @@ function deriveMultiLaunchCategoryOptions() {
   return multiLaunchType === "income"
     ? deriveCategoryOptions("income")
     : deriveCategoryOptions("expense");
+}
+
+function normalizeSearchText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function getMultiLaunchCategorySuggestions(query, categoryOptions) {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return [];
+
+  return categoryOptions
+    .filter((option) => normalizeSearchText(option).startsWith(normalizedQuery))
+    .slice(0, 8);
+}
+
+function applyMultiLaunchCategorySelection(row, categoryValue) {
+  row.category = categoryValue;
+  const defaultAmount = getMultiLaunchCategoryDefaultAmount(categoryValue);
+  if ((String(row.amount || "").trim() === "" || row.autoAmountFromCategory) && Number.isFinite(Number(defaultAmount))) {
+    row.amount = String(formatMultiLaunchAmount(Number(defaultAmount)));
+  }
+  row.autoAmountFromCategory = Number.isFinite(Number(defaultAmount));
+  row.categoryUnitAmount = Number.isFinite(Number(defaultAmount)) ? Number(defaultAmount) : null;
+}
+
+function focusMultiLaunchCategoryField(rowId, selectionStart = null, selectionEnd = null) {
+  window.requestAnimationFrame(() => {
+    const input = nodes.multiLaunchRows?.querySelector(
+      `[data-multi-row-id="${rowId}"][data-multi-field="category"]`
+    );
+    if (!input || typeof input.focus !== "function") return;
+
+    input.focus({ preventScroll: true });
+
+    if (
+      typeof selectionStart === "number" &&
+      typeof selectionEnd === "number" &&
+      typeof input.setSelectionRange === "function"
+    ) {
+      input.setSelectionRange(selectionStart, selectionEnd);
+      return;
+    }
+
+    const end = String(input.value || "").length;
+    if (typeof input.setSelectionRange === "function") {
+      input.setSelectionRange(end, end);
+    }
+  });
 }
 
 function handleMultiLaunchTypeToggleClick(event) {
@@ -527,31 +591,50 @@ function handleMultiLaunchRowsInput(event) {
   } else if (field.dataset.multiField === "quantity") {
     row.quantity = field.value;
   } else if (field.dataset.multiField === "category") {
-    row.category = field.value;
-    const defaultAmount = getMultiLaunchCategoryDefaultAmount(field.value);
-    if ((String(row.amount || "").trim() === "" || row.autoAmountFromCategory) && Number.isFinite(Number(defaultAmount))) {
-      row.amount = String(formatMultiLaunchAmount(Number(defaultAmount)));
-    }
-    row.autoAmountFromCategory = Number.isFinite(Number(defaultAmount));
-    row.categoryUnitAmount = Number.isFinite(Number(defaultAmount)) ? Number(defaultAmount) : null;
+    applyMultiLaunchCategorySelection(row, field.value);
+    pendingMultiLaunchCategoryFocus = {
+      rowId,
+      selectionStart: typeof field.selectionStart === "number" ? field.selectionStart : null,
+      selectionEnd: typeof field.selectionEnd === "number" ? field.selectionEnd : null
+    };
     shouldRerender = true;
   }
 
   if (shouldRerender) {
     renderMultiLaunchScreen();
+    if (pendingMultiLaunchCategoryFocus) {
+      focusMultiLaunchCategoryField(
+        pendingMultiLaunchCategoryFocus.rowId,
+        pendingMultiLaunchCategoryFocus.selectionStart,
+        pendingMultiLaunchCategoryFocus.selectionEnd
+      );
+      pendingMultiLaunchCategoryFocus = null;
+    }
   }
 }
 
 function handleMultiLaunchRowsClick(event) {
   const removeButton = event.target.closest("[data-multi-remove-row-id]");
-  if (!removeButton) return;
-
-  const rowId = Number(removeButton.dataset.multiRemoveRowId);
-  multiLaunchRows = multiLaunchRows.filter((row) => row.id !== rowId);
-  if (!multiLaunchRows.length) {
-    multiLaunchRows = [createMultiLaunchRow()];
+  if (removeButton) {
+    const rowId = Number(removeButton.dataset.multiRemoveRowId);
+    multiLaunchRows = multiLaunchRows.filter((row) => row.id !== rowId);
+    if (!multiLaunchRows.length) {
+      multiLaunchRows = [createMultiLaunchRow()];
+    }
+    renderMultiLaunchScreen();
+    return;
   }
+
+  const categoryOptionButton = event.target.closest("[data-multi-category-option][data-multi-row-id]");
+  if (!categoryOptionButton) return;
+
+  const rowId = Number(categoryOptionButton.dataset.multiRowId);
+  const row = multiLaunchRows.find((item) => item.id === rowId);
+  if (!row) return;
+
+  applyMultiLaunchCategorySelection(row, categoryOptionButton.dataset.multiCategoryOption || "");
   renderMultiLaunchScreen();
+  focusMultiLaunchCategoryField(rowId);
 }
 
 function handleAddMultiLaunchRow() {
