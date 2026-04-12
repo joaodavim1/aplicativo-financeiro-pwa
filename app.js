@@ -685,7 +685,7 @@ function renderCategoryBarsByType({ node, type, emptyMessage, fallbackColor }) {
 function renderHistoryFilterOptions() {
   syncHistoryFilterInputs();
 
-  const type = nodes.historyTypeFilter?.value || "all";
+  const type = currentHistoryFilters.type || nodes.historyTypeFilter?.value || "all";
   const categoryOptions = deriveHistoryCategoryOptions(type);
   const paymentOptions = deriveHistoryPaymentOptions();
   const previousCategory = currentHistoryFilters.category;
@@ -695,11 +695,16 @@ function renderHistoryFilterOptions() {
   nodes.historyCategoryGroup?.classList.toggle("hidden", !showDetailedFilters);
   nodes.historyPaymentGroup?.classList.toggle("hidden", !showDetailedFilters);
 
+  if (!showDetailedFilters) {
+    currentHistoryFilters.category = "";
+    currentHistoryFilters.payment = "";
+  }
+
   if (nodes.historyCategoryFilter) {
     nodes.historyCategoryFilter.innerHTML = ['<option value="">Todas</option>']
       .concat(categoryOptions.map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`))
       .join("");
-    nodes.historyCategoryFilter.value = categoryOptions.includes(previousCategory) ? previousCategory : "";
+    nodes.historyCategoryFilter.value = showDetailedFilters && categoryOptions.includes(previousCategory) ? previousCategory : "";
     currentHistoryFilters.category = nodes.historyCategoryFilter.value;
   }
 
@@ -707,7 +712,7 @@ function renderHistoryFilterOptions() {
     nodes.historyPaymentFilter.innerHTML = ['<option value="">Todos</option>']
       .concat(paymentOptions.map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`))
       .join("");
-    nodes.historyPaymentFilter.value = paymentOptions.includes(previousPayment) ? previousPayment : "";
+    nodes.historyPaymentFilter.value = showDetailedFilters && paymentOptions.includes(previousPayment) ? previousPayment : "";
     currentHistoryFilters.payment = nodes.historyPaymentFilter.value;
   }
 }
@@ -1242,12 +1247,13 @@ function sumByType(type) {
 }
 
 function handleHistoryFilterChange() {
+  const nextType = currentHistoryFilters.type || nodes.historyTypeFilter?.value || "all";
   currentHistoryFilters = {
     startDate: nodes.historyStartDate?.value || "",
     endDate: nodes.historyEndDate?.value || "",
-    type: nodes.historyTypeFilter?.value || "all",
-    category: nodes.historyCategoryFilter?.value || "",
-    payment: nodes.historyPaymentFilter?.value || ""
+    type: nextType,
+    category: nextType === "all" ? "" : (nodes.historyCategoryFilter?.value || ""),
+    payment: nextType === "all" ? "" : (nodes.historyPaymentFilter?.value || "")
   };
 
   renderHistoryFilterOptions();
