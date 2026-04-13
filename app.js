@@ -50,6 +50,7 @@ let activeScreen = "EXTRATO";
 let isCategoryManagerOpen = false;
 let isPaymentManagerOpen = false;
 let appToastTimer = null;
+let categorySuggestionsHideTimer = null;
 let appToastActionCleanup = null;
 let remotePrintWatchTimer = null;
 let knownPrintedTransactionIds = new Set();
@@ -250,6 +251,10 @@ function bindEvents() {
   nodes.settingsIncomeCategoriesList?.addEventListener("click", handleCatalogListClick);
   nodes.settingsPaymentMethodsList?.addEventListener("click", handleCatalogListClick);
   nodes.screenTabs.addEventListener("click", handleScreenTabClick);
+  nodes.categoryInput?.addEventListener("focus", handleCategoryInputFocus);
+  nodes.categoryInput?.addEventListener("input", handleCategoryInputInput);
+  nodes.categoryInput?.addEventListener("blur", handleCategoryInputBlur);
+  nodes.categorySuggestions?.addEventListener("click", handleCategorySuggestionsClick);
   nodes.incomeCategoryBars?.addEventListener("click", handleCategoryBarClick);
   nodes.expenseCategoryBars?.addEventListener("click", handleCategoryBarClick);
   nodes.multiLaunchTypeToggle?.addEventListener("click", handleMultiLaunchTypeToggleClick);
@@ -972,9 +977,51 @@ function renderCategoryOptions() {
 
 function renderSingleCategorySuggestions() {
   if (!nodes.categorySuggestions) return;
-  nodes.categorySuggestions.innerHTML = currentCategoryOptions
-    .map((option) => `<option value="${escapeAttribute(option)}"></option>`)
+  const query = nodes.categoryInput?.value?.trim() || "";
+  const filtered = query
+    ? currentCategoryOptions.filter((opt) => opt.toLowerCase().startsWith(query.toLowerCase()))
+    : currentCategoryOptions;
+
+  if (filtered.length === 0) {
+    nodes.categorySuggestions.innerHTML = "";
+    nodes.categorySuggestions.classList.add("hidden");
+    return;
+  }
+
+  nodes.categorySuggestions.innerHTML = filtered
+    .map((option) => `<button class="category-suggestion-option" data-category-option="${escapeAttribute(option)}" type="button">${escapeHtml(option)}</button>`)
     .join("");
+  nodes.categorySuggestions.classList.remove("hidden");
+}
+
+function handleCategoryInputFocus() {
+  clearTimeout(categorySuggestionsHideTimer);
+  renderSingleCategorySuggestions();
+}
+
+function handleCategoryInputInput() {
+  clearTimeout(categorySuggestionsHideTimer);
+  renderSingleCategorySuggestions();
+}
+
+function handleCategoryInputBlur() {
+  categorySuggestionsHideTimer = setTimeout(() => {
+    if (nodes.categorySuggestions) {
+      nodes.categorySuggestions.innerHTML = "";
+      nodes.categorySuggestions.classList.add("hidden");
+    }
+  }, 200);
+}
+
+function handleCategorySuggestionsClick(event) {
+  clearTimeout(categorySuggestionsHideTimer);
+  const button = event.target.closest("[data-category-option]");
+  if (!button) return;
+  if (nodes.categoryInput) nodes.categoryInput.value = button.dataset.categoryOption;
+  if (nodes.categorySuggestions) {
+    nodes.categorySuggestions.innerHTML = "";
+    nodes.categorySuggestions.classList.add("hidden");
+  }
 }
 
 function handleTypeToggleClick(event) {

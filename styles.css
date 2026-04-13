@@ -1541,6 +1541,30 @@ body[data-theme="dark"] .menu-dark {
   background: var(--surface-soft);
 }
 
+.category-suggestions {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.category-suggestion-option {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--field-border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: inherit;
+}
+
+.category-suggestion-option:hover,
+.category-suggestion-option:active {
+  background: var(--surface-soft);
+}
+
 .multi-launch-money-field .multi-launch-field-legend {
   display: none;
 }
