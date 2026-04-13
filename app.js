@@ -53,6 +53,8 @@ let appToastTimer = null;
 let categorySuggestionsHideTimer = null;
 let isTouchingCategorySuggestions = false;
 let isTouchingMultiSuggestions = false;
+let suggestionTouchStartY = null;
+let suggestionTouchIsScroll = false;
 let appToastActionCleanup = null;
 let remotePrintWatchTimer = null;
 let knownPrintedTransactionIds = new Set();
@@ -256,9 +258,10 @@ function bindEvents() {
   nodes.categoryInput?.addEventListener("focus", handleCategoryInputFocus);
   nodes.categoryInput?.addEventListener("input", handleCategoryInputInput);
   nodes.categoryInput?.addEventListener("blur", handleCategoryInputBlur);
-  nodes.categorySuggestions?.addEventListener("touchstart", () => { isTouchingCategorySuggestions = true; }, { passive: true });
+  nodes.categorySuggestions?.addEventListener("touchstart", handleSuggestionsTouchStart, { passive: true });
+  nodes.categorySuggestions?.addEventListener("touchmove", handleSuggestionsTouchMove, { passive: true });
   nodes.categorySuggestions?.addEventListener("touchend", handleCategorySuggestionsClick, { passive: false });
-  nodes.categorySuggestions?.addEventListener("touchcancel", () => { isTouchingCategorySuggestions = false; }, { passive: true });
+  nodes.categorySuggestions?.addEventListener("touchcancel", handleSuggestionsTouchCancel, { passive: true });
   nodes.categorySuggestions?.addEventListener("click", handleCategorySuggestionsClick);
   nodes.incomeCategoryBars?.addEventListener("click", handleCategoryBarClick);
   nodes.expenseCategoryBars?.addEventListener("click", handleCategoryBarClick);
@@ -266,7 +269,8 @@ function bindEvents() {
   nodes.multiLaunchRows?.addEventListener("click", handleMultiLaunchRowsClick);
   nodes.multiLaunchRows?.addEventListener("touchend", handleMultiLaunchRowsClick, { passive: false });
   nodes.multiLaunchRows?.addEventListener("touchstart", handleMultiLaunchSuggestionsTouchStart, { passive: true });
-  nodes.multiLaunchRows?.addEventListener("touchcancel", () => { isTouchingMultiSuggestions = false; }, { passive: true });
+  nodes.multiLaunchRows?.addEventListener("touchmove", handleSuggestionsTouchMove, { passive: true });
+  nodes.multiLaunchRows?.addEventListener("touchcancel", handleSuggestionsTouchCancel, { passive: true });
   nodes.multiLaunchRows?.addEventListener("input", handleMultiLaunchRowsInput);
   nodes.multiLaunchRows?.addEventListener("change", handleMultiLaunchRowsInput);
   nodes.multiLaunchRows?.addEventListener("focus", handleMultiLaunchRowsFocus, true);
@@ -623,10 +627,31 @@ function renderMultiLaunchCategorySuggestions(rowId, query, keepOpen = false) {
 
 let multiLaunchCategoryBlurTimers = {};
 
+function handleSuggestionsTouchStart(event) {
+  isTouchingCategorySuggestions = true;
+  suggestionTouchStartY = event.touches[0]?.clientY ?? null;
+  suggestionTouchIsScroll = false;
+}
+
+function handleSuggestionsTouchMove(event) {
+  if (suggestionTouchStartY === null) return;
+  const dy = Math.abs((event.touches[0]?.clientY ?? 0) - suggestionTouchStartY);
+  if (dy > 8) suggestionTouchIsScroll = true;
+}
+
+function handleSuggestionsTouchCancel() {
+  isTouchingCategorySuggestions = false;
+  isTouchingMultiSuggestions = false;
+  suggestionTouchStartY = null;
+  suggestionTouchIsScroll = false;
+}
+
 function handleMultiLaunchSuggestionsTouchStart(event) {
   if (event.target.closest("[data-multi-category-option][data-multi-row-id]")) {
     isTouchingMultiSuggestions = true;
   }
+  suggestionTouchStartY = event.touches[0]?.clientY ?? null;
+  suggestionTouchIsScroll = false;
 }
 
 function handleMultiLaunchRowsFocus(event) {
@@ -696,6 +721,14 @@ function handleMultiLaunchRowsClick(event) {
 
   const categoryOptionButton = event.target.closest("[data-multi-category-option][data-multi-row-id]");
   if (!categoryOptionButton) return;
+
+  // Se foi scroll, ignora — não seleciona
+  if (suggestionTouchIsScroll) {
+    suggestionTouchIsScroll = false;
+    suggestionTouchStartY = null;
+    return;
+  }
+  suggestionTouchStartY = null;
   event.preventDefault();
 
   const rowId = Number(categoryOptionButton.dataset.multiRowId);
@@ -1072,6 +1105,13 @@ function handleCategoryInputBlur() {
 }
 
 function handleCategorySuggestionsClick(event) {
+  // Se foi scroll, ignora — não seleciona
+  if (suggestionTouchIsScroll) {
+    suggestionTouchIsScroll = false;
+    suggestionTouchStartY = null;
+    return;
+  }
+  suggestionTouchStartY = null;
   const button = event.target.closest("[data-category-option]");
   isTouchingCategorySuggestions = false;
   if (!button) return;
