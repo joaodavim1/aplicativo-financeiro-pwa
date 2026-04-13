@@ -255,10 +255,12 @@ function bindEvents() {
   nodes.categoryInput?.addEventListener("input", handleCategoryInputInput);
   nodes.categoryInput?.addEventListener("blur", handleCategoryInputBlur);
   nodes.categorySuggestions?.addEventListener("click", handleCategorySuggestionsClick);
+  nodes.categorySuggestions?.addEventListener("touchend", handleCategorySuggestionsClick, { passive: false });
   nodes.incomeCategoryBars?.addEventListener("click", handleCategoryBarClick);
   nodes.expenseCategoryBars?.addEventListener("click", handleCategoryBarClick);
   nodes.multiLaunchTypeToggle?.addEventListener("click", handleMultiLaunchTypeToggleClick);
   nodes.multiLaunchRows?.addEventListener("click", handleMultiLaunchRowsClick);
+  nodes.multiLaunchRows?.addEventListener("touchend", handleMultiLaunchRowsClick, { passive: false });
   nodes.multiLaunchRows?.addEventListener("input", handleMultiLaunchRowsInput);
   nodes.multiLaunchRows?.addEventListener("change", handleMultiLaunchRowsInput);
   nodes.multiLaunchRows?.addEventListener("focus", handleMultiLaunchRowsFocus, true);
@@ -668,6 +670,9 @@ function handleMultiLaunchRowsInput(event) {
 }
 
 function handleMultiLaunchRowsClick(event) {
+  const categoryOptionButton = event.target.closest("[data-multi-category-option][data-multi-row-id]");
+  if (categoryOptionButton) event.preventDefault();
+
   const removeButton = event.target.closest("[data-multi-remove-row-id]");
   if (removeButton) {
     const rowId = Number(removeButton.dataset.multiRemoveRowId);
@@ -1054,6 +1059,7 @@ function handleCategoryInputBlur() {
 }
 
 function handleCategorySuggestionsClick(event) {
+  event.preventDefault();
   clearTimeout(categorySuggestionsHideTimer);
   const button = event.target.closest("[data-category-option]");
   if (!button) return;
