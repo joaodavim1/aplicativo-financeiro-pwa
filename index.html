@@ -259,10 +259,11 @@
                     inputmode="text"
                     autocomplete="off"
                     autocapitalize="words"
-                    placeholder="Digite para buscar"
+                    placeholder="Toque para selecionar"
+                    list="categorySuggestions"
                     required
                   />
-                  <div id="categorySuggestions" class="multi-launch-category-suggestions hidden" role="listbox" aria-label="Categorias"></div>
+                  <datalist id="categorySuggestions"></datalist>
                   <button id="manageCategoryToggleButton" class="field-link-button" type="button">Gerenciar categorias de despesa</button>
                 </label>
 
@@ -606,9 +607,9 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260412ah"></script>
+    <script src="./supabase-config.js?v=20260412ai"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js"></script>
-    <script type="module" src="./auth.js?v=20260412ah"></script>
+    <script type="module" src="./auth.js?v=20260412ai"></script>
   </body>
 </html>

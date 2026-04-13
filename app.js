@@ -240,10 +240,6 @@ function bindEvents() {
   nodes.transactionForm.addEventListener("submit", handleSubmit);
   nodes.typeToggle?.addEventListener("click", handleTypeToggleClick);
   nodes.manageCategoryToggleButton?.addEventListener("click", toggleCategoryManager);
-  nodes.categoryInput?.addEventListener("input", handleCategoryInputChange);
-  nodes.categoryInput?.addEventListener("focus", handleCategoryInputFocus);
-  nodes.categoryInput?.addEventListener("blur", handleCategoryInputBlur);
-  nodes.categorySuggestions?.addEventListener("click", handleCategorySuggestionsClick);
   nodes.managePaymentToggleButton?.addEventListener("click", togglePaymentManager);
   nodes.addExpenseCategoryButton?.addEventListener("click", () => handleAddCatalogItem("expense"));
   nodes.addIncomeCategoryButton?.addEventListener("click", () => handleAddCatalogItem("income"));
@@ -971,59 +967,14 @@ function renderCategoryOptions() {
   if (!options.includes(previousValue)) {
     nodes.categoryInput.value = options[0] || "";
   }
-  renderSingleCategorySuggestions("");
+  renderSingleCategorySuggestions();
 }
 
-function renderSingleCategorySuggestions(query, showAll = false) {
+function renderSingleCategorySuggestions() {
   if (!nodes.categorySuggestions) return;
-
-  const normalizedQuery = normalizeSearchText(query);
-  const filtered = normalizedQuery
-    ? currentCategoryOptions.filter((o) => normalizeSearchText(o).startsWith(normalizedQuery))
-    : showAll ? currentCategoryOptions : [];
-
-  if (filtered.length === 0) {
-    nodes.categorySuggestions.innerHTML = "";
-    nodes.categorySuggestions.classList.add("hidden");
-    return;
-  }
-
-  nodes.categorySuggestions.innerHTML = filtered
-    .slice(0, 12)
-    .map((option) => `
-      <button
-        class="multi-launch-category-option"
-        data-category-option="${escapeAttribute(option)}"
-        type="button"
-      >${escapeHtml(option)}</button>
-    `)
+  nodes.categorySuggestions.innerHTML = currentCategoryOptions
+    .map((option) => `<option value="${escapeAttribute(option)}"></option>`)
     .join("");
-  nodes.categorySuggestions.classList.remove("hidden");
-}
-
-function handleCategoryInputChange() {
-  renderSingleCategorySuggestions(nodes.categoryInput?.value || "", true);
-}
-
-function handleCategoryInputFocus() {
-  renderSingleCategorySuggestions(nodes.categoryInput?.value || "", true);
-}
-
-function handleCategorySuggestionsClick(event) {
-  const button = event.target.closest("[data-category-option]");
-  if (!button) return;
-  const value = button.dataset.categoryOption;
-  if (nodes.categoryInput) nodes.categoryInput.value = value;
-  nodes.categorySuggestions.innerHTML = "";
-  nodes.categorySuggestions.classList.add("hidden");
-}
-
-function handleCategoryInputBlur(event) {
-  if (nodes.categorySuggestions?.contains(event.relatedTarget)) return;
-  window.setTimeout(() => {
-    nodes.categorySuggestions.innerHTML = "";
-    nodes.categorySuggestions.classList.add("hidden");
-  }, 150);
 }
 
 function handleTypeToggleClick(event) {
