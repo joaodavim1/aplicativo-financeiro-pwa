@@ -254,7 +254,9 @@ function bindEvents() {
   nodes.categoryInput?.addEventListener("focus", handleCategoryInputFocus);
   nodes.categoryInput?.addEventListener("input", handleCategoryInputInput);
   nodes.categoryInput?.addEventListener("blur", handleCategoryInputBlur);
-  nodes.categorySuggestions?.addEventListener("touchstart", (e) => e.preventDefault(), { passive: false });
+  nodes.categorySuggestions?.addEventListener("touchstart", (e) => {
+    if (e.target.closest("[data-category-option]")) e.preventDefault();
+  }, { passive: false });
   nodes.categorySuggestions?.addEventListener("touchend", handleCategorySuggestionsClick, { passive: false });
   nodes.categorySuggestions?.addEventListener("click", handleCategorySuggestionsClick);
   nodes.incomeCategoryBars?.addEventListener("click", handleCategoryBarClick);

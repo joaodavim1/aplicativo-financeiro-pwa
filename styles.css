@@ -1545,24 +1545,7 @@ body[data-theme="dark"] .menu-dark {
   position: relative;
 }
 
-.category-suggestions {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  z-index: 200;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 6px;
-  background: var(--surface);
-  border: 1px solid var(--field-border);
-  border-radius: 14px;
-  max-height: 220px;
-  overflow-y: auto;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-}
-
+.category-suggestions,
 .multi-launch-category-suggestions {
   position: absolute;
   top: calc(100% + 4px);
@@ -1578,6 +1561,7 @@ body[data-theme="dark"] .menu-dark {
   border-radius: 14px;
   max-height: 220px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);
 }
 
