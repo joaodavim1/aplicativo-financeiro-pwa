@@ -1,8 +1,8 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260412af";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260412ag";
 
-const IOS_APP_VERSION = "Versão atual: 1.16";
-const IOS_SETTINGS_VERSION = "1.16";
-const IOS_BUILD_TOKEN = "20260412af";
+const IOS_APP_VERSION = "Versão atual: 1.17";
+const IOS_SETTINGS_VERSION = "1.17";
+const IOS_BUILD_TOKEN = "20260412ag";
 const BUILD_STORAGE_KEY = "financeiro-pwa-build-token";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;

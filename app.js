@@ -241,6 +241,8 @@ function bindEvents() {
   nodes.typeToggle?.addEventListener("click", handleTypeToggleClick);
   nodes.manageCategoryToggleButton?.addEventListener("click", toggleCategoryManager);
   nodes.categoryInput?.addEventListener("input", handleCategoryInputChange);
+  nodes.categoryInput?.addEventListener("focus", handleCategoryInputFocus);
+  nodes.categoryInput?.addEventListener("blur", handleCategoryInputBlur);
   nodes.categorySuggestions?.addEventListener("click", handleCategorySuggestionsClick);
   nodes.managePaymentToggleButton?.addEventListener("click", togglePaymentManager);
   nodes.addExpenseCategoryButton?.addEventListener("click", () => handleAddCatalogItem("expense"));
@@ -972,24 +974,22 @@ function renderCategoryOptions() {
   renderSingleCategorySuggestions("");
 }
 
-function renderSingleCategorySuggestions(query) {
+function renderSingleCategorySuggestions(query, showAll = false) {
   if (!nodes.categorySuggestions) return;
 
   const normalizedQuery = normalizeSearchText(query);
   const filtered = normalizedQuery
     ? currentCategoryOptions.filter((o) => normalizeSearchText(o).includes(normalizedQuery))
-    : [];
+    : showAll ? currentCategoryOptions : [];
 
-  const exactMatch = filtered.some((o) => normalizeSearchText(o) === normalizedQuery);
-
-  if (!normalizedQuery || filtered.length === 0 || exactMatch) {
+  if (filtered.length === 0) {
     nodes.categorySuggestions.innerHTML = "";
     nodes.categorySuggestions.classList.add("hidden");
     return;
   }
 
   nodes.categorySuggestions.innerHTML = filtered
-    .slice(0, 8)
+    .slice(0, 12)
     .map((option) => `
       <button
         class="multi-launch-category-option"
@@ -1002,7 +1002,11 @@ function renderSingleCategorySuggestions(query) {
 }
 
 function handleCategoryInputChange() {
-  renderSingleCategorySuggestions(nodes.categoryInput?.value || "");
+  renderSingleCategorySuggestions(nodes.categoryInput?.value || "", true);
+}
+
+function handleCategoryInputFocus() {
+  renderSingleCategorySuggestions(nodes.categoryInput?.value || "", true);
 }
 
 function handleCategorySuggestionsClick(event) {
@@ -1010,7 +1014,16 @@ function handleCategorySuggestionsClick(event) {
   if (!button) return;
   const value = button.dataset.categoryOption;
   if (nodes.categoryInput) nodes.categoryInput.value = value;
-  renderSingleCategorySuggestions("");
+  nodes.categorySuggestions.innerHTML = "";
+  nodes.categorySuggestions.classList.add("hidden");
+}
+
+function handleCategoryInputBlur(event) {
+  if (nodes.categorySuggestions?.contains(event.relatedTarget)) return;
+  window.setTimeout(() => {
+    nodes.categorySuggestions.innerHTML = "";
+    nodes.categorySuggestions.classList.add("hidden");
+  }, 150);
 }
 
 function handleTypeToggleClick(event) {
