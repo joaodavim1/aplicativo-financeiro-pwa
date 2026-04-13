@@ -261,6 +261,8 @@ function bindEvents() {
   nodes.multiLaunchRows?.addEventListener("click", handleMultiLaunchRowsClick);
   nodes.multiLaunchRows?.addEventListener("input", handleMultiLaunchRowsInput);
   nodes.multiLaunchRows?.addEventListener("change", handleMultiLaunchRowsInput);
+  nodes.multiLaunchRows?.addEventListener("focus", handleMultiLaunchRowsFocus, true);
+  nodes.multiLaunchRows?.addEventListener("blur", handleMultiLaunchRowsBlur, true);
   nodes.multiLaunchAddRowButton?.addEventListener("click", handleAddMultiLaunchRow);
   nodes.multiLaunchFinalizeButton?.addEventListener("click", handleToggleMultiLaunchFinalize);
   nodes.multiLaunchSaveButton?.addEventListener("click", handleSaveMultiLaunch);
@@ -573,13 +575,30 @@ function updateMultiLaunchAmountField(rowId, amount) {
   amountInput.value = amount;
 }
 
-function renderMultiLaunchCategorySuggestions(rowId, query) {
+function renderMultiLaunchCategorySuggestions(rowId, query, showAll = false) {
   const suggestionsNode = nodes.multiLaunchRows?.querySelector(
     `[data-multi-category-suggestions="${rowId}"]`
   );
   if (!suggestionsNode) return;
 
   const categoryOptions = deriveMultiLaunchCategoryOptions();
+
+  if (showAll) {
+    if (categoryOptions.length === 0) return;
+    suggestionsNode.innerHTML = categoryOptions
+      .map((option) => `
+        <button
+          class="multi-launch-category-option"
+          data-multi-category-option="${escapeAttribute(option)}"
+          data-multi-row-id="${rowId}"
+          type="button"
+        >${escapeHtml(option)}</button>
+      `)
+      .join("");
+    suggestionsNode.classList.remove("hidden");
+    return;
+  }
+
   const suggestions = getMultiLaunchCategorySuggestions(query, categoryOptions);
   const exactMatch = suggestions.some(
     (option) => normalizeSearchText(option) === normalizeSearchText(query)
@@ -604,6 +623,31 @@ function renderMultiLaunchCategorySuggestions(rowId, query) {
     `)
     .join("");
   suggestionsNode.classList.remove("hidden");
+}
+
+let multiLaunchCategoryBlurTimers = {};
+
+function handleMultiLaunchRowsFocus(event) {
+  const field = event.target.closest("[data-multi-row-id][data-multi-field='category']");
+  if (!field) return;
+  const rowId = Number(field.dataset.multiRowId);
+  clearTimeout(multiLaunchCategoryBlurTimers[rowId]);
+  renderMultiLaunchCategorySuggestions(rowId, field.value, true);
+}
+
+function handleMultiLaunchRowsBlur(event) {
+  const field = event.target.closest("[data-multi-row-id][data-multi-field='category']");
+  if (!field) return;
+  const rowId = Number(field.dataset.multiRowId);
+  multiLaunchCategoryBlurTimers[rowId] = setTimeout(() => {
+    const suggestionsNode = nodes.multiLaunchRows?.querySelector(
+      `[data-multi-category-suggestions="${rowId}"]`
+    );
+    if (suggestionsNode) {
+      suggestionsNode.innerHTML = "";
+      suggestionsNode.classList.add("hidden");
+    }
+  }, 250);
 }
 
 function handleMultiLaunchTypeToggleClick(event) {
@@ -654,6 +698,7 @@ function handleMultiLaunchRowsClick(event) {
   const row = multiLaunchRows.find((item) => item.id === rowId);
   if (!row) return;
 
+  clearTimeout(multiLaunchCategoryBlurTimers[rowId]);
   applyMultiLaunchCategorySelection(row, categoryOptionButton.dataset.multiCategoryOption || "");
   const categoryInput = nodes.multiLaunchRows?.querySelector(
     `[data-multi-row-id="${rowId}"][data-multi-field="category"]`
@@ -969,7 +1014,7 @@ function renderCategoryOptions() {
   const options = deriveCategoryOptions(type);
   currentCategoryOptions = options;
 
-  if (!options.includes(previousValue)) {
+  if (previousValue && !options.includes(previousValue)) {
     nodes.categoryInput.value = options[0] || "";
   }
   renderSingleCategorySuggestions();
