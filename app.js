@@ -54,6 +54,7 @@ let appToastActionCleanup = null;
 let remotePrintWatchTimer = null;
 let knownPrintedTransactionIds = new Set();
 let qzTrayActive = false;
+let currentCategoryOptions = [];
 let pendingMultiLaunchCategoryFocus = null;
 let currentHistoryFilters = {
   startDate: "",
@@ -122,6 +123,7 @@ const nodes = {
   userBadge: document.querySelector("#userBadge"),
   appToast: document.querySelector("#appToast"),
   categoryInput: document.querySelector("#categoryInput"),
+  categorySuggestions: document.querySelector("#categorySuggestions"),
   paymentMethodInput: document.querySelector("#paymentMethodInput"),
   manageCategoryToggleButton: document.querySelector("#manageCategoryToggleButton"),
   managePaymentToggleButton: document.querySelector("#managePaymentToggleButton"),
@@ -238,6 +240,8 @@ function bindEvents() {
   nodes.transactionForm.addEventListener("submit", handleSubmit);
   nodes.typeToggle?.addEventListener("click", handleTypeToggleClick);
   nodes.manageCategoryToggleButton?.addEventListener("click", toggleCategoryManager);
+  nodes.categoryInput?.addEventListener("input", handleCategoryInputChange);
+  nodes.categorySuggestions?.addEventListener("click", handleCategorySuggestionsClick);
   nodes.managePaymentToggleButton?.addEventListener("click", togglePaymentManager);
   nodes.addExpenseCategoryButton?.addEventListener("click", () => handleAddCatalogItem("expense"));
   nodes.addIncomeCategoryButton?.addEventListener("click", () => handleAddCatalogItem("income"));
@@ -960,14 +964,53 @@ function renderCategoryOptions() {
   const type = nodes.typeInput.value === "income" ? "income" : "expense";
   const previousValue = nodes.categoryInput.value;
   const options = deriveCategoryOptions(type);
+  currentCategoryOptions = options;
 
-  nodes.categoryInput.innerHTML = options
-    .map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`)
-    .join("");
-
-  if (options.includes(previousValue)) {
-    nodes.categoryInput.value = previousValue;
+  if (!options.includes(previousValue)) {
+    nodes.categoryInput.value = options[0] || "";
   }
+  renderSingleCategorySuggestions("");
+}
+
+function renderSingleCategorySuggestions(query) {
+  if (!nodes.categorySuggestions) return;
+
+  const normalizedQuery = normalizeSearchText(query);
+  const filtered = normalizedQuery
+    ? currentCategoryOptions.filter((o) => normalizeSearchText(o).includes(normalizedQuery))
+    : [];
+
+  const exactMatch = filtered.some((o) => normalizeSearchText(o) === normalizedQuery);
+
+  if (!normalizedQuery || filtered.length === 0 || exactMatch) {
+    nodes.categorySuggestions.innerHTML = "";
+    nodes.categorySuggestions.classList.add("hidden");
+    return;
+  }
+
+  nodes.categorySuggestions.innerHTML = filtered
+    .slice(0, 8)
+    .map((option) => `
+      <button
+        class="multi-launch-category-option"
+        data-category-option="${escapeAttribute(option)}"
+        type="button"
+      >${escapeHtml(option)}</button>
+    `)
+    .join("");
+  nodes.categorySuggestions.classList.remove("hidden");
+}
+
+function handleCategoryInputChange() {
+  renderSingleCategorySuggestions(nodes.categoryInput?.value || "");
+}
+
+function handleCategorySuggestionsClick(event) {
+  const button = event.target.closest("[data-category-option]");
+  if (!button) return;
+  const value = button.dataset.categoryOption;
+  if (nodes.categoryInput) nodes.categoryInput.value = value;
+  renderSingleCategorySuggestions("");
 }
 
 function handleTypeToggleClick(event) {

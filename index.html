@@ -252,14 +252,17 @@
 
                 <label>
                   <span>Categoria</span>
-                  <select id="categoryInput" name="category">
-                    <option value="Casa">Casa</option>
-                    <option value="Mercado">Mercado</option>
-                    <option value="Transporte">Transporte</option>
-                    <option value="Lazer">Lazer</option>
-                    <option value="Investimentos">Investimentos</option>
-                    <option value="Trabalho">Trabalho</option>
-                  </select>
+                  <input
+                    id="categoryInput"
+                    name="category"
+                    type="text"
+                    inputmode="text"
+                    autocomplete="off"
+                    autocapitalize="words"
+                    placeholder="Digite para buscar"
+                    required
+                  />
+                  <div id="categorySuggestions" class="multi-launch-category-suggestions hidden" role="listbox" aria-label="Categorias"></div>
                   <button id="manageCategoryToggleButton" class="field-link-button" type="button">Gerenciar categorias de despesa</button>
                 </label>
 
@@ -603,9 +606,9 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260412ae"></script>
+    <script src="./supabase-config.js?v=20260412af"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js"></script>
-    <script type="module" src="./auth.js?v=20260412ae"></script>
+    <script type="module" src="./auth.js?v=20260412af"></script>
   </body>
 </html>
