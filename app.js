@@ -577,54 +577,40 @@ function updateMultiLaunchAmountField(rowId, amount) {
   amountInput.value = amount;
 }
 
-function renderMultiLaunchCategorySuggestions(rowId, query, showAll = false) {
+function renderMultiLaunchCategorySuggestions(rowId, query, keepOpen = false) {
   const suggestionsNode = nodes.multiLaunchRows?.querySelector(
     `[data-multi-category-suggestions="${rowId}"]`
   );
   if (!suggestionsNode) return;
 
   const categoryOptions = deriveMultiLaunchCategoryOptions();
-
-  if (showAll) {
-    if (categoryOptions.length === 0) return;
-    suggestionsNode.innerHTML = categoryOptions
-      .map((option) => `
-        <button
-          class="multi-launch-category-option"
-          data-multi-category-option="${escapeAttribute(option)}"
-          data-multi-row-id="${rowId}"
-          type="button"
-        >${escapeHtml(option)}</button>
-      `)
-      .join("");
-    suggestionsNode.classList.remove("hidden");
-    return;
-  }
-
-  const suggestions = getMultiLaunchCategorySuggestions(query, categoryOptions);
-  const exactMatch = suggestions.some(
-    (option) => normalizeSearchText(option) === normalizeSearchText(query)
-  );
-
-  if (!String(query || "").trim() || suggestions.length === 0 || exactMatch) {
+  if (categoryOptions.length === 0) {
     suggestionsNode.innerHTML = "";
     suggestionsNode.classList.add("hidden");
     return;
   }
 
-  suggestionsNode.innerHTML = suggestions
-    .map((option) => `
-      <button
-        class="multi-launch-category-option"
-        data-multi-category-option="${escapeAttribute(option)}"
-        data-multi-row-id="${rowId}"
-        type="button"
-      >
-        ${escapeHtml(option)}
-      </button>
-    `)
-    .join("");
-  suggestionsNode.classList.remove("hidden");
+  if (keepOpen) {
+    const q = String(query || "").trim();
+    const filtered = q
+      ? categoryOptions.filter((opt) => normalizeSearchText(opt).startsWith(normalizeSearchText(q)))
+      : categoryOptions;
+
+    if (filtered.length === 0) {
+      suggestionsNode.innerHTML = "";
+      suggestionsNode.classList.add("hidden");
+      return;
+    }
+
+    suggestionsNode.innerHTML = filtered
+      .map((option) => `<button class="multi-launch-category-option" data-multi-category-option="${escapeAttribute(option)}" data-multi-row-id="${rowId}" type="button">${escapeHtml(option)}</button>`)
+      .join("");
+    suggestionsNode.classList.remove("hidden");
+    return;
+  }
+
+  suggestionsNode.innerHTML = "";
+  suggestionsNode.classList.add("hidden");
 }
 
 let multiLaunchCategoryBlurTimers = {};
@@ -674,7 +660,7 @@ function handleMultiLaunchRowsInput(event) {
     row.quantity = field.value;
   } else if (field.dataset.multiField === "category") {
     applyMultiLaunchCategorySelection(row, field.value);
-    renderMultiLaunchCategorySuggestions(rowId, field.value);
+    renderMultiLaunchCategorySuggestions(rowId, field.value, true);
     if (row.autoAmountFromCategory) {
       updateMultiLaunchAmountField(rowId, row.amount);
     }
