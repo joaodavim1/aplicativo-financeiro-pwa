@@ -252,17 +252,19 @@
 
                 <label>
                   <span>Categoria</span>
-                  <input
-                    id="categoryInput"
-                    name="category"
-                    type="text"
-                    inputmode="text"
-                    autocomplete="off"
-                    autocapitalize="words"
-                    placeholder="Toque para selecionar"
-                    required
-                  />
-                  <div id="categorySuggestions" class="category-suggestions hidden" role="listbox" aria-label="Categorias disponíveis"></div>
+                  <div class="field-with-suggestions">
+                    <input
+                      id="categoryInput"
+                      name="category"
+                      type="text"
+                      inputmode="text"
+                      autocomplete="off"
+                      autocapitalize="words"
+                      placeholder="Toque para selecionar"
+                      required
+                    />
+                    <div id="categorySuggestions" class="category-suggestions hidden" role="listbox" aria-label="Categorias disponíveis"></div>
+                  </div>
                   <button id="manageCategoryToggleButton" class="field-link-button" type="button">Gerenciar categorias de despesa</button>
                 </label>
 

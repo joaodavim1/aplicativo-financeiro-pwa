@@ -477,24 +477,26 @@ function renderMultiLaunchRow(row, index, categoryOptions) {
       </label>
       <label class="multi-launch-field">
         <span class="multi-launch-field-legend">Categoria</span>
-        <input
-          data-multi-row-id="${row.id}"
-          data-multi-field="category"
-          data-multi-category-search="true"
-          type="text"
-          inputmode="text"
-          placeholder="Categoria"
-          autocomplete="off"
-          autocapitalize="words"
-          enterkeyhint="done"
-          value="${escapeAttribute(row.category || "")}"
-        />
-        <div
-          class="multi-launch-category-suggestions hidden"
-          data-multi-category-suggestions="${row.id}"
-          role="listbox"
-          aria-label="Categorias encontradas"
-        ></div>
+        <div class="field-with-suggestions">
+          <input
+            data-multi-row-id="${row.id}"
+            data-multi-field="category"
+            data-multi-category-search="true"
+            type="text"
+            inputmode="text"
+            placeholder="Categoria"
+            autocomplete="off"
+            autocapitalize="words"
+            enterkeyhint="done"
+            value="${escapeAttribute(row.category || "")}"
+          />
+          <div
+            class="multi-launch-category-suggestions hidden"
+            data-multi-category-suggestions="${row.id}"
+            role="listbox"
+            aria-label="Categorias encontradas"
+          ></div>
+        </div>
       </label>
       ${multiLaunchRows.length > 1 ? `
         <button

@@ -1541,17 +1541,51 @@ body[data-theme="dark"] .menu-dark {
   background: var(--surface-soft);
 }
 
+.field-with-suggestions {
+  position: relative;
+}
+
 .category-suggestions {
-  display: grid;
-  gap: 6px;
-  margin-top: 6px;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--field-border);
+  border-radius: 14px;
+  max-height: 220px;
+  overflow-y: auto;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+.multi-launch-category-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--field-border);
+  border-radius: 14px;
+  max-height: 220px;
+  overflow-y: auto;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
 }
 
 .category-suggestion-option {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid var(--field-border);
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--surface);
   color: var(--ink);
   text-align: left;
