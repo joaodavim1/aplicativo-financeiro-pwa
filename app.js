@@ -976,8 +976,14 @@ function renderCategoryOptions() {
 }
 
 function renderSingleCategorySuggestions() {
+  // Chamada pelo renderCategoryOptions — só atualiza o conteúdo se o dropdown já estiver aberto
   if (!nodes.categorySuggestions) return;
-  const query = nodes.categoryInput?.value?.trim() || "";
+  if (nodes.categorySuggestions.classList.contains("hidden")) return;
+  buildCategorySuggestions(nodes.categoryInput?.value?.trim() || "");
+}
+
+function buildCategorySuggestions(query) {
+  if (!nodes.categorySuggestions) return;
   const filtered = query
     ? currentCategoryOptions.filter((opt) => opt.toLowerCase().startsWith(query.toLowerCase()))
     : currentCategoryOptions;
@@ -994,23 +1000,24 @@ function renderSingleCategorySuggestions() {
   nodes.categorySuggestions.classList.remove("hidden");
 }
 
+function hideCategorySuggestions() {
+  if (!nodes.categorySuggestions) return;
+  nodes.categorySuggestions.innerHTML = "";
+  nodes.categorySuggestions.classList.add("hidden");
+}
+
 function handleCategoryInputFocus() {
   clearTimeout(categorySuggestionsHideTimer);
-  renderSingleCategorySuggestions();
+  buildCategorySuggestions(nodes.categoryInput?.value?.trim() || "");
 }
 
 function handleCategoryInputInput() {
   clearTimeout(categorySuggestionsHideTimer);
-  renderSingleCategorySuggestions();
+  buildCategorySuggestions(nodes.categoryInput?.value?.trim() || "");
 }
 
 function handleCategoryInputBlur() {
-  categorySuggestionsHideTimer = setTimeout(() => {
-    if (nodes.categorySuggestions) {
-      nodes.categorySuggestions.innerHTML = "";
-      nodes.categorySuggestions.classList.add("hidden");
-    }
-  }, 200);
+  categorySuggestionsHideTimer = setTimeout(hideCategorySuggestions, 250);
 }
 
 function handleCategorySuggestionsClick(event) {
@@ -1018,10 +1025,7 @@ function handleCategorySuggestionsClick(event) {
   const button = event.target.closest("[data-category-option]");
   if (!button) return;
   if (nodes.categoryInput) nodes.categoryInput.value = button.dataset.categoryOption;
-  if (nodes.categorySuggestions) {
-    nodes.categorySuggestions.innerHTML = "";
-    nodes.categorySuggestions.classList.add("hidden");
-  }
+  hideCategorySuggestions();
 }
 
 function handleTypeToggleClick(event) {
