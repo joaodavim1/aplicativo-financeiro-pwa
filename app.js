@@ -254,13 +254,15 @@ function bindEvents() {
   nodes.categoryInput?.addEventListener("focus", handleCategoryInputFocus);
   nodes.categoryInput?.addEventListener("input", handleCategoryInputInput);
   nodes.categoryInput?.addEventListener("blur", handleCategoryInputBlur);
-  nodes.categorySuggestions?.addEventListener("click", handleCategorySuggestionsClick);
+  nodes.categorySuggestions?.addEventListener("touchstart", (e) => e.preventDefault(), { passive: false });
   nodes.categorySuggestions?.addEventListener("touchend", handleCategorySuggestionsClick, { passive: false });
+  nodes.categorySuggestions?.addEventListener("click", handleCategorySuggestionsClick);
   nodes.incomeCategoryBars?.addEventListener("click", handleCategoryBarClick);
   nodes.expenseCategoryBars?.addEventListener("click", handleCategoryBarClick);
   nodes.multiLaunchTypeToggle?.addEventListener("click", handleMultiLaunchTypeToggleClick);
   nodes.multiLaunchRows?.addEventListener("click", handleMultiLaunchRowsClick);
   nodes.multiLaunchRows?.addEventListener("touchend", handleMultiLaunchRowsClick, { passive: false });
+  nodes.multiLaunchRows?.addEventListener("touchstart", handleMultiLaunchSuggestionsTouchStart, { passive: false });
   nodes.multiLaunchRows?.addEventListener("input", handleMultiLaunchRowsInput);
   nodes.multiLaunchRows?.addEventListener("change", handleMultiLaunchRowsInput);
   nodes.multiLaunchRows?.addEventListener("focus", handleMultiLaunchRowsFocus, true);
@@ -616,6 +618,13 @@ function renderMultiLaunchCategorySuggestions(rowId, query, keepOpen = false) {
 }
 
 let multiLaunchCategoryBlurTimers = {};
+
+function handleMultiLaunchSuggestionsTouchStart(event) {
+  // Previne blur no input ao tocar numa sugestão, mantendo teclado aberto
+  if (event.target.closest("[data-multi-category-option]")) {
+    event.preventDefault();
+  }
+}
 
 function handleMultiLaunchRowsFocus(event) {
   const field = event.target.closest("[data-multi-row-id][data-multi-field='category']");
