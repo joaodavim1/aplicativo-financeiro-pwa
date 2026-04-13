@@ -10,9 +10,19 @@
     <title>Financeiro</title>
     <link rel="manifest" href="./manifest.webmanifest?v=20260412ad" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260413ak" />
+    <link rel="stylesheet" href="./styles.css?v=20260413al" />
   </head>
   <body>
+    <div id="categoryPickerModal" class="category-picker-modal hidden" role="dialog" aria-modal="true">
+      <div class="category-picker-backdrop"></div>
+      <div class="category-picker-sheet">
+        <div class="category-picker-header">
+          <input id="categoryPickerSearch" type="text" placeholder="Pesquisar categoria..." autocomplete="off" autocapitalize="words" />
+          <button id="categoryPickerClose" class="category-picker-close" type="button">✕</button>
+        </div>
+        <div id="categoryPickerList" class="category-picker-list"></div>
+      </div>
+    </div>
     <div id="appToast" class="app-toast hidden" role="status" aria-live="polite"></div>
     <div class="app-shell">
       <section id="authGate" class="auth-gate hidden">
@@ -252,19 +262,8 @@
 
                 <label>
                   <span>Categoria</span>
-                  <div class="field-with-suggestions">
-                    <input
-                      id="categoryInput"
-                      name="category"
-                      type="text"
-                      inputmode="text"
-                      autocomplete="off"
-                      autocapitalize="words"
-                      placeholder="Toque para selecionar"
-                      required
-                    />
-                    <div id="categorySuggestions" class="category-suggestions hidden" role="listbox" aria-label="Categorias disponíveis"></div>
-                  </div>
+                  <input id="categoryInput" name="category" type="hidden" required />
+                  <button id="categoryPickerButton" class="category-picker-button" type="button">Selecionar categoria</button>
                   <button id="manageCategoryToggleButton" class="field-link-button" type="button">Gerenciar categorias de despesa</button>
                 </label>
 
@@ -608,9 +607,9 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260413ak"></script>
+    <script src="./supabase-config.js?v=20260413al"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js"></script>
-    <script type="module" src="./auth.js?v=20260413ak"></script>
+    <script type="module" src="./auth.js?v=20260413al"></script>
   </body>
 </html>
