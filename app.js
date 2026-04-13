@@ -979,7 +979,7 @@ function renderSingleCategorySuggestions(query, showAll = false) {
 
   const normalizedQuery = normalizeSearchText(query);
   const filtered = normalizedQuery
-    ? currentCategoryOptions.filter((o) => normalizeSearchText(o).includes(normalizedQuery))
+    ? currentCategoryOptions.filter((o) => normalizeSearchText(o).startsWith(normalizedQuery))
     : showAll ? currentCategoryOptions : [];
 
   if (filtered.length === 0) {
