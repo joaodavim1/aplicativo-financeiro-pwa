@@ -51,6 +51,8 @@ let isCategoryManagerOpen = false;
 let isPaymentManagerOpen = false;
 let appToastTimer = null;
 let categorySuggestionsHideTimer = null;
+let isTouchingCategorySuggestions = false;
+let isTouchingMultiSuggestions = false;
 let appToastActionCleanup = null;
 let remotePrintWatchTimer = null;
 let knownPrintedTransactionIds = new Set();
@@ -254,17 +256,17 @@ function bindEvents() {
   nodes.categoryInput?.addEventListener("focus", handleCategoryInputFocus);
   nodes.categoryInput?.addEventListener("input", handleCategoryInputInput);
   nodes.categoryInput?.addEventListener("blur", handleCategoryInputBlur);
-  nodes.categorySuggestions?.addEventListener("touchstart", (e) => {
-    if (e.target.closest("[data-category-option]")) e.preventDefault();
-  }, { passive: false });
+  nodes.categorySuggestions?.addEventListener("touchstart", () => { isTouchingCategorySuggestions = true; }, { passive: true });
   nodes.categorySuggestions?.addEventListener("touchend", handleCategorySuggestionsClick, { passive: false });
+  nodes.categorySuggestions?.addEventListener("touchcancel", () => { isTouchingCategorySuggestions = false; }, { passive: true });
   nodes.categorySuggestions?.addEventListener("click", handleCategorySuggestionsClick);
   nodes.incomeCategoryBars?.addEventListener("click", handleCategoryBarClick);
   nodes.expenseCategoryBars?.addEventListener("click", handleCategoryBarClick);
   nodes.multiLaunchTypeToggle?.addEventListener("click", handleMultiLaunchTypeToggleClick);
   nodes.multiLaunchRows?.addEventListener("click", handleMultiLaunchRowsClick);
   nodes.multiLaunchRows?.addEventListener("touchend", handleMultiLaunchRowsClick, { passive: false });
-  nodes.multiLaunchRows?.addEventListener("touchstart", handleMultiLaunchSuggestionsTouchStart, { passive: false });
+  nodes.multiLaunchRows?.addEventListener("touchstart", handleMultiLaunchSuggestionsTouchStart, { passive: true });
+  nodes.multiLaunchRows?.addEventListener("touchcancel", () => { isTouchingMultiSuggestions = false; }, { passive: true });
   nodes.multiLaunchRows?.addEventListener("input", handleMultiLaunchRowsInput);
   nodes.multiLaunchRows?.addEventListener("change", handleMultiLaunchRowsInput);
   nodes.multiLaunchRows?.addEventListener("focus", handleMultiLaunchRowsFocus, true);
@@ -622,9 +624,8 @@ function renderMultiLaunchCategorySuggestions(rowId, query, keepOpen = false) {
 let multiLaunchCategoryBlurTimers = {};
 
 function handleMultiLaunchSuggestionsTouchStart(event) {
-  // Previne blur no input ao tocar numa sugestão, mantendo teclado aberto
-  if (event.target.closest("[data-multi-category-option]")) {
-    event.preventDefault();
+  if (event.target.closest("[data-multi-category-option][data-multi-row-id]")) {
+    isTouchingMultiSuggestions = true;
   }
 }
 
@@ -639,6 +640,7 @@ function handleMultiLaunchRowsFocus(event) {
 function handleMultiLaunchRowsBlur(event) {
   const field = event.target.closest("[data-multi-row-id][data-multi-field='category']");
   if (!field) return;
+  if (isTouchingMultiSuggestions) return;
   const rowId = Number(field.dataset.multiRowId);
   multiLaunchCategoryBlurTimers[rowId] = setTimeout(() => {
     const suggestionsNode = nodes.multiLaunchRows?.querySelector(
@@ -700,6 +702,7 @@ function handleMultiLaunchRowsClick(event) {
   const row = multiLaunchRows.find((item) => item.id === rowId);
   if (!row) return;
 
+  isTouchingMultiSuggestions = false;
   clearTimeout(multiLaunchCategoryBlurTimers[rowId]);
   applyMultiLaunchCategorySelection(row, categoryOptionButton.dataset.multiCategoryOption || "");
   const categoryInput = nodes.multiLaunchRows?.querySelector(
@@ -1064,14 +1067,16 @@ function handleCategoryInputInput() {
 }
 
 function handleCategoryInputBlur() {
-  categorySuggestionsHideTimer = setTimeout(hideCategorySuggestions, 250);
+  if (isTouchingCategorySuggestions) return;
+  categorySuggestionsHideTimer = setTimeout(hideCategorySuggestions, 300);
 }
 
 function handleCategorySuggestionsClick(event) {
+  const button = event.target.closest("[data-category-option]");
+  isTouchingCategorySuggestions = false;
+  if (!button) return;
   event.preventDefault();
   clearTimeout(categorySuggestionsHideTimer);
-  const button = event.target.closest("[data-category-option]");
-  if (!button) return;
   if (nodes.categoryInput) nodes.categoryInput.value = button.dataset.categoryOption;
   hideCategorySuggestions();
 }
