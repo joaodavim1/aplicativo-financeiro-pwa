@@ -735,8 +735,11 @@ body[data-theme="dark"] .future-expense-value {
   color: #ffb0a4;
 }
 
-body[data-theme="dark"] .future-income-value {
-  color: #9de6ca;
+body[data-theme="dark"] .future-income-value,
+body[data-theme="dark"] .pill-card strong,
+body[data-theme="dark"] .transaction-amount.income,
+body[data-theme="dark"] .multi-launch-total {
+  color: var(--ink);
 }
 
 body:not([data-theme="dark"]) .filter-grid input,

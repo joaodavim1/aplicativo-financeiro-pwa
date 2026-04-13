@@ -10,7 +10,7 @@
     <title>Financeiro</title>
     <link rel="manifest" href="./manifest.webmanifest?v=20260412ad" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260413al" />
+    <link rel="stylesheet" href="./styles.css?v=20260413am" />
   </head>
   <body>
     <div id="categoryPickerModal" class="category-picker-modal hidden" role="dialog" aria-modal="true">
@@ -293,9 +293,8 @@
 
                 <label>
                   <span>Pagamento</span>
-                  <select id="paymentMethodInput" name="paymentMethod">
-                    <option value="Pix">Pix</option>
-                  </select>
+                  <input id="paymentMethodInput" name="paymentMethod" type="hidden" />
+                  <button id="paymentPickerButton" class="category-picker-button" type="button">Selecionar forma de pagamento</button>
                   <button id="managePaymentToggleButton" class="field-link-button" type="button">Gerenciar formas de pagamento</button>
                 </label>
 
@@ -607,9 +606,9 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260413al"></script>
+    <script src="./supabase-config.js?v=20260413am"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js"></script>
-    <script type="module" src="./auth.js?v=20260413al"></script>
+    <script type="module" src="./auth.js?v=20260413am"></script>
   </body>
 </html>

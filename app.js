@@ -131,6 +131,7 @@ const nodes = {
   categoryPickerClose: document.querySelector("#categoryPickerClose"),
   categoryPickerBackdrop: document.querySelector(".category-picker-backdrop"),
   paymentMethodInput: document.querySelector("#paymentMethodInput"),
+  paymentPickerButton: document.querySelector("#paymentPickerButton"),
   manageCategoryToggleButton: document.querySelector("#manageCategoryToggleButton"),
   managePaymentToggleButton: document.querySelector("#managePaymentToggleButton"),
   manageExpenseCategoryCard: document.querySelector("#manageExpenseCategoryCard"),
@@ -257,6 +258,7 @@ function bindEvents() {
   nodes.settingsPaymentMethodsList?.addEventListener("click", handleCatalogListClick);
   nodes.screenTabs.addEventListener("click", handleScreenTabClick);
   nodes.categoryPickerButton?.addEventListener("click", openCategoryPicker);
+  nodes.paymentPickerButton?.addEventListener("click", openPaymentPicker);
   nodes.categoryPickerClose?.addEventListener("click", closeCategoryPicker);
   nodes.categoryPickerBackdrop?.addEventListener("click", closeCategoryPicker);
   nodes.categoryPickerSearch?.addEventListener("input", handleCategoryPickerSearch);
@@ -974,10 +976,12 @@ function renderSingleCategorySuggestions() {
 }
 
 let categoryPickerCallback = null;
+let categoryPickerCleanup = null;
 
-function openCategoryPicker(callback) {
+function openCategoryPicker(callback, cleanup) {
   if (!nodes.categoryPickerModal) return;
   categoryPickerCallback = typeof callback === "function" ? callback : null;
+  categoryPickerCleanup = typeof cleanup === "function" ? cleanup : null;
   buildCategoryPickerList("");
   if (nodes.categoryPickerSearch) nodes.categoryPickerSearch.value = "";
   nodes.categoryPickerModal.classList.remove("hidden");
@@ -988,6 +992,7 @@ function closeCategoryPicker() {
   if (!nodes.categoryPickerModal) return;
   nodes.categoryPickerModal.classList.add("hidden");
   categoryPickerCallback = null;
+  if (categoryPickerCleanup) { categoryPickerCleanup(); categoryPickerCleanup = null; }
 }
 
 function buildCategoryPickerList(query) {
@@ -1081,20 +1086,32 @@ function syncManagerSections() {
 
 function renderPaymentMethodOptions() {
   if (!nodes.paymentMethodInput) return;
-
   const previousValue = nodes.paymentMethodInput.value;
   const options = derivePaymentMethodOptions();
-
-  nodes.paymentMethodInput.innerHTML = options
-    .map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`)
-    .join("");
-
-  if (options.includes(previousValue)) {
-    nodes.paymentMethodInput.value = previousValue;
-    return;
+  if (!options.includes(previousValue)) {
+    nodes.paymentMethodInput.value = preferredPaymentMethod();
   }
+  updatePaymentPickerButton();
+}
 
-  nodes.paymentMethodInput.value = preferredPaymentMethod();
+function updatePaymentPickerButton() {
+  if (!nodes.paymentPickerButton) return;
+  const val = nodes.paymentMethodInput?.value || "";
+  nodes.paymentPickerButton.textContent = val || "Selecionar forma de pagamento";
+  nodes.paymentPickerButton.style.opacity = val ? "1" : "0.6";
+}
+
+function openPaymentPicker() {
+  const options = derivePaymentMethodOptions();
+  const savedCategoryOptions = currentCategoryOptions;
+  currentCategoryOptions = options;
+  openCategoryPicker(
+    (value) => {
+      if (nodes.paymentMethodInput) nodes.paymentMethodInput.value = value;
+      updatePaymentPickerButton();
+    },
+    () => { currentCategoryOptions = savedCategoryOptions; }
+  );
 }
 
 function syncLaunchFormDefaults() {
