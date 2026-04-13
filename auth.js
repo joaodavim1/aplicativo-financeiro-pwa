@@ -1,4 +1,4 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260412aj";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260413ak";
 
 const IOS_APP_VERSION = "Versão atual: 1.30";
 const IOS_SETTINGS_VERSION = "1.30";
