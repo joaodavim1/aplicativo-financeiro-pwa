@@ -53,6 +53,7 @@ let appToastTimer = null;
 let appToastActionCleanup = null;
 let remotePrintWatchTimer = null;
 let knownPrintedTransactionIds = new Set();
+let qzTrayActive = false;
 let pendingMultiLaunchCategoryFocus = null;
 let currentHistoryFilters = {
   startDate: "",
@@ -186,6 +187,7 @@ export async function bootFinanceiroApp({ mode = "demo", user = null, persistenc
 
   initializePrintTracking();
   startRemotePrintWatch();
+  initQZTray();
   render();
 }
 
@@ -433,9 +435,6 @@ function computeMultiLaunchTotal() {
 }
 
 function renderMultiLaunchRow(row, index, categoryOptions) {
-  const suggestions = getMultiLaunchCategorySuggestions(row.category, categoryOptions);
-  const hasSuggestions = String(row.category || "").trim() && suggestions.length > 0;
-
   return `
     <article class="multi-launch-entry-card">
       <h3 class="multi-launch-entry-title">Lançamento ${index + 1}</h3>
@@ -481,22 +480,12 @@ function renderMultiLaunchRow(row, index, categoryOptions) {
           enterkeyhint="done"
           value="${escapeAttribute(row.category || "")}"
         />
-        ${hasSuggestions ? `
-          <div class="multi-launch-category-suggestions" role="listbox" aria-label="Categorias encontradas">
-            ${suggestions
-              .map((option) => `
-                <button
-                  class="multi-launch-category-option"
-                  data-multi-category-option="${escapeAttribute(option)}"
-                  data-multi-row-id="${row.id}"
-                  type="button"
-                >
-                  ${escapeHtml(option)}
-                </button>
-              `)
-              .join("")}
-          </div>
-        ` : ""}
+        <div
+          class="multi-launch-category-suggestions hidden"
+          data-multi-category-suggestions="${row.id}"
+          role="listbox"
+          aria-label="Categorias encontradas"
+        ></div>
       </label>
       ${multiLaunchRows.length > 1 ? `
         <button
@@ -569,6 +558,47 @@ function focusMultiLaunchCategoryField(rowId, selectionStart = null, selectionEn
   });
 }
 
+function updateMultiLaunchAmountField(rowId, amount) {
+  const amountInput = nodes.multiLaunchRows?.querySelector(
+    `[data-multi-row-id="${rowId}"][data-multi-field="amount"]`
+  );
+  if (!amountInput) return;
+  amountInput.value = amount;
+}
+
+function renderMultiLaunchCategorySuggestions(rowId, query) {
+  const suggestionsNode = nodes.multiLaunchRows?.querySelector(
+    `[data-multi-category-suggestions="${rowId}"]`
+  );
+  if (!suggestionsNode) return;
+
+  const categoryOptions = deriveMultiLaunchCategoryOptions();
+  const suggestions = getMultiLaunchCategorySuggestions(query, categoryOptions);
+  const exactMatch = suggestions.some(
+    (option) => normalizeSearchText(option) === normalizeSearchText(query)
+  );
+
+  if (!String(query || "").trim() || suggestions.length === 0 || exactMatch) {
+    suggestionsNode.innerHTML = "";
+    suggestionsNode.classList.add("hidden");
+    return;
+  }
+
+  suggestionsNode.innerHTML = suggestions
+    .map((option) => `
+      <button
+        class="multi-launch-category-option"
+        data-multi-category-option="${escapeAttribute(option)}"
+        data-multi-row-id="${rowId}"
+        type="button"
+      >
+        ${escapeHtml(option)}
+      </button>
+    `)
+    .join("");
+  suggestionsNode.classList.remove("hidden");
+}
+
 function handleMultiLaunchTypeToggleClick(event) {
   const button = event.target.closest("[data-multi-type]");
   if (!button) return;
@@ -583,7 +613,6 @@ function handleMultiLaunchRowsInput(event) {
   const rowId = Number(field.dataset.multiRowId);
   const row = multiLaunchRows.find((item) => item.id === rowId);
   if (!row) return;
-  let shouldRerender = false;
 
   if (field.dataset.multiField === "amount") {
     row.amount = field.value;
@@ -592,23 +621,9 @@ function handleMultiLaunchRowsInput(event) {
     row.quantity = field.value;
   } else if (field.dataset.multiField === "category") {
     applyMultiLaunchCategorySelection(row, field.value);
-    pendingMultiLaunchCategoryFocus = {
-      rowId,
-      selectionStart: typeof field.selectionStart === "number" ? field.selectionStart : null,
-      selectionEnd: typeof field.selectionEnd === "number" ? field.selectionEnd : null
-    };
-    shouldRerender = true;
-  }
-
-  if (shouldRerender) {
-    renderMultiLaunchScreen();
-    if (pendingMultiLaunchCategoryFocus) {
-      focusMultiLaunchCategoryField(
-        pendingMultiLaunchCategoryFocus.rowId,
-        pendingMultiLaunchCategoryFocus.selectionStart,
-        pendingMultiLaunchCategoryFocus.selectionEnd
-      );
-      pendingMultiLaunchCategoryFocus = null;
+    renderMultiLaunchCategorySuggestions(rowId, field.value);
+    if (row.autoAmountFromCategory) {
+      updateMultiLaunchAmountField(rowId, row.amount);
     }
   }
 }
@@ -633,7 +648,14 @@ function handleMultiLaunchRowsClick(event) {
   if (!row) return;
 
   applyMultiLaunchCategorySelection(row, categoryOptionButton.dataset.multiCategoryOption || "");
-  renderMultiLaunchScreen();
+  const categoryInput = nodes.multiLaunchRows?.querySelector(
+    `[data-multi-row-id="${rowId}"][data-multi-field="category"]`
+  );
+  if (categoryInput) {
+    categoryInput.value = row.category;
+  }
+  updateMultiLaunchAmountField(rowId, row.amount);
+  renderMultiLaunchCategorySuggestions(rowId, "");
   focusMultiLaunchCategoryField(rowId);
 }
 
@@ -2428,7 +2450,75 @@ function promptPrintTransactions(transactions, message) {
   });
 }
 
+async function initQZTray() {
+  if (typeof qz === "undefined") return;
+  try {
+    qz.security.setCertificatePromise((resolve) => resolve(""));
+    qz.security.setSignaturePromise(() => (resolve) => resolve(""));
+    if (!qz.websocket.isActive()) {
+      await qz.websocket.connect({ retries: 1, delay: 0 });
+    }
+    qzTrayActive = true;
+  } catch {
+    qzTrayActive = false;
+  }
+}
+
+async function printViaQZTray(transactions) {
+  const printableTransactions = Array.isArray(transactions) ? transactions.filter(Boolean) : [];
+  if (!printableTransactions.length) return;
+
+  try {
+    const printers = await qz.printers.find();
+    const printerList = Array.isArray(printers) ? printers : [printers];
+    const bemaPrinter =
+      printerList.find((p) =>
+        String(p).toLowerCase().includes("bematech") ||
+        String(p).toLowerCase().includes("mp-4200") ||
+        String(p).toLowerCase().includes("mp4200")
+      ) || printerList[0];
+
+    if (!bemaPrinter) {
+      showAppToast("Impressora não encontrada. Verifique o QZ Tray.");
+      printTransactionsReceiptFallback(printableTransactions);
+      return;
+    }
+
+    const account = resolveActiveAccountRecord(
+      Array.isArray(currentState?.ui?.accounts) ? currentState.ui.accounts : [],
+      currentState?.ui?.activeAccountId ?? null
+    );
+    const lines = buildReceiptLines(printableTransactions, account?.name || "Sem conta", new Date());
+    const ESC = "\x1b";
+    const GS = "\x1d";
+
+    const rawData = [
+      { type: "raw", format: "plain", data: ESC + "@" },
+      { type: "raw", format: "plain", data: ESC + "a\x01" },
+      ...lines.map((line) => ({ type: "raw", format: "plain", data: line + "\n" })),
+      { type: "raw", format: "plain", data: "\n\n\n" },
+      { type: "raw", format: "plain", data: GS + "V\x41\x03" }
+    ];
+
+    const config = qz.configs.create(bemaPrinter);
+    await qz.print(config, rawData);
+    showAppToast("Impresso com sucesso!");
+  } catch (error) {
+    console.error("Erro ao imprimir via QZ Tray:", error);
+    qzTrayActive = false;
+    printTransactionsReceiptFallback(printableTransactions);
+  }
+}
+
 function printTransactionsReceipt(transactions) {
+  if (qzTrayActive) {
+    printViaQZTray(transactions);
+    return;
+  }
+  printTransactionsReceiptFallback(transactions);
+}
+
+function printTransactionsReceiptFallback(transactions) {
   const printableTransactions = Array.isArray(transactions) ? transactions.filter(Boolean) : [];
   if (!printableTransactions.length) return;
 
