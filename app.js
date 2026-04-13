@@ -670,9 +670,6 @@ function handleMultiLaunchRowsInput(event) {
 }
 
 function handleMultiLaunchRowsClick(event) {
-  const categoryOptionButton = event.target.closest("[data-multi-category-option][data-multi-row-id]");
-  if (categoryOptionButton) event.preventDefault();
-
   const removeButton = event.target.closest("[data-multi-remove-row-id]");
   if (removeButton) {
     const rowId = Number(removeButton.dataset.multiRemoveRowId);
@@ -686,6 +683,7 @@ function handleMultiLaunchRowsClick(event) {
 
   const categoryOptionButton = event.target.closest("[data-multi-category-option][data-multi-row-id]");
   if (!categoryOptionButton) return;
+  event.preventDefault();
 
   const rowId = Number(categoryOptionButton.dataset.multiRowId);
   const row = multiLaunchRows.find((item) => item.id === rowId);
