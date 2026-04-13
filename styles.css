@@ -738,8 +738,9 @@ body[data-theme="dark"] .future-expense-value {
 body[data-theme="dark"] .future-income-value,
 body[data-theme="dark"] .pill-card strong,
 body[data-theme="dark"] .transaction-amount.income,
-body[data-theme="dark"] .multi-launch-total {
-  color: var(--ink);
+body[data-theme="dark"] .multi-launch-total,
+body[data-theme="dark"] #multiLaunchTotalValue {
+  color: var(--ink) !important;
 }
 
 body:not([data-theme="dark"]) .filter-grid input,
