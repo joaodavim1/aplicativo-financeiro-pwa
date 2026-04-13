@@ -50,11 +50,7 @@ let activeScreen = "EXTRATO";
 let isCategoryManagerOpen = false;
 let isPaymentManagerOpen = false;
 let appToastTimer = null;
-let categorySuggestionsHideTimer = null;
-let isTouchingCategorySuggestions = false;
-let isTouchingMultiSuggestions = false;
-let suggestionTouchStartY = null;
-let suggestionTouchIsScroll = false;
+let categorySuggestionsOpen = false;
 let appToastActionCleanup = null;
 let remotePrintWatchTimer = null;
 let knownPrintedTransactionIds = new Set();
@@ -257,24 +253,16 @@ function bindEvents() {
   nodes.screenTabs.addEventListener("click", handleScreenTabClick);
   nodes.categoryInput?.addEventListener("focus", handleCategoryInputFocus);
   nodes.categoryInput?.addEventListener("input", handleCategoryInputInput);
-  nodes.categoryInput?.addEventListener("blur", handleCategoryInputBlur);
-  nodes.categorySuggestions?.addEventListener("touchstart", handleSuggestionsTouchStart, { passive: true });
-  nodes.categorySuggestions?.addEventListener("touchmove", handleSuggestionsTouchMove, { passive: true });
-  nodes.categorySuggestions?.addEventListener("touchend", handleCategorySuggestionsClick, { passive: false });
-  nodes.categorySuggestions?.addEventListener("touchcancel", handleSuggestionsTouchCancel, { passive: true });
   nodes.categorySuggestions?.addEventListener("click", handleCategorySuggestionsClick);
+  document.addEventListener("click", handleDocumentClickCloseSuggestions);
+  document.addEventListener("click", handleDocumentClickCloseMultiSuggestions);
   nodes.incomeCategoryBars?.addEventListener("click", handleCategoryBarClick);
   nodes.expenseCategoryBars?.addEventListener("click", handleCategoryBarClick);
   nodes.multiLaunchTypeToggle?.addEventListener("click", handleMultiLaunchTypeToggleClick);
   nodes.multiLaunchRows?.addEventListener("click", handleMultiLaunchRowsClick);
-  nodes.multiLaunchRows?.addEventListener("touchend", handleMultiLaunchRowsClick, { passive: false });
-  nodes.multiLaunchRows?.addEventListener("touchstart", handleMultiLaunchSuggestionsTouchStart, { passive: true });
-  nodes.multiLaunchRows?.addEventListener("touchmove", handleSuggestionsTouchMove, { passive: true });
-  nodes.multiLaunchRows?.addEventListener("touchcancel", handleSuggestionsTouchCancel, { passive: true });
   nodes.multiLaunchRows?.addEventListener("input", handleMultiLaunchRowsInput);
   nodes.multiLaunchRows?.addEventListener("change", handleMultiLaunchRowsInput);
   nodes.multiLaunchRows?.addEventListener("focus", handleMultiLaunchRowsFocus, true);
-  nodes.multiLaunchRows?.addEventListener("blur", handleMultiLaunchRowsBlur, true);
   nodes.multiLaunchAddRowButton?.addEventListener("click", handleAddMultiLaunchRow);
   nodes.multiLaunchFinalizeButton?.addEventListener("click", handleToggleMultiLaunchFinalize);
   nodes.multiLaunchSaveButton?.addEventListener("click", handleSaveMultiLaunch);
@@ -625,57 +613,33 @@ function renderMultiLaunchCategorySuggestions(rowId, query, keepOpen = false) {
   suggestionsNode.classList.add("hidden");
 }
 
-let multiLaunchCategoryBlurTimers = {};
-
-function handleSuggestionsTouchStart(event) {
-  isTouchingCategorySuggestions = true;
-  suggestionTouchStartY = event.touches[0]?.clientY ?? null;
-  suggestionTouchIsScroll = false;
-}
-
-function handleSuggestionsTouchMove(event) {
-  if (suggestionTouchStartY === null) return;
-  const dy = Math.abs((event.touches[0]?.clientY ?? 0) - suggestionTouchStartY);
-  if (dy > 8) suggestionTouchIsScroll = true;
-}
-
-function handleSuggestionsTouchCancel() {
-  isTouchingCategorySuggestions = false;
-  isTouchingMultiSuggestions = false;
-  suggestionTouchStartY = null;
-  suggestionTouchIsScroll = false;
-}
-
-function handleMultiLaunchSuggestionsTouchStart(event) {
-  if (event.target.closest("[data-multi-category-option][data-multi-row-id]")) {
-    isTouchingMultiSuggestions = true;
-  }
-  suggestionTouchStartY = event.touches[0]?.clientY ?? null;
-  suggestionTouchIsScroll = false;
-}
+let multiActiveRowId = null;
 
 function handleMultiLaunchRowsFocus(event) {
   const field = event.target.closest("[data-multi-row-id][data-multi-field='category']");
   if (!field) return;
   const rowId = Number(field.dataset.multiRowId);
-  clearTimeout(multiLaunchCategoryBlurTimers[rowId]);
+  multiActiveRowId = rowId;
   renderMultiLaunchCategorySuggestions(rowId, field.value, true);
 }
 
-function handleMultiLaunchRowsBlur(event) {
-  const field = event.target.closest("[data-multi-row-id][data-multi-field='category']");
-  if (!field) return;
-  if (isTouchingMultiSuggestions) return;
-  const rowId = Number(field.dataset.multiRowId);
-  multiLaunchCategoryBlurTimers[rowId] = setTimeout(() => {
-    const suggestionsNode = nodes.multiLaunchRows?.querySelector(
-      `[data-multi-category-suggestions="${rowId}"]`
-    );
-    if (suggestionsNode) {
-      suggestionsNode.innerHTML = "";
-      suggestionsNode.classList.add("hidden");
-    }
-  }, 250);
+function handleDocumentClickCloseMultiSuggestions(event) {
+  if (multiActiveRowId === null) return;
+  const wrapper = nodes.multiLaunchRows?.querySelector(
+    `[data-multi-category-suggestions="${multiActiveRowId}"]`
+  )?.closest(".field-with-suggestions");
+  const activeInput = nodes.multiLaunchRows?.querySelector(
+    `[data-multi-row-id="${multiActiveRowId}"][data-multi-field="category"]`
+  );
+  if ((wrapper && wrapper.contains(event.target)) || (activeInput && activeInput.contains(event.target))) return;
+  const suggestionsNode = nodes.multiLaunchRows?.querySelector(
+    `[data-multi-category-suggestions="${multiActiveRowId}"]`
+  );
+  if (suggestionsNode) {
+    suggestionsNode.innerHTML = "";
+    suggestionsNode.classList.add("hidden");
+  }
+  multiActiveRowId = null;
 }
 
 function handleMultiLaunchTypeToggleClick(event) {
@@ -722,21 +686,10 @@ function handleMultiLaunchRowsClick(event) {
   const categoryOptionButton = event.target.closest("[data-multi-category-option][data-multi-row-id]");
   if (!categoryOptionButton) return;
 
-  // Se foi scroll, ignora — não seleciona
-  if (suggestionTouchIsScroll) {
-    suggestionTouchIsScroll = false;
-    suggestionTouchStartY = null;
-    return;
-  }
-  suggestionTouchStartY = null;
-  event.preventDefault();
-
   const rowId = Number(categoryOptionButton.dataset.multiRowId);
   const row = multiLaunchRows.find((item) => item.id === rowId);
   if (!row) return;
 
-  isTouchingMultiSuggestions = false;
-  clearTimeout(multiLaunchCategoryBlurTimers[rowId]);
   applyMultiLaunchCategorySelection(row, categoryOptionButton.dataset.multiCategoryOption || "");
   const categoryInput = nodes.multiLaunchRows?.querySelector(
     `[data-multi-row-id="${rowId}"][data-multi-field="category"]`
@@ -744,6 +697,7 @@ function handleMultiLaunchRowsClick(event) {
   if (categoryInput) {
     categoryInput.value = row.category;
   }
+  multiActiveRowId = null;
   updateMultiLaunchAmountField(rowId, row.amount);
   renderMultiLaunchCategorySuggestions(rowId, "");
   focusMultiLaunchCategoryField(rowId);
@@ -1059,65 +1013,56 @@ function renderCategoryOptions() {
 }
 
 function renderSingleCategorySuggestions() {
-  // Chamada pelo renderCategoryOptions — só atualiza o conteúdo se o dropdown já estiver aberto
+  // Chamada pelo renderCategoryOptions — só atualiza se já estiver aberto
   if (!nodes.categorySuggestions) return;
-  if (nodes.categorySuggestions.classList.contains("hidden")) return;
-  buildCategorySuggestions(nodes.categoryInput?.value?.trim() || "");
+  if (!categorySuggestionsOpen) return;
+  showCategorySuggestions(nodes.categoryInput?.value?.trim() || "");
 }
 
-function buildCategorySuggestions(query) {
+function showCategorySuggestions(query) {
   if (!nodes.categorySuggestions) return;
   const filtered = query
     ? currentCategoryOptions.filter((opt) => opt.toLowerCase().startsWith(query.toLowerCase()))
     : currentCategoryOptions;
 
   if (filtered.length === 0) {
-    nodes.categorySuggestions.innerHTML = "";
-    nodes.categorySuggestions.classList.add("hidden");
-    return;
+    nodes.categorySuggestions.innerHTML = "<p style='padding:10px;opacity:0.5;font-size:13px'>Nenhuma categoria encontrada</p>";
+  } else {
+    nodes.categorySuggestions.innerHTML = filtered
+      .map((option) => `<button class="category-suggestion-option" data-category-option="${escapeAttribute(option)}" type="button">${escapeHtml(option)}</button>`)
+      .join("");
   }
-
-  nodes.categorySuggestions.innerHTML = filtered
-    .map((option) => `<button class="category-suggestion-option" data-category-option="${escapeAttribute(option)}" type="button">${escapeHtml(option)}</button>`)
-    .join("");
   nodes.categorySuggestions.classList.remove("hidden");
+  categorySuggestionsOpen = true;
 }
 
 function hideCategorySuggestions() {
   if (!nodes.categorySuggestions) return;
   nodes.categorySuggestions.innerHTML = "";
   nodes.categorySuggestions.classList.add("hidden");
+  categorySuggestionsOpen = false;
 }
 
 function handleCategoryInputFocus() {
-  clearTimeout(categorySuggestionsHideTimer);
-  buildCategorySuggestions(nodes.categoryInput?.value?.trim() || "");
+  showCategorySuggestions(nodes.categoryInput?.value?.trim() || "");
 }
 
 function handleCategoryInputInput() {
-  clearTimeout(categorySuggestionsHideTimer);
-  buildCategorySuggestions(nodes.categoryInput?.value?.trim() || "");
-}
-
-function handleCategoryInputBlur() {
-  if (isTouchingCategorySuggestions) return;
-  categorySuggestionsHideTimer = setTimeout(hideCategorySuggestions, 300);
+  showCategorySuggestions(nodes.categoryInput?.value?.trim() || "");
 }
 
 function handleCategorySuggestionsClick(event) {
-  // Se foi scroll, ignora — não seleciona
-  if (suggestionTouchIsScroll) {
-    suggestionTouchIsScroll = false;
-    suggestionTouchStartY = null;
-    return;
-  }
-  suggestionTouchStartY = null;
   const button = event.target.closest("[data-category-option]");
-  isTouchingCategorySuggestions = false;
   if (!button) return;
-  event.preventDefault();
-  clearTimeout(categorySuggestionsHideTimer);
   if (nodes.categoryInput) nodes.categoryInput.value = button.dataset.categoryOption;
+  hideCategorySuggestions();
+  nodes.categoryInput?.focus();
+}
+
+function handleDocumentClickCloseSuggestions(event) {
+  if (!categorySuggestionsOpen) return;
+  const wrapper = nodes.categoryInput?.closest(".field-with-suggestions");
+  if (wrapper && wrapper.contains(event.target)) return;
   hideCategorySuggestions();
 }
 
