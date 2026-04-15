@@ -55,6 +55,7 @@ let appToastActionCleanup = null;
 let remotePrintWatchTimer = null;
 let knownPrintedTransactionIds = new Set();
 let qzTrayActive = false;
+const printerMode = new URLSearchParams(window.location.search).get("impressora") === "1";
 let currentCategoryOptions = [];
 let pendingMultiLaunchCategoryFocus = null;
 let currentHistoryFilters = {
@@ -197,7 +198,18 @@ export async function bootFinanceiroApp({ mode = "demo", user = null, persistenc
   initializePrintTracking();
   startRemotePrintWatch();
   initQZTray();
+  if (printerMode) applyPrinterModeUI();
   render();
+}
+
+function applyPrinterModeUI() {
+  const header = document.querySelector(".app-header");
+  if (!header) return;
+  const badge = document.createElement("div");
+  badge.id = "printerModeBadge";
+  badge.textContent = "MODO IMPRESSORA";
+  badge.style.cssText = "background:#145c4c;color:#fff;font-size:11px;font-weight:700;letter-spacing:.08em;padding:3px 8px;border-radius:4px;margin-left:8px;";
+  header.appendChild(badge);
 }
 
 window.financeiroNavigateToScreen = navigateToScreen;
@@ -2918,16 +2930,20 @@ function startRemotePrintWatch() {
 
       if (unseenTransactions.length > 0) {
         markTransactionsAsPrinted(unseenTransactions);
-        showActionToast({
-          message:
-            unseenTransactions.length === 1
-              ? "Novo lançamento recebido. Deseja imprimir?"
-              : `${unseenTransactions.length} novos lançamentos recebidos. Deseja imprimir?`,
-          primaryLabel: "Imprimir",
-          secondaryLabel: "Agora não",
-          onPrimary: () => printTransactionsReceipt(unseenTransactions),
-          onSecondary: () => {}
-        });
+        if (printerMode) {
+          printTransactionsReceipt(unseenTransactions);
+        } else {
+          showActionToast({
+            message:
+              unseenTransactions.length === 1
+                ? "Novo lançamento recebido. Deseja imprimir?"
+                : `${unseenTransactions.length} novos lançamentos recebidos. Deseja imprimir?`,
+            primaryLabel: "Imprimir",
+            secondaryLabel: "Agora não",
+            onPrimary: () => printTransactionsReceipt(unseenTransactions),
+            onSecondary: () => {}
+          });
+        }
       }
     } catch (error) {
       console.warn("Falha ao verificar novos lançamentos para impressão:", error);
