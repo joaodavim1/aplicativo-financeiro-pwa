@@ -2655,7 +2655,7 @@ function buildEscPosHex(lines) {
   push(0x0a, 0x0a, 0x0a, 0x0a); // alimenta papel
   push(0x1d, 0x56, 0x00);        // GS V 0 — corte total
 
-  return bytes.map((b) => b.toString(16).padStart(2, "0")).join(" ");
+  return bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 async function printViaQZTray(transactions) {
