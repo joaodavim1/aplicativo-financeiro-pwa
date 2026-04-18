@@ -2549,10 +2549,20 @@ function promptPrintTransactions(transactions, message) {
 async function initQZTray() {
   if (typeof qz === "undefined") return;
   try {
-    qz.security.setCertificatePromise((resolve) => resolve(""));
-    qz.security.setSignaturePromise(() => (resolve) => resolve(""));
+    qz.security.setCertificatePromise((resolve, reject) => {
+      fetch("https://demo.qz.io/signing/demo-public-key.txt", { cache: "no-store" })
+        .then((r) => r.text())
+        .then(resolve)
+        .catch(reject);
+    });
+    qz.security.setSignaturePromise((toSign) => (resolve, reject) => {
+      fetch("https://demo.qz.io/signing/sign-message?request=" + encodeURIComponent(toSign), { cache: "no-store" })
+        .then((r) => r.text())
+        .then(resolve)
+        .catch(reject);
+    });
     if (!qz.websocket.isActive()) {
-      await qz.websocket.connect({ retries: 1, delay: 0 });
+      await qz.websocket.connect({ retries: 2, delay: 1 });
     }
     qzTrayActive = true;
   } catch {
