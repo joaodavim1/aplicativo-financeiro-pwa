@@ -2546,28 +2546,59 @@ function promptPrintTransactions(transactions, message) {
   });
 }
 
+const QZ_PRIVATE_KEY = `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC33oTkMXeznYFQ
+GiagRMRnkvS7KuYRrp2RdL7Q5DbUVKb8F9vcSkyrNeJb5W4nCIBVAzroUkIYimwd
+UR9aq8xUunasSwA7E4ZY8oxv9uiPS3SyHFyEauKdupI0t8i5wB/0mLmk85D+mOjW
+7OPRlOfGQzqjl7N4X0DW582DTJWLuJiGlBHdydw06JiiEFnY7nCgd+ZTm9kSQ7Vu
+UxbmJG+K26sbKXIAlao8YZnZlCN4CmutwmhVTpmRI/PnmIGrBpNU/JzPRQz33jNA
+x1adPepQSyZ8ShU+BVCp8XByCN49tFcOB+It39x+OlbInpCk2SvAFNl1dt+WweVm
+hM/H6Rd1AgMBAAECggEAA1A6OtZ9Xro+40+lVIwIsgke6eSLAtSPuFhPO/pw1oC0
+BaT0bFLWcNtmuds3kfKARYfqXtdko4aTDjAxDXQ9GWXGz7IGTgo7CI1OZJIhfLuS
+XcdPD3/Rl6AOFG8faeGBcenypntRKJVe1MiuDk/NoXACtYH9VPT6eSTyOiR+KWdh
+XZX6VaZPnknE54zn3KkVS0VVZamNn82WGaZMz0nOxlmbFgEeIAnBjL3oBUqZx+Ic
+kiSgaVdjs26BskB1MtZ7Xd53mHkoPyGBo2UUgZiSIXDr4DKFEDsY3P6n/Sf3T/G0
+m7bh55ypRp8f1t1WgYp5ceR/mcvEG/jNIaanIRb9YQKBgQDflg1RRVq1ojkAOQuT
+xboQRvp1CqJyGc3vAHLC5ff5+G4QtaEo+uhZ89VY2HS7sMtD4PVmLkZRI2Xxrvty
+55Wq2pCwdtWiudPWHSMncR+DK6jq/0g6+lWuddGeH5qrzyavA/3Rll0cNPKbvqPD
+gTMFWqL5++tMiNmcJFjw9wJZKQKBgQDShnQgtApL8YuSDgSvMSFPlPbnNNNn+iYG
+weT/VamE7ZqYh7y243QtRrcCGXuD2lhrKKqjplEbYVdzbNIRTPCJ5HS1u8Ryoj1a
+jzfSrwdErMBLSVTRNtyzTuP/cyv7ZJQKJJhYc2euBEMUIckU6jXeWcBzrbTHyP7O
+sB5DBHc5bQKBgChpEW0f8N4lPNIqfUovEYsBmSDwVB31RgAtf5B0ShZ27UW93ivu
+9XHUnTnanXaS5JoXHaNjN7hQgotlCfNhoe5oZIBQahpoJb5sM79cNcraaERY8XAf
+cL8Acmt24NiurxowyX5JA/kmJLc7hJPAVT1hfVVbT9LcZSBQfXbH3jfJAoGAYrHt
+1zcQbLH8gKhZwdgCidCIP7QgN+qp0RktRhbetha+FyvraMIRQPiZ6z4PDa1bLkGO
+XdImy/NCkDY/9SRg0ARuQpSYcDVnFgF2Zirv+V4TeDgUr1BM/zLI6IUR5XUtgePO
+GAliXc5ZtCJypn92aZsiAhk5Wz/7VOJ0DW8WhbECgYEAoI7xz/NYAhzn49EcONVr
+Otv+R5J+dFPTvKSptjKLbIMpHy2RsCmwxOR53dvJbrlmqHxSxYBw2q2KJhFu6hx6
+iaCYJwAUdDlp2kmylXIcP34tUoG5O5M/RX0qz7Hx/MIkAFrllzOPH+4RNBL4OnmO
+K87FrAmoSOzupZOjn3guz1U=
+-----END PRIVATE KEY-----`;
+
+async function qzSignRequest(toSign) {
+  const pemBody = QZ_PRIVATE_KEY.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, "");
+  const der = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey(
+    "pkcs8", der.buffer,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-512" },
+    false, ["sign"]
+  );
+  const sig = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(toSign));
+  return btoa(String.fromCharCode(...new Uint8Array(sig)));
+}
+
 async function initQZTray() {
   if (typeof qz === "undefined") return;
   try {
-    let certText = "";
-    let useDemoCert = false;
-    try {
-      const r = await fetch("https://demo.qz.io/signing/demo-public-key.txt", { cache: "no-store" });
-      certText = await r.text();
-      useDemoCert = true;
-    } catch {
-      // sem acesso ao demo, usa cert vazio (mostra dialogo Allow)
-    }
-
-    qz.security.setCertificatePromise((resolve) => resolve(certText));
-    qz.security.setSignaturePromise((toSign) => (resolve) => {
-      if (!useDemoCert) { resolve(""); return; }
-      fetch("https://demo.qz.io/signing/sign-message?request=" + encodeURIComponent(toSign), { cache: "no-store" })
+    qz.security.setCertificatePromise((resolve, reject) => {
+      fetch("./certs/digital-certificate.txt", { cache: "no-store" })
         .then((r) => r.text())
         .then(resolve)
-        .catch(() => resolve(""));
+        .catch(reject);
     });
-
+    qz.security.setSignaturePromise((toSign) => (resolve, reject) => {
+      qzSignRequest(toSign).then(resolve).catch(reject);
+    });
     if (!qz.websocket.isActive()) {
       await qz.websocket.connect({ retries: 2, delay: 1 });
     }
