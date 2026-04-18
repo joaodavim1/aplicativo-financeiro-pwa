@@ -10,7 +10,7 @@
     <title>Financeiro</title>
     <link rel="manifest" href="./manifest.webmanifest?v=20260412ad" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
-    <link rel="stylesheet" href="./styles.css?v=20260413an" />
+    <link rel="stylesheet" href="./styles.css?v=20260418aa" />
   </head>
   <body>
     <div id="categoryPickerModal" class="category-picker-modal hidden" role="dialog" aria-modal="true">
@@ -202,6 +202,9 @@
                   <h2>Extrato</h2>
                   <button id="clearHistoryFiltersButton" class="ghost-button dark-ghost history-clear-button inline" type="button">
                     Limpar filtros
+                  </button>
+                  <button id="printAllTransactionsButton" class="ghost-button dark-ghost history-clear-button inline" type="button" title="Imprimir lançamentos">
+                    Imprimir
                   </button>
                 </div>
                 <div class="stack-inline">
@@ -606,9 +609,9 @@
       </div>
     </dialog>
 
-    <script src="./supabase-config.js?v=20260413an"></script>
+    <script src="./supabase-config.js?v=20260418aa"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js"></script>
-    <script type="module" src="./auth.js?v=20260413an"></script>
+    <script type="module" src="./auth.js?v=20260418aa"></script>
   </body>
 </html>

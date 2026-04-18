@@ -98,6 +98,7 @@ const nodes = {
   historyPaymentFilter: document.querySelector("#historyPaymentFilter"),
   clearHistoryFiltersButton: document.querySelector("#clearHistoryFiltersButton"),
   filteredTotalValue: document.querySelector("#filteredTotalValue"),
+  printAllTransactionsButton: document.querySelector("#printAllTransactionsButton"),
   extratoList: document.querySelector("#extratoList"),
   futureBalanceValue: document.querySelector("#futureBalanceValue"),
   futureIncomeValue: document.querySelector("#futureIncomeValue"),
@@ -295,6 +296,14 @@ function bindEvents() {
   });
   nodes.historyTypeToggle?.addEventListener("click", handleHistoryTypeToggleClick);
   nodes.clearHistoryFiltersButton?.addEventListener("click", clearHistoryFilters);
+  nodes.printAllTransactionsButton?.addEventListener("click", () => {
+    const transactions = getHistoryFilteredTransactions();
+    if (!transactions.length) {
+      showAppToast("Nenhum lançamento para imprimir.");
+      return;
+    }
+    printTransactionsReceipt(transactions);
+  });
   nodes.futureTypeToggle?.addEventListener("click", handleFutureTypeToggleClick);
   [nodes.futureStartDate, nodes.futureEndDate, nodes.futureCategoryFilter, nodes.futurePaymentFilter]
     .forEach((node) => node?.addEventListener("change", handleFutureFilterChange));
@@ -2551,6 +2560,27 @@ async function initQZTray() {
   }
 }
 
+function buildEscPosHex(lines) {
+  const bytes = [];
+  const push = (...vals) => vals.forEach((v) => bytes.push(v));
+
+  push(0x1b, 0x40);       // ESC @ — inicializa
+  push(0x1b, 0x61, 0x00); // ESC a 0 — alinha esquerda
+
+  for (const line of lines) {
+    for (let i = 0; i < line.length; i++) {
+      const code = line.charCodeAt(i);
+      push(code > 0xff ? 0x3f : code); // substitui chars fora do Latin-1 por '?'
+    }
+    push(0x0a); // LF
+  }
+
+  push(0x0a, 0x0a, 0x0a, 0x0a); // alimenta papel
+  push(0x1d, 0x56, 0x00);        // GS V 0 — corte total
+
+  return bytes.map((b) => b.toString(16).padStart(2, "0")).join(" ");
+}
+
 async function printViaQZTray(transactions) {
   const printableTransactions = Array.isArray(transactions) ? transactions.filter(Boolean) : [];
   if (!printableTransactions.length) return;
@@ -2558,34 +2588,33 @@ async function printViaQZTray(transactions) {
   try {
     const printers = await qz.printers.find();
     const printerList = Array.isArray(printers) ? printers : [printers];
-    const bemaPrinter =
-      printerList.find((p) =>
-        String(p).toLowerCase().includes("bematech") ||
-        String(p).toLowerCase().includes("mp-4200") ||
-        String(p).toLowerCase().includes("mp4200")
-      ) || printerList[0];
+    console.log("[Impressão] Impressoras encontradas:", printerList);
+
+    const bemaPrinter = printerList.find((p) =>
+      String(p).toLowerCase().includes("elgin")
+    ) || printerList.find((p) =>
+      String(p).toLowerCase().includes("bematech") ||
+      String(p).toLowerCase().includes("mp-4200") ||
+      String(p).toLowerCase().includes("mp4200")
+    );
 
     if (!bemaPrinter) {
-      showAppToast("Impressora não encontrada. Verifique o QZ Tray.");
-      printTransactionsReceiptFallback(printableTransactions);
+      console.warn("[Impressão] Impressora Elgin não encontrada. Lista:", printerList);
+      showAppToast(`Impressora Elgin não encontrada. Impressoras: ${printerList.join(", ")}`);
       return;
     }
+
+    console.log("[Impressão] Usando impressora:", bemaPrinter);
 
     const account = resolveActiveAccountRecord(
       Array.isArray(currentState?.ui?.accounts) ? currentState.ui.accounts : [],
       currentState?.ui?.activeAccountId ?? null
     );
     const lines = buildReceiptLines(printableTransactions, account?.name || "Sem conta", new Date());
-    const ESC = "\x1b";
-    const GS = "\x1d";
 
-    const rawData = [
-      { type: "raw", format: "plain", data: ESC + "@" },
-      { type: "raw", format: "plain", data: ESC + "a\x01" },
-      ...lines.map((line) => ({ type: "raw", format: "plain", data: line + "\n" })),
-      { type: "raw", format: "plain", data: "\n\n\n" },
-      { type: "raw", format: "plain", data: GS + "V\x41\x03" }
-    ];
+    const hexData = buildEscPosHex(lines);
+    console.log("[Impressão] Primeiros bytes hex:", hexData.substring(0, 60));
+    const rawData = [{ type: "raw", format: "hex", data: hexData }];
 
     const config = qz.configs.create(bemaPrinter);
     await qz.print(config, rawData);
@@ -2597,7 +2626,10 @@ async function printViaQZTray(transactions) {
   }
 }
 
-function printTransactionsReceipt(transactions) {
+async function printTransactionsReceipt(transactions) {
+  if (!qzTrayActive && typeof qz !== "undefined") {
+    await initQZTray();
+  }
   if (qzTrayActive) {
     printViaQZTray(transactions);
     return;
@@ -2610,45 +2642,21 @@ function printTransactionsReceiptFallback(transactions) {
   if (!printableTransactions.length) return;
 
   const receiptHtml = buildReceiptHtml(printableTransactions);
-  const frame = document.createElement("iframe");
-  frame.setAttribute("aria-hidden", "true");
-  frame.style.position = "fixed";
-  frame.style.right = "0";
-  frame.style.bottom = "0";
-  frame.style.width = "0";
-  frame.style.height = "0";
-  frame.style.border = "0";
-  frame.style.opacity = "0";
-  document.body.appendChild(frame);
-
-  const frameWindow = frame.contentWindow;
-  if (!frameWindow) {
-    frame.remove();
-    showAppToast("Não foi possível abrir a impressão.");
+  const printWindow = window.open("", "_blank", "width=400,height=600");
+  if (!printWindow) {
+    showAppToast("Bloqueio de pop-up: permita pop-ups para este site e tente novamente.");
     return;
   }
 
-  frameWindow.document.open();
-  frameWindow.document.write(receiptHtml);
-  frameWindow.document.close();
+  printWindow.document.open();
+  printWindow.document.write(receiptHtml);
+  printWindow.document.close();
 
-  const cleanup = () => {
-    window.setTimeout(() => {
-      frame.remove();
-    }, 800);
-  };
-
-  frameWindow.addEventListener("afterprint", cleanup, { once: true });
-  window.setTimeout(() => {
-    try {
-      frameWindow.focus();
-      frameWindow.print();
-    } catch (error) {
-      cleanup();
-      console.error("Falha ao imprimir:", error);
-      showAppToast("Não foi possível enviar para impressão.");
-    }
-  }, 250);
+  printWindow.addEventListener("load", () => {
+    printWindow.focus();
+    printWindow.print();
+    printWindow.addEventListener("afterprint", () => printWindow.close(), { once: true });
+  }, { once: true });
 }
 
 function buildReceiptHtml(transactions) {
@@ -2665,10 +2673,10 @@ function buildReceiptHtml(transactions) {
     <meta charset="UTF-8" />
     <title>Impressão Financeiro</title>
     <style>
-      @page { size: 80mm auto; margin: 4mm; }
+      @page { size: 57mm auto; margin: 2mm; }
       html, body { margin: 0; padding: 0; background: #fff; color: #000; }
       body { font-family: "Courier New", Courier, monospace; }
-      .receipt { width: 72mm; margin: 0 auto; padding: 0; white-space: pre-wrap; font-size: 11px; line-height: 1.35; }
+      .receipt { width: 53mm; margin: 0; padding: 0; white-space: pre-wrap; font-size: 10px; line-height: 1.3; }
     </style>
   </head>
   <body>
