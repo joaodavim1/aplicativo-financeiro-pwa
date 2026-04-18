@@ -2549,18 +2549,25 @@ function promptPrintTransactions(transactions, message) {
 async function initQZTray() {
   if (typeof qz === "undefined") return;
   try {
-    qz.security.setCertificatePromise((resolve, reject) => {
-      fetch("https://demo.qz.io/signing/demo-public-key.txt", { cache: "no-store" })
-        .then((r) => r.text())
-        .then(resolve)
-        .catch(reject);
-    });
-    qz.security.setSignaturePromise((toSign) => (resolve, reject) => {
+    let certText = "";
+    let useDemoCert = false;
+    try {
+      const r = await fetch("https://demo.qz.io/signing/demo-public-key.txt", { cache: "no-store" });
+      certText = await r.text();
+      useDemoCert = true;
+    } catch {
+      // sem acesso ao demo, usa cert vazio (mostra dialogo Allow)
+    }
+
+    qz.security.setCertificatePromise((resolve) => resolve(certText));
+    qz.security.setSignaturePromise((toSign) => (resolve) => {
+      if (!useDemoCert) { resolve(""); return; }
       fetch("https://demo.qz.io/signing/sign-message?request=" + encodeURIComponent(toSign), { cache: "no-store" })
         .then((r) => r.text())
         .then(resolve)
-        .catch(reject);
+        .catch(() => resolve(""));
     });
+
     if (!qz.websocket.isActive()) {
       await qz.websocket.connect({ retries: 2, delay: 1 });
     }
