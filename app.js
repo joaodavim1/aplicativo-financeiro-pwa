@@ -2618,7 +2618,14 @@ async function initQZTray() {
   try {
     qz.security.setCertificatePromise((resolve) => resolve(QZ_CERTIFICATE));
     qz.security.setSignaturePromise((toSign) => (resolve, reject) => {
-      qzSignRequest(toSign).then(resolve).catch(reject);
+      console.log("[QZ Tray] toSign:", JSON.stringify(toSign));
+      qzSignRequest(toSign).then((sig) => {
+        console.log("[QZ Tray] signature gerada:", sig);
+        resolve(sig);
+      }).catch((err) => {
+        console.error("[QZ Tray] erro na assinatura:", err);
+        reject(err);
+      });
     });
     if (!qz.websocket.isActive()) {
       await qz.websocket.connect({ retries: 2, delay: 1 });
