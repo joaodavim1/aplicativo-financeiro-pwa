@@ -2575,6 +2575,29 @@ iaCYJwAUdDlp2kmylXIcP34tUoG5O5M/RX0qz7Hx/MIkAFrllzOPH+4RNBL4OnmO
 K87FrAmoSOzupZOjn3guz1U=
 -----END PRIVATE KEY-----`;
 
+const QZ_CERTIFICATE = `-----BEGIN CERTIFICATE-----
+MIIDlzCCAn+gAwIBAgIUEb7Fk9W70CDcBfEZecKCacYaIokwDQYJKoZIhvcNAQEL
+BQAwWzELMAkGA1UEBhMCQlIxCzAJBgNVBAgMAlNQMREwDwYDVQQHDAhTYW9QYXVs
+bzETMBEGA1UECgwKRmluYW5jZWlybzEXMBUGA1UEAwwOZmluYW5jZWlyby1wd2Ew
+HhcNMjYwNDE4MjExNzI1WhcNMzYwNDE1MjExNzI1WjBbMQswCQYDVQQGEwJCUjEL
+MAkGA1UECAwCU1AxETAPBgNVBAcMCFNhb1BhdWxvMRMwEQYDVQQKDApGaW5hbmNl
+aXJvMRcwFQYDVQQDDA5maW5hbmNlaXJvLXB3YTCCASIwDQYJKoZIhvcNAQEBBQAD
+ggEPADCCAQoCggEBALfehOQxd7OdgVAaJqBExGeS9Lsq5hGunZF0vtDkNtRUpvwX
+29xKTKs14lvlbicIgFUDOuhSQhiKbB1RH1qrzFS6dqxLADsThljyjG/26I9LdLIc
+XIRq4p26kjS3yLnAH/SYuaTzkP6Y6Nbs49GU58ZDOqOXs3hfQNbnzYNMlYu4mIaU
+Ed3J3DTomKIQWdjucKB35lOb2RJDtW5TFuYkb4rbqxspcgCVqjxhmdmUI3gKa63C
+aFVOmZEj8+eYgasGk1T8nM9FDPfeM0DHVp096lBLJnxKFT4FUKnxcHII3j20Vw4H
+4i3f3H46VsiekKTZK8AU2XV235bB5WaEz8fpF3UCAwEAAaNTMFEwHQYDVR0OBBYE
+FD2QxFMqRF7ik7Eg1PTYXoWi/tPcMB8GA1UdIwQYMBaAFD2QxFMqRF7ik7Eg1PTY
+XoWi/tPcMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAJyYFIcD
+XG7m7Fzru22wGul1coRFL99WwcszPNsr1lTmyynkSuid3iJUxLmWLAkeboPrPQVa
+LQ8JMaoI+AzJ5SGX2EbUQKLLvegNgyAKKR3Y7gsrtryjR15ehz/Bhlfl5ZukGYzs
+exBYpIQpm0F+9d/7ppcUYI4oBqiWkxUrcwXTUyLRfSF7HKhwfPHR6VtiaHJKsCMc
+SYqeDdaj1v+7pC5FiLJLffsNWKsNw8+V1cNAQoy35LxTKp6F5ikF6fmVk3Fg7c59
+DNOzCB4DXQY+EK6C/aj8mgtJaRkOF3Pmh1AbJyOjufrC5sNXGRPZZXrnOHFsDm2+
+zCW3HHOUT6PVDuw=
+-----END CERTIFICATE-----`;
+
 async function qzSignRequest(toSign) {
   const pemBody = QZ_PRIVATE_KEY.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, "");
   const der = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
@@ -2584,18 +2607,16 @@ async function qzSignRequest(toSign) {
     false, ["sign"]
   );
   const sig = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(toSign));
-  return btoa(String.fromCharCode(...new Uint8Array(sig)));
+  const bytes = new Uint8Array(sig);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
 }
 
 async function initQZTray() {
   if (typeof qz === "undefined") return;
   try {
-    qz.security.setCertificatePromise((resolve, reject) => {
-      fetch("./certs/digital-certificate.txt", { cache: "no-store" })
-        .then((r) => r.text())
-        .then(resolve)
-        .catch(reject);
-    });
+    qz.security.setCertificatePromise((resolve) => resolve(QZ_CERTIFICATE));
     qz.security.setSignaturePromise((toSign) => (resolve, reject) => {
       qzSignRequest(toSign).then(resolve).catch(reject);
     });
@@ -2603,7 +2624,8 @@ async function initQZTray() {
       await qz.websocket.connect({ retries: 2, delay: 1 });
     }
     qzTrayActive = true;
-  } catch {
+  } catch (e) {
+    console.error("[QZ Tray] Falha ao conectar:", e);
     qzTrayActive = false;
   }
 }
