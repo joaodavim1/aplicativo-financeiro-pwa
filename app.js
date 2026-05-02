@@ -1530,8 +1530,8 @@ function getActiveHistoryType() {
 
 function getCurrentHistoryUiFilters() {
   const type = getActiveHistoryType();
-  const startDate = nodes.historyStartDate?.value || currentHistoryFilters.startDate || "";
-  const endDate = nodes.historyEndDate?.value || currentHistoryFilters.endDate || "";
+  const startDate = normalizeDateFilterValue(nodes.historyStartDate?.value || currentHistoryFilters.startDate || "");
+  const endDate = normalizeDateFilterValue(nodes.historyEndDate?.value || currentHistoryFilters.endDate || "");
   const category = type === "all" ? "" : (nodes.historyCategoryFilter?.value || currentHistoryFilters.category || "");
   const payment = type === "all" ? "" : (nodes.historyPaymentFilter?.value || currentHistoryFilters.payment || "");
 
@@ -1553,8 +1553,8 @@ function sumByType(type) {
 function handleHistoryFilterChange() {
   const nextType = getActiveHistoryType();
   currentHistoryFilters = {
-    startDate: nodes.historyStartDate?.value || "",
-    endDate: nodes.historyEndDate?.value || "",
+    startDate: normalizeDateFilterValue(nodes.historyStartDate?.value || ""),
+    endDate: normalizeDateFilterValue(nodes.historyEndDate?.value || ""),
     type: nextType,
     category: nextType === "all" ? "" : (nodes.historyCategoryFilter?.value || ""),
     payment: nextType === "all" ? "" : (nodes.historyPaymentFilter?.value || "")
@@ -1619,8 +1619,8 @@ function clearHistoryFilters() {
 function handleFutureFilterChange() {
   currentFutureFilters = {
     ...currentFutureFilters,
-    startDate: nodes.futureStartDate?.value || "",
-    endDate: nodes.futureEndDate?.value || "",
+    startDate: normalizeDateFilterValue(nodes.futureStartDate?.value || ""),
+    endDate: normalizeDateFilterValue(nodes.futureEndDate?.value || ""),
     category: nodes.futureCategoryFilter?.value || "",
     payment: nodes.futurePaymentFilter?.value || ""
   };
@@ -3622,13 +3622,17 @@ function formatDateInputValue(dateMillis) {
 }
 
 function toStartOfDayMillis(dateText) {
-  const [year, month, day] = String(dateText).split("-").map(Number);
-  return new Date(year, (month || 1) - 1, day || 1, 0, 0, 0, 0).getTime();
+  const parts = parseDateParts(dateText);
+  if (!parts) return Number.NaN;
+  const { year, month, day } = parts;
+  return new Date(year, month - 1, day, 0, 0, 0, 0).getTime();
 }
 
 function toEndOfDayMillis(dateText) {
-  const [year, month, day] = String(dateText).split("-").map(Number);
-  return new Date(year, (month || 1) - 1, day || 1, 23, 59, 59, 999).getTime();
+  const parts = parseDateParts(dateText);
+  if (!parts) return Number.NaN;
+  const { year, month, day } = parts;
+  return new Date(year, month - 1, day, 23, 59, 59, 999).getTime();
 }
 
 function todayDateInputValue() {
@@ -3637,6 +3641,40 @@ function todayDateInputValue() {
   const month = String(today.getMonth() + 1).padStart(2, "0");
   const day = String(today.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function parseDateParts(dateText) {
+  const raw = String(dateText || "").trim();
+  if (!raw) return null;
+
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    const year = Number(isoMatch[1]);
+    const month = Number(isoMatch[2]);
+    const day = Number(isoMatch[3]);
+    const parsed = new Date(year, month - 1, day);
+    if (parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day) {
+      return { day, month, year };
+    }
+    return null;
+  }
+
+  const brMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!brMatch) return null;
+  const day = Number(brMatch[1]);
+  const month = Number(brMatch[2]);
+  const year = Number(brMatch[3]);
+  const parsed = new Date(year, month - 1, day);
+  if (parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day) {
+    return { day, month, year };
+  }
+  return null;
+}
+
+function normalizeDateFilterValue(dateText) {
+  const parts = parseDateParts(dateText);
+  if (!parts) return "";
+  return `${String(parts.day).padStart(2, "0")}/${String(parts.month).padStart(2, "0")}/${parts.year}`;
 }
 
 function fallbackBudgetColor(index) {
