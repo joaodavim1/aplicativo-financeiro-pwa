@@ -1,8 +1,8 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260418aa";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260502a";
 
 const IOS_APP_VERSION = "Versão atual: 1.35";
 const IOS_SETTINGS_VERSION = "1.35";
-const IOS_BUILD_TOKEN = "20260418aa";
+const IOS_BUILD_TOKEN = "20260502a";
 const BUILD_STORAGE_KEY = "financeiro-pwa-build-token";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
@@ -680,7 +680,14 @@ function createSupabasePersistence(ensureSessionFn) {
         appSettings: Array.isArray(appSettings) ? appSettings[0] || null : null
       });
 
-      return mergeUiPreferences(remoteState, readStoredUiPreferences(session.user.uid));
+      const mergedState = mergeUiPreferences(remoteState, readStoredUiPreferences(session.user.uid));
+      return {
+        ...mergedState,
+        ui: {
+          ...mergedState.ui,
+          activeAccountId
+        }
+      };
     },
     async saveState(state) {
       const session = await ensureSessionFn();
@@ -1039,8 +1046,15 @@ function getUiPrefsStorageKey(userId) {
 
 function selectActiveAccount(people, transactions, preferredAccountId = null) {
   if (preferredAccountId) {
+    const preferredHasTransactions = transactions.some(
+      (item) => Number(item.account_id) === Number(preferredAccountId)
+    );
+    const hasAnyTransaction = transactions.length > 0;
+    const canUsePreferred = preferredHasTransactions || !hasAnyTransaction;
+
     const preferredPerson = people.find((person) => Number(person.id) === Number(preferredAccountId));
-    if (preferredPerson) return preferredPerson;
+    if (preferredPerson && canUsePreferred) return preferredPerson;
+
     const preferredTransaction = transactions.find((item) => Number(item.account_id) === Number(preferredAccountId));
     if (preferredTransaction) {
       return {
