@@ -928,7 +928,7 @@ function getExtratoTransactionsBase() {
     return currentState.transactions;
   }
 
-  return currentState.transactions.filter((transaction) => resolveFutureDateMillis(transaction) <= todayEnd);
+  return currentState.transactions.filter((transaction) => shouldAppearInHistory(transaction, todayEnd));
 }
 
 function historyFilterIncludesFutureDates(activeFilters) {
@@ -974,7 +974,7 @@ function renderExtratoList() {
 }
 
 function renderExtratoSummary() {
-  const filtered = getHistoryDateRangeTransactions();
+  const filtered = getHistoryFilteredTransactions();
   const income = filtered
     .filter((transaction) => resolveTransactionType(transaction) === "income")
     .reduce((accumulator, transaction) => accumulator + transaction.amount, 0);
@@ -1757,18 +1757,18 @@ function renderFutureFilterOptions() {
 function getFutureTransactions() {
   const todayEnd = toEndOfDayMillis(todayDateInputValue());
   return currentState.transactions.filter((transaction) => {
-    const futureDateMillis = resolveFutureDateMillis(transaction);
-    if (futureDateMillis <= todayEnd) return false;
+    if (!isFuturePendingTransaction(transaction, todayEnd)) return false;
+    const referenceDateMillis = resolveFutureDateMillis(transaction);
     if (currentFutureFilters.type !== "all" && transaction.type !== currentFutureFilters.type) return false;
     if (currentFutureFilters.category && transaction.category !== currentFutureFilters.category) return false;
     if (currentFutureFilters.payment && transaction.paymentMethod !== currentFutureFilters.payment) return false;
     if (currentFutureFilters.startDate) {
       const startMillis = toStartOfDayMillis(currentFutureFilters.startDate);
-      if (futureDateMillis < startMillis) return false;
+      if (referenceDateMillis < startMillis) return false;
     }
     if (currentFutureFilters.endDate) {
       const endMillis = toEndOfDayMillis(currentFutureFilters.endDate);
-      if (futureDateMillis > endMillis) return false;
+      if (referenceDateMillis > endMillis) return false;
     }
     return true;
   }).sort(compareTransactionsNewestFirst);
@@ -2530,7 +2530,23 @@ function compareLaunchDateNewestFirst(left, right) {
 
 function resolveTransactionStatus(transaction) {
   const todayEnd = toEndOfDayMillis(todayDateInputValue());
-  return resolveFutureDateMillis(transaction) <= todayEnd ? "Concluido" : "Pendente";
+  return isFuturePendingTransaction(transaction, todayEnd) ? "Pendente" : "Concluido";
+}
+
+function isCardPendingTransaction(transaction) {
+  const cardPaymentDate = Number(transaction?.cardPaymentDateMillis);
+  return Number.isFinite(cardPaymentDate) && cardPaymentDate > 0;
+}
+
+function isFuturePendingTransaction(transaction, todayEnd) {
+  if (isCardPendingTransaction(transaction)) {
+    return true;
+  }
+  return Number(transaction?.dateMillis || 0) > todayEnd;
+}
+
+function shouldAppearInHistory(transaction, todayEnd) {
+  return !isFuturePendingTransaction(transaction, todayEnd);
 }
 
 function clearAppToastState() {
