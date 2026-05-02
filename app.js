@@ -55,6 +55,7 @@ let appToastActionCleanup = null;
 let remotePrintWatchTimer = null;
 let knownPrintedTransactionIds = new Set();
 let qzTrayActive = false;
+let remoteSyncInFlight = null;
 const printerMode = new URLSearchParams(window.location.search).get("impressora") === "1";
 let currentCategoryOptions = [];
 let pendingMultiLaunchCategoryFocus = null;
@@ -326,6 +327,17 @@ function bindEvents() {
   nodes.settingsNotificationsEnabled?.addEventListener("change", handleNotificationsEnabledChange);
   nodes.settingsNotificationTime?.addEventListener("change", handleNotificationTimeChange);
   nodes.settingsVoiceWakeWordSave?.addEventListener("click", handleVoiceWakeWordSave);
+  window.addEventListener("focus", () => {
+    void syncRemoteState({ source: "focus", skipWhenEditing: false });
+  });
+  window.addEventListener("online", () => {
+    void syncRemoteState({ source: "online", skipWhenEditing: false });
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      void syncRemoteState({ source: "visible", skipWhenEditing: false });
+    }
+  });
 }
 
 async function handleSubmit(event) {
@@ -2998,9 +3010,23 @@ function startRemotePrintWatch() {
     return;
   }
 
-  remotePrintWatchTimer = window.setInterval(async () => {
-    if (editingTransactionId !== null) return;
+  void syncRemoteState({ source: "startup", skipWhenEditing: false });
 
+  remotePrintWatchTimer = window.setInterval(() => {
+    void syncRemoteState({ source: "interval", skipWhenEditing: true });
+  }, 7000);
+}
+
+function canRunRemoteSync() {
+  return currentIdentity?.mode === "google" && typeof currentPersistence?.loadState === "function";
+}
+
+async function syncRemoteState({ source = "interval", skipWhenEditing = true } = {}) {
+  if (!canRunRemoteSync()) return false;
+  if (skipWhenEditing && editingTransactionId !== null) return false;
+  if (remoteSyncInFlight) return remoteSyncInFlight;
+
+  remoteSyncInFlight = (async () => {
     try {
       const remoteState = sanitizeState(await currentPersistence.loadState());
       const remoteTransactions = Array.isArray(remoteState?.transactions) ? remoteState.transactions : [];
@@ -3030,10 +3056,17 @@ function startRemotePrintWatch() {
           });
         }
       }
+
+      return true;
     } catch (error) {
-      console.warn("Falha ao verificar novos lançamentos para impressão:", error);
+      console.warn(`Falha ao sincronizar com banco (${source}):`, error);
+      return false;
+    } finally {
+      remoteSyncInFlight = null;
     }
-  }, 7000);
+  })();
+
+  return remoteSyncInFlight;
 }
 
 function applyTheme() {
