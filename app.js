@@ -2851,8 +2851,11 @@ function wrapReceiptText(text, width = 40) {
 
 function formatPrintDateTime(date) {
   return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short"
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
   }).format(date);
 }
 
@@ -3314,9 +3317,7 @@ function sanitizeTransaction(transaction) {
     type: normalizeTransactionType(transaction?.type),
     amount: Number.isFinite(Number(transaction?.amount)) ? Number(transaction.amount) : 0,
     dateMillis,
-    dateLabel: typeof transaction?.dateLabel === "string" && transaction.dateLabel.trim()
-      ? transaction.dateLabel
-      : formatRelativeDate(dateMillis),
+    dateLabel: formatRelativeDate(dateMillis),
     paymentMethod: String(transaction?.paymentMethod || "").trim(),
     installments: Math.max(1, Number.parseInt(String(transaction?.installments || "1"), 10) || 1),
     installmentNumber: Math.max(1, Number.parseInt(String(transaction?.installmentNumber || transaction?.installment_number || "1"), 10) || 1),
@@ -3573,23 +3574,11 @@ function normalizeTransactionId(id) {
 }
 
 function formatRelativeDate(dateMillis) {
-  const currentDate = new Date();
-  const targetDate = new Date(dateMillis);
-  const currentStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-  const targetStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
-  const diffDays = Math.round((currentStart - targetStart) / 86400000);
-
-  if (diffDays === 0) return "Hoje";
-  if (diffDays === 1) return "Ontem";
-  if (diffDays > 1 && diffDays < 7) {
-    return new Intl.DateTimeFormat("pt-BR", { weekday: "long" }).format(targetDate);
-  }
-
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric"
-  }).format(targetDate);
+  }).format(new Date(dateMillis));
 }
 
 function formatDateShort(dateMillis) {

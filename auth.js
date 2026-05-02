@@ -1,8 +1,8 @@
-import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260502b";
+import { bootFinanceiroApp, getFinanceiroMenuState } from "./app.js?v=20260502c";
 
 const IOS_APP_VERSION = "Versão atual: 1.35";
 const IOS_SETTINGS_VERSION = "1.35";
-const IOS_BUILD_TOKEN = "20260502b";
+const IOS_BUILD_TOKEN = "20260502c";
 const BUILD_STORAGE_KEY = "financeiro-pwa-build-token";
 
 const runtimeConfig = window.FINANCEIRO_SUPABASE_CONFIG || null;
@@ -1326,23 +1326,11 @@ function toSupabaseAppSettings(state, context) {
 }
 
 function formatRelativeDate(dateMillis) {
-  const currentDate = new Date();
-  const targetDate = new Date(dateMillis);
-  const currentStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-  const targetStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
-  const diffDays = Math.round((currentStart - targetStart) / 86400000);
-
-  if (diffDays === 0) return "Hoje";
-  if (diffDays === 1) return "Ontem";
-  if (diffDays > 1 && diffDays < 7) {
-    return new Intl.DateTimeFormat("pt-BR", { weekday: "long" }).format(targetDate);
-  }
-
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric"
-  }).format(targetDate);
+  }).format(new Date(dateMillis));
 }
 
 async function createGoogleNonceClient() {
