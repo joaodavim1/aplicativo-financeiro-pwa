@@ -819,6 +819,14 @@ body:not([data-theme="dark"]) .multi-launch-category-option:hover {
   appearance: none;
 }
 
+.date-filter-input {
+  min-width: 150px;
+  font-size: 16px;
+  font-family: "Segoe UI", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
 .history-clear-button {
   margin-top: 16px;
 }

@@ -327,6 +327,7 @@ function bindEvents() {
   nodes.settingsNotificationsEnabled?.addEventListener("change", handleNotificationsEnabledChange);
   nodes.settingsNotificationTime?.addEventListener("change", handleNotificationTimeChange);
   nodes.settingsVoiceWakeWordSave?.addEventListener("click", handleVoiceWakeWordSave);
+  bindDateFilterMasking();
   window.addEventListener("focus", () => {
     void syncRemoteState({ source: "focus", skipWhenEditing: false });
   });
@@ -338,6 +339,40 @@ function bindEvents() {
       void syncRemoteState({ source: "visible", skipWhenEditing: false });
     }
   });
+}
+
+function bindDateFilterMasking() {
+  const dateInputs = [
+    nodes.historyStartDate,
+    nodes.historyEndDate,
+    nodes.futureStartDate,
+    nodes.futureEndDate
+  ].filter(Boolean);
+
+  dateInputs.forEach((input) => {
+    input.addEventListener("input", handleDateFilterMaskInput);
+    input.addEventListener("blur", handleDateFilterMaskBlur);
+  });
+}
+
+function handleDateFilterMaskInput(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement)) return;
+  target.value = formatDateMaskValue(target.value);
+}
+
+function handleDateFilterMaskBlur(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement)) return;
+  const normalized = normalizeDateFilterValue(target.value);
+  target.value = normalized || formatDateMaskValue(target.value);
+}
+
+function formatDateMaskValue(rawValue) {
+  const digits = String(rawValue || "").replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 
 async function handleSubmit(event) {
