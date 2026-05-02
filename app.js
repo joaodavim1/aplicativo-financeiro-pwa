@@ -896,6 +896,28 @@ function getExtratoTransactionsBase() {
   return currentState.transactions.filter((transaction) => resolveFutureDateMillis(transaction) <= todayEnd);
 }
 
+function historyFilterIncludesFutureDates(activeFilters) {
+  const todayEnd = toEndOfDayMillis(todayDateInputValue());
+  const startMillis = activeFilters.startDate
+    ? toStartOfDayMillis(activeFilters.startDate)
+    : null;
+  const endMillis = activeFilters.endDate
+    ? toEndOfDayMillis(activeFilters.endDate)
+    : null;
+
+  return (
+    (Number.isFinite(startMillis) && startMillis > todayEnd) ||
+    (Number.isFinite(endMillis) && endMillis > todayEnd)
+  );
+}
+
+function resolveHistoryFilterDateMillis(transaction, includeFutureReferenceDate) {
+  if (includeFutureReferenceDate) {
+    return resolveFutureDateMillis(transaction);
+  }
+  return Number(transaction?.dateMillis || Date.now());
+}
+
 function renderExtratoList() {
   const filtered = getHistoryFilteredTransactions();
   const total = filtered.reduce(
@@ -1892,8 +1914,9 @@ function syncHistoryFilterInputs() {
 
 function getHistoryFilteredTransactions() {
   const activeFilters = getCurrentHistoryUiFilters();
+  const includeFutureReferenceDate = historyFilterIncludesFutureDates(activeFilters);
   return getExtratoTransactionsBase().filter((transaction) => {
-    const effectiveDateMillis = resolveFutureDateMillis(transaction);
+    const filterDateMillis = resolveHistoryFilterDateMillis(transaction, includeFutureReferenceDate);
     if (activeFilters.type !== "all" && resolveTransactionType(transaction) !== activeFilters.type) {
       return false;
     }
@@ -1905,13 +1928,13 @@ function getHistoryFilteredTransactions() {
     }
     if (activeFilters.startDate) {
       const startMillis = toStartOfDayMillis(activeFilters.startDate);
-      if (effectiveDateMillis < startMillis) {
+      if (filterDateMillis < startMillis) {
         return false;
       }
     }
     if (activeFilters.endDate) {
       const endMillis = toEndOfDayMillis(activeFilters.endDate);
-      if (effectiveDateMillis > endMillis) {
+      if (filterDateMillis > endMillis) {
         return false;
       }
     }
@@ -1921,17 +1944,18 @@ function getHistoryFilteredTransactions() {
 
 function getHistoryDateRangeTransactions() {
   const activeFilters = getCurrentHistoryUiFilters();
+  const includeFutureReferenceDate = historyFilterIncludesFutureDates(activeFilters);
   return getExtratoTransactionsBase().filter((transaction) => {
-    const effectiveDateMillis = resolveFutureDateMillis(transaction);
+    const filterDateMillis = resolveHistoryFilterDateMillis(transaction, includeFutureReferenceDate);
     if (activeFilters.startDate) {
       const startMillis = toStartOfDayMillis(activeFilters.startDate);
-      if (effectiveDateMillis < startMillis) {
+      if (filterDateMillis < startMillis) {
         return false;
       }
     }
     if (activeFilters.endDate) {
       const endMillis = toEndOfDayMillis(activeFilters.endDate);
-      if (effectiveDateMillis > endMillis) {
+      if (filterDateMillis > endMillis) {
         return false;
       }
     }
