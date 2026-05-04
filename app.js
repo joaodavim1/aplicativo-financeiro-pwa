@@ -365,7 +365,7 @@ function handleDateFilterMaskBlur(event) {
   const target = event.target;
   if (!(target instanceof HTMLInputElement)) return;
   const normalized = normalizeDateFilterValue(target.value);
-  target.value = normalized || formatDateMaskValue(target.value);
+  target.value = normalized || String(target.value || "").trim() || formatDateMaskValue(target.value);
 }
 
 function formatDateMaskValue(rawValue) {
@@ -1565,8 +1565,10 @@ function getActiveHistoryType() {
 
 function getCurrentHistoryUiFilters() {
   const type = getActiveHistoryType();
-  const startDate = normalizeDateFilterValue(nodes.historyStartDate?.value || currentHistoryFilters.startDate || "");
-  const endDate = normalizeDateFilterValue(nodes.historyEndDate?.value || currentHistoryFilters.endDate || "");
+  const startDateRaw = String(nodes.historyStartDate?.value || currentHistoryFilters.startDate || "").trim();
+  const endDateRaw = String(nodes.historyEndDate?.value || currentHistoryFilters.endDate || "").trim();
+  const startDate = normalizeDateFilterValue(startDateRaw);
+  const endDate = normalizeDateFilterValue(endDateRaw);
   const category = type === "all" ? "" : (nodes.historyCategoryFilter?.value || currentHistoryFilters.category || "");
   const payment = type === "all" ? "" : (nodes.historyPaymentFilter?.value || currentHistoryFilters.payment || "");
 
@@ -1588,8 +1590,8 @@ function sumByType(type) {
 function handleHistoryFilterChange() {
   const nextType = getActiveHistoryType();
   currentHistoryFilters = {
-    startDate: normalizeDateFilterValue(nodes.historyStartDate?.value || ""),
-    endDate: normalizeDateFilterValue(nodes.historyEndDate?.value || ""),
+    startDate: String(nodes.historyStartDate?.value || "").trim(),
+    endDate: String(nodes.historyEndDate?.value || "").trim(),
     type: nextType,
     category: nextType === "all" ? "" : (nodes.historyCategoryFilter?.value || ""),
     payment: nextType === "all" ? "" : (nodes.historyPaymentFilter?.value || "")
@@ -1654,8 +1656,8 @@ function clearHistoryFilters() {
 function handleFutureFilterChange() {
   currentFutureFilters = {
     ...currentFutureFilters,
-    startDate: normalizeDateFilterValue(nodes.futureStartDate?.value || ""),
-    endDate: normalizeDateFilterValue(nodes.futureEndDate?.value || ""),
+    startDate: String(nodes.futureStartDate?.value || "").trim(),
+    endDate: String(nodes.futureEndDate?.value || "").trim(),
     category: nodes.futureCategoryFilter?.value || "",
     payment: nodes.futurePaymentFilter?.value || ""
   };
