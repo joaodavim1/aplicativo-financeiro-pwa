@@ -352,6 +352,7 @@ function bindDateFilterMasking() {
   dateInputs.forEach((input) => {
     input.addEventListener("input", handleDateFilterMaskInput);
     input.addEventListener("blur", handleDateFilterMaskBlur);
+    input.addEventListener("focus", handleDateFilterMaskFocus);
   });
 }
 
@@ -366,6 +367,19 @@ function handleDateFilterMaskBlur(event) {
   if (!(target instanceof HTMLInputElement)) return;
   const normalized = normalizeDateFilterValue(target.value);
   target.value = normalized || String(target.value || "").trim() || formatDateMaskValue(target.value);
+}
+
+function handleDateFilterMaskFocus(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement)) return;
+  window.setTimeout(() => {
+    try {
+      const valueLength = target.value.length;
+      if (valueLength > 0) {
+        target.setSelectionRange(0, valueLength);
+      }
+    } catch {}
+  }, 0);
 }
 
 function formatDateMaskValue(rawValue) {
