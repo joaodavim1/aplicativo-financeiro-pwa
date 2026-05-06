@@ -927,21 +927,6 @@ function renderHistoryFilterOptions() {
 
 function getExtratoTransactionsBase() {
   const todayEnd = toEndOfDayMillis(todayDateInputValue());
-  const activeFilters = getCurrentHistoryUiFilters();
-  const startMillis = activeFilters.startDate
-    ? toStartOfDayMillis(activeFilters.startDate)
-    : null;
-  const endMillis = activeFilters.endDate
-    ? toEndOfDayMillis(activeFilters.endDate)
-    : null;
-  const includesFutureRange =
-    (Number.isFinite(startMillis) && startMillis > todayEnd) ||
-    (Number.isFinite(endMillis) && endMillis > todayEnd);
-
-  if (includesFutureRange) {
-    return currentState.transactions;
-  }
-
   return currentState.transactions.filter((transaction) => shouldAppearInHistory(transaction, todayEnd));
 }
 
@@ -961,9 +946,7 @@ function historyFilterIncludesFutureDates(activeFilters) {
 }
 
 function resolveHistoryFilterDateMillis(transaction, includeFutureReferenceDate) {
-  if (includeFutureReferenceDate) {
-    return resolveFutureDateMillis(transaction);
-  }
+  void includeFutureReferenceDate;
   return Number(transaction?.dateMillis || Date.now());
 }
 
@@ -1965,9 +1948,8 @@ function syncHistoryFilterInputs() {
 
 function getHistoryFilteredTransactions() {
   const activeFilters = getCurrentHistoryUiFilters();
-  const includeFutureReferenceDate = historyFilterIncludesFutureDates(activeFilters);
   return getExtratoTransactionsBase().filter((transaction) => {
-    const filterDateMillis = resolveHistoryFilterDateMillis(transaction, includeFutureReferenceDate);
+    const filterDateMillis = resolveHistoryFilterDateMillis(transaction);
     if (activeFilters.type !== "all" && resolveTransactionType(transaction) !== activeFilters.type) {
       return false;
     }
@@ -1995,9 +1977,8 @@ function getHistoryFilteredTransactions() {
 
 function getHistoryDateRangeTransactions() {
   const activeFilters = getCurrentHistoryUiFilters();
-  const includeFutureReferenceDate = historyFilterIncludesFutureDates(activeFilters);
   return getExtratoTransactionsBase().filter((transaction) => {
-    const filterDateMillis = resolveHistoryFilterDateMillis(transaction, includeFutureReferenceDate);
+    const filterDateMillis = resolveHistoryFilterDateMillis(transaction);
     if (activeFilters.startDate) {
       const startMillis = toStartOfDayMillis(activeFilters.startDate);
       if (filterDateMillis < startMillis) {
@@ -2549,13 +2530,13 @@ function resolveTransactionStatus(transaction) {
   return isFuturePendingTransaction(transaction, todayEnd) ? "Pendente" : "Concluido";
 }
 
-function isCardPendingTransaction(transaction) {
+function isCardPendingTransaction(transaction, todayEnd) {
   const cardPaymentDate = Number(transaction?.cardPaymentDateMillis);
-  return Number.isFinite(cardPaymentDate) && cardPaymentDate > 0;
+  return Number.isFinite(cardPaymentDate) && cardPaymentDate > todayEnd;
 }
 
 function isFuturePendingTransaction(transaction, todayEnd) {
-  if (isCardPendingTransaction(transaction)) {
+  if (isCardPendingTransaction(transaction, todayEnd)) {
     return true;
   }
   return Number(transaction?.dateMillis || 0) > todayEnd;
